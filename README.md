@@ -53,9 +53,9 @@ The add-on uses the client language by default. Choose a language for the curren
 
 ## 实机预览
 
-v0.5.7 实机截图，展示钓鱼工具栏和渔获面板。
+v0.6.0 实机截图：统一钓鱼设置、本次渔获和鱼类资料库可同时打开，统一使用深色界面。
 
-![BobberTally 钓鱼工具栏和渔获面板](docs/media/gameplay.png)
+![BobberTally v0.6.0：钓鱼设置、渔获估价与鱼类资料库同时打开](docs/media/gameplay-v0.6.0.webp)
 
 ## 数据与致谢
 
