@@ -252,57 +252,6 @@ equip:SetPoint("BOTTOMRIGHT", -155, 15)
 local nextStep = Button(wizard, nil, "下一步", 130)
 nextStep:SetPoint("BOTTOMRIGHT", -18, 15)
 
-local floating = CreateFrame("Frame", "WowfFishingFloating", UIParent)
-floating:SetSize(159, 32)
-floating:SetClampedToScreen(true)
-floating:SetMovable(true)
-floating:Hide()
-local floatButton = Button(floating, "WowfFishingFloatingGear", "装备鱼竿", 118)
-floatButton:SetPoint("LEFT", 0, 0)
-floatButton:RegisterForDrag("LeftButton")
-local lock = Button(floating, nil, "固定", 41)
-lock:SetPoint("LEFT", floatButton, "RIGHT", 0, 0)
-
-function addon.UpdateFloatingGear(hasPole)
-    if not db then return end
-    floatButton:SetText(hasPole and "恢复武器" or "装备鱼竿")
-    floating:SetShown(db.setupEquipment ~= nil)
-end
-
-local function StopMoving()
-    if not floating.moving then return end
-    floating:StopMovingOrSizing()
-    floating.moving = nil
-    local x, y = floating:GetCenter()
-    local parentX, parentY = UIParent:GetCenter()
-    if not x or not parentX then return end
-    db.floatPosition = { x = x - parentX, y = y - parentY }
-    floating:ClearAllPoints()
-    floating:SetPoint("CENTER", UIParent, "CENTER", db.floatPosition.x, db.floatPosition.y)
-end
-
-floatButton:SetScript("OnDragStart", function()
-    if db.floatLocked then return end
-    floating.moving = true
-    floating:StartMoving()
-end)
-floatButton:SetScript("OnDragStop", StopMoving)
-floatButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(self:GetText())
-    local key = handlers.key()
-    if key then GameTooltip:AddLine("快捷键  " .. key) end
-    if not db.floatLocked then GameTooltip:AddLine("拖动按钮调整位置。") end
-    GameTooltip:Show()
-end)
-floatButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
-floating:SetScript("OnHide", StopMoving)
-lock:SetScript("OnClick", function()
-    StopMoving()
-    db.floatLocked = not db.floatLocked
-    lock:SetText(db.floatLocked and "解锁" or "固定")
-end)
-
 local function Render(notice)
     local rodPage, weaponPage = step == 1, step == 2
     local items = step == 3 and {} or Items(rodPage)
@@ -470,12 +419,4 @@ end
 
 function addon.InitializeSetup(settings, callbacks)
     db, handlers = settings, callbacks
-    local position = db.floatPosition
-    if position then
-        floating:SetPoint("CENTER", UIParent, "CENTER", position.x, position.y)
-    else
-        floating:SetPoint("RIGHT", UIParent, "RIGHT", -145, -115)
-    end
-    lock:SetText(db.floatLocked and "解锁" or "固定")
-    floatButton:SetScript("OnClick", handlers.toggleGear)
 end

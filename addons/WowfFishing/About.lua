@@ -14,7 +14,7 @@ panel:Hide()
 
 local title = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 title:SetPoint("TOPLEFT", 12, -6)
-title:SetText("无限钓鱼助手 · 说明与致谢")
+title:SetText("无限钓鱼助手 · 关于")
 
 local scroll = CreateFrame("ScrollFrame", nil, panel)
 scroll:SetPoint("TOPLEFT", 17, -36)
@@ -29,16 +29,17 @@ text:SetWidth(515)
 text:SetJustifyH("LEFT")
 text:SetSpacing(3)
 text:SetText(table.concat({
-    "|cffffd100无限钓鱼助手 0.4.1|r",
+    "|cffffd100无限钓鱼助手 0.5.7|r",
     "为《魔兽世界：无限》制作的钓鱼辅助插件。",
     "",
     "|cffffd100使用方法|r",
     "/wowfish setup 打开配置向导，选择鱼竿、武器和换装快捷键。",
-    "完成后拖动屏幕上的换装按钮，再点「固定」保存位置。",
+    "点击工具栏上的装备图标换装，点击三条横杠图标打开或关闭主面板。",
     "已有 F、W 方案的角色可继续使用原有 M 键换装。",
-    "/wowfish 打开主面板。/wowfish bind G 设置空闲的抛竿键。",
-    "在游戏设置开启交互键后，听见浮漂水花声再按同一键收竿。",
-    "/wowfish loot 查看本次渔获、两种单价和总价。",
+    "装备鱼竿后，左键点击鱼钩图标抛竿。按住工具栏最右侧的四向箭头可移动整组。",
+    "听见水花声后，右键点击浮漂收竿。也可用 /wowfish bind G 绑定空闲键，再开启游戏交互键，同键抛竿和收竿。",
+    "/wowfish 或 /wowfish loot 打开钓鱼面板，查看抛竿统计、渔获详情、两种单价和总价。",
+    "按住钓鱼面板的标题栏可单独移动窗口。",
     "打开拍卖行后点更新拍卖价，报价旁会显示查询时间。",
     "总价按单价乘数量计算，缺少报价的数量会另行标明。",
     "/wowfish fish 打开鱼类资料库，支持名称、地点和类别搜索。",

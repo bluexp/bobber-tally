@@ -1,6 +1,10 @@
 # BobberTally 规则与代码审查
 
-2026 年 11 月 11 日审查了《魔兽世界：无限》国服规则、v0.3.1 的 Lua 源码及下载包。v0.4.0 换装向导的实现见下节。 [v0.3.1 审查原文](https://github.com/bluexp/bobber-tally/blob/01fca65/COMPLIANCE.md)
+2026 年 11 月 11 日审查了《魔兽世界：无限》国服规则、v0.3.1 的 Lua 源码及下载包。后续版本的实现变化记录如下。 [v0.3.1 审查原文](https://github.com/bluexp/bobber-tally/blob/01fca65/COMPLIANCE.md)
+
+## v0.5.7 工具栏和钓鱼面板
+
+鱼钩图标由玩家点击后通过游戏的安全动作按钮抛竿。浮漂交互仍由玩家点击或按键触发。工具栏和合并面板的位置按角色保存在本地游戏设置。 [Fishing.lua](addons/WowfFishing/Fishing.lua) · [CatchList.lua](addons/WowfFishing/CatchList.lua)
 
 ## v0.4.0 换装向导
 

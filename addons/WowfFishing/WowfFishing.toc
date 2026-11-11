@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: 无限钓鱼助手
-## Notes: 钓鱼装备、抛竿收竿、渔获估价与鱼类资料库。参考来源与作者感谢见插件内「说明与致谢」。
-## Version: 0.4.1
+## Notes: 钓鱼装备、抛竿收竿、渔获估价与鱼类资料库。参考来源与作者感谢见插件内「关于」。
+## Version: 0.5.7
 ## SavedVariablesPerCharacter: WowfFishingDB
 
 FishData.lua

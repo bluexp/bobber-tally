@@ -1,16 +1,65 @@
 local _, addon = ...
 local FISHING_SPELL_ID = 7620
-local GEAR_BUTTON = "WowfFishingGearButton"
-local FLOATING_GEAR_BUTTON = "WowfFishingFloatingGear"
+local GEAR_BUTTON = "WowfFishingFloatingGear"
 local CAST_BUTTON = "WowfFishingCastButton"
+local ICON_SIZE, CAST_OFFSET = 42, 7
 local LOOT_ITEM = Enum and Enum.LootSlotType and Enum.LootSlotType.Item or LOOT_SLOT_ITEM or 1
 
 local events = CreateFrame("Frame")
 local bindings = CreateFrame("Frame")
-local castButton = CreateFrame("Button", CAST_BUTTON, UIParent, "SecureActionButtonTemplate")
-castButton:Hide()
-castButton:RegisterForClicks("AnyUp", "AnyDown")
-castButton:SetAttribute("type", "spell")
+local toolbar = CreateFrame("Frame", "WowfFishingToolbar", UIParent, "BackdropTemplate")
+toolbar:SetSize(184, 54)
+toolbar:SetClampedToScreen(true)
+toolbar:SetMovable(true)
+toolbar:SetBackdrop({
+    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+    edgeSize = 14,
+    insets = { left = 4, right = 4, top = 4, bottom = 4 },
+})
+toolbar:Hide()
+
+local function ToolbarIcon(button)
+    button:SetSize(ICON_SIZE, ICON_SIZE)
+    button:EnableMouse(true)
+    button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    local icon = button:CreateTexture(nil, "ARTWORK")
+    icon:SetPoint("TOPLEFT", 2, -2)
+    icon:SetPoint("BOTTOMRIGHT", -2, 2)
+    local border = button:CreateTexture(nil, "OVERLAY")
+    border:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+    border:SetPoint("CENTER")
+    border:SetSize(64, 64)
+    return icon
+end
+
+local castButton = CreateFrame("Button", CAST_BUTTON, toolbar, "SecureActionButtonTemplate")
+castButton:SetPoint("LEFT", CAST_OFFSET, 0)
+castButton:RegisterForClicks("LeftButtonUp", "LeftButtonDown")
+local castIcon = ToolbarIcon(castButton)
+local gearButton = CreateFrame("Button", GEAR_BUTTON, toolbar)
+gearButton:SetPoint("LEFT", castButton, "RIGHT", 6, 0)
+local gearIcon = ToolbarIcon(gearButton)
+local panelButton = CreateFrame("Button", "WowfFishingPanelToggle", toolbar)
+panelButton:SetPoint("LEFT", gearButton, "RIGHT", 6, 0)
+ToolbarIcon(panelButton):SetColorTexture(0.12, 0.09, 0.06)
+for y = -6, 6, 6 do
+    local bar = panelButton:CreateTexture(nil, "ARTWORK", nil, 1)
+    bar:SetPoint("CENTER", panelButton, "CENTER", 0, y)
+    bar:SetSize(20, 2)
+    bar:SetColorTexture(0.91, 0.76, 0.47)
+end
+
+local dragHandle = addon.CreateDragHandle(toolbar, "WowfFishingToolbarGrip", "按住左键拖动工具栏")
+dragHandle:SetPoint("LEFT", panelButton, "RIGHT", 6, 0)
+
+panelButton:SetScript("OnClick", addon.ToggleCatchList)
+panelButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(addon.IsCatchListShown() and "收起钓鱼面板" or "打开钓鱼面板")
+    GameTooltip:Show()
+end)
+panelButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 local db, spellName, audioTimer, lootSlots
 local swappingUntil = 0
@@ -18,93 +67,90 @@ local casts, catches, itemCount = 0, 0, 0
 local lastCatch = "—"
 local fishing, hasPole, caughtFromWindow = false, false, false
 
+local function PositionToolbar()
+    local position = db.castButtonPosition
+    toolbar:ClearAllPoints()
+    if position then
+        toolbar:SetPoint("LEFT", UIParent, "CENTER", position.x - CAST_OFFSET - ICON_SIZE / 2, position.y)
+    elseif db.floatPosition then
+        toolbar:SetPoint("CENTER", UIParent, "CENTER", db.floatPosition.x, db.floatPosition.y)
+    else
+        toolbar:SetPoint("RIGHT", UIParent, "RIGHT", -390, 100)
+    end
+end
+
+local function StopMovingToolbar()
+    if not toolbar.moving or InCombatLockdown() then return end
+    toolbar:StopMovingOrSizing()
+    toolbar.moving = nil
+    local x, y = castButton:GetCenter()
+    local parentX, parentY = UIParent:GetCenter()
+    if not x or not parentX then return end
+    db.castButtonPosition = { x = x - parentX, y = y - parentY }
+    PositionToolbar()
+end
+
+dragHandle:SetScript("OnDragStart", function()
+    if InCombatLockdown() then return end
+    toolbar.moving = true
+    toolbar:StartMoving()
+end)
+dragHandle:SetScript("OnDragStop", StopMovingToolbar)
+toolbar:SetScript("OnHide", StopMovingToolbar)
+castButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(fishing and "正在钓鱼" or (hasPole and "点击抛竿" or "请先装备鱼竿"))
+    if fishing then
+        GameTooltip:AddLine("听到水花声后，右键点击浮漂。", 1, 1, 1)
+    end
+    if db.fishKey then
+        GameTooltip:AddLine("抛竿与收竿快捷键  " .. db.fishKey, 1, 1, 1)
+    end
+    GameTooltip:Show()
+end)
+castButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+local function UpdateCastButton()
+    if InCombatLockdown() then return end
+    local canCast = hasPole and spellName ~= nil and not fishing
+    castButton:SetAttribute("type", canCast and "spell" or nil)
+    castIcon:SetDesaturated(not canCast)
+end
+
 local function Say(message)
     print("|cff63c6ea无限钓鱼助手|r " .. message)
 end
-
-local panel = CreateFrame("Frame", "WowfFishingPanel", UIParent, "BasicFrameTemplateWithInset")
-panel:SetSize(310, 190)
-panel:SetPoint("RIGHT", UIParent, "RIGHT", -70, 100)
-panel:SetClampedToScreen(true)
-panel:SetMovable(true)
-panel:EnableMouse(true)
-panel:RegisterForDrag("LeftButton")
-panel:SetScript("OnDragStart", panel.StartMoving)
-panel:SetScript("OnDragStop", panel.StopMovingOrSizing)
-panel:Hide()
-
-local title = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-title:SetPoint("TOPLEFT", 12, -6)
-title:SetText("无限钓鱼助手")
-
-local aboutButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-aboutButton:SetSize(96, 20)
-aboutButton:SetPoint("TOPRIGHT", -32, -3)
-aboutButton:SetText("说明与致谢")
-aboutButton:SetScript("OnClick", addon.ToggleAbout)
-
-local status = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-status:SetPoint("TOPLEFT", 15, -33)
-
-local stats = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-stats:SetPoint("TOPLEFT", status, "BOTTOMLEFT", 0, -9)
-
-local recent = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-recent:SetPoint("TOPLEFT", stats, "BOTTOMLEFT", 0, -8)
-recent:SetWidth(194)
-recent:SetJustifyH("LEFT")
-recent:SetMaxLines(1)
-
-local catchListButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-catchListButton:SetSize(81, 21)
-catchListButton:SetPoint("TOPRIGHT", -14, -72)
-catchListButton:SetText("查看全部")
-catchListButton:SetScript("OnClick", addon.ToggleCatchList)
-
-local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-hint:SetPoint("BOTTOMLEFT", 15, 72)
-
-local gearButton = CreateFrame("Button", GEAR_BUTTON, panel, "UIPanelButtonTemplate")
-gearButton:SetSize(135, 24)
-gearButton:SetPoint("BOTTOMLEFT", 14, 42)
-
-local audioButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-audioButton:SetSize(135, 24)
-audioButton:SetPoint("BOTTOMRIGHT", -14, 42)
-
-local setupButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-setupButton:SetSize(282, 24)
-setupButton:SetPoint("BOTTOMLEFT", 14, 12)
-setupButton:SetText("配置向导")
-setupButton:SetScript("OnClick", addon.ShowSetup)
 
 local function GearKey()
     return db.gearKey or (db.useM and "M") or nil
 end
 
-local function RefreshPanel()
+gearButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(hasPole and "恢复武器" or "装备鱼竿")
+    local key = GearKey()
+    if key then GameTooltip:AddLine("换装快捷键  " .. key, 1, 1, 1) end
+    GameTooltip:Show()
+end)
+gearButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+local function RefreshSummary()
+    local state = "普通装备"
     if fishing then
-        status:SetText("已抛竿，等待浮漂水花声")
+        state = "已抛竿，等待浮漂水花声"
     elseif hasPole then
-        status:SetText("鱼竿已装备，可以抛竿")
-    else
-        status:SetText("普通装备")
+        state = "鱼竿已装备，可以抛竿"
     end
-    stats:SetText(("本次：抛竿 %d 次，收获 %d 竿 / %d 件"):format(casts, catches, itemCount))
-    recent:SetText("最近渔获：" .. lastCatch)
-    hint:SetText(db.fishKey and ("抛竿 / 收竿：" .. db.fishKey) or "设置抛竿键：/wowfish bind G")
-    gearButton:SetText(hasPole and "恢复原装备" or "装备鱼竿")
-    audioButton:SetText(db.enhanceSound and "水花声：增强" or "水花声：原音")
-    addon.UpdateFloatingGear(hasPole)
+    addon.UpdateCatchSummary(state, casts, catches, itemCount, lastCatch)
 end
 
 local function UpdateBindings()
     if InCombatLockdown() then return end
+    UpdateCastButton()
     ClearOverrideBindings(bindings)
     local key = GearKey()
     if key then
-        local button = db.setupEquipment and FLOATING_GEAR_BUTTON or GEAR_BUTTON
-        SetOverrideBindingClick(bindings, true, key, button, "LeftButton")
+        SetOverrideBindingClick(bindings, true, key, GEAR_BUTTON, "LeftButton")
     end
     if db.fishKey and spellName and hasPole then
         if fishing then
@@ -165,21 +211,22 @@ local function UpdateChannel(countCast)
         audioTimer = C_Timer.NewTimer(5, RestoreAudio)
     end
     UpdateBindings()
-    RefreshPanel()
+    RefreshSummary()
 end
 
 local function UpdateEquipment()
     local wasEquipped = hasPole
     hasPole = addon.IsFishingPole(GetInventoryItemID("player", 16))
+    local setup = db.setupEquipment
+    local target = setup and (hasPole and setup.weapon or setup.rod)
+    local icon = target and select(5, C_Item.GetItemInfoInstant(target.main))
+    gearIcon:SetTexture(icon or (hasPole and "Interface\\Icons\\INV_Sword_04" or "Interface\\Icons\\INV_Fishingpole_02"))
     if db.useM and MultiBar6 and not InCombatLockdown() then
         MultiBar6:SetAlpha(hasPole and 1 or 0)
     end
-    if wasEquipped ~= hasPole then
-        panel:SetShown(hasPole)
-        if not hasPole then RestoreAudio() end
-    end
+    if wasEquipped and not hasPole then RestoreAudio() end
     UpdateBindings()
-    RefreshPanel()
+    RefreshSummary()
 end
 
 local function ToggleEquipment()
@@ -230,15 +277,15 @@ local function ToggleEquipment()
 end
 
 gearButton:SetScript("OnClick", ToggleEquipment)
-audioButton:SetScript("OnClick", function()
+local function ToggleAudio()
     db.enhanceSound = not db.enhanceSound
     if not db.enhanceSound then
         RestoreAudio()
     elseif fishing then
         EnhanceAudio()
     end
-    RefreshPanel()
-end)
+    RefreshSummary()
+end
 
 local function ReadFishingLoot()
     if not IsFishingLoot or not IsFishingLoot() then return end
@@ -268,7 +315,7 @@ local function CountLoot(slot)
     itemCount = itemCount + item.quantity
     lastCatch = ("%s ×%d"):format(item.name, item.quantity)
     addon.RecordCatch(item.itemID, item.name, item.quantity)
-    RefreshPanel()
+    RefreshSummary()
 end
 
 local function NormalizeKey(input)
@@ -302,11 +349,7 @@ end
 
 local function HandleCommand(input)
     local command, argument = input:match("^%s*(%S*)%s*(.-)%s*$")
-    if command == "" then
-        panel:SetShown(not panel:IsShown())
-        return
-    end
-    if command == "loot" then
+    if command == "" or command == "loot" then
         addon.ToggleCatchList()
         return
     end
@@ -360,14 +403,18 @@ end
 local function Initialize()
     WowfFishingDB = WowfFishingDB or {}
     db = WowfFishingDB
-    addon.InitializeCatchList(db)
+    addon.InitializeCatchList(db, ToggleAudio)
     addon.InitializeFishCatalog(db)
     if db.useM == nil then db.useM = false end
     if db.enhanceSound == nil then db.enhanceSound = true end
-    addon.InitializeSetup(db, { key = GearKey, validateKey = ValidateGearKey, saveKey = SaveGearKey, toggleGear = ToggleEquipment, say = Say })
+    addon.InitializeSetup(db, { key = GearKey, validateKey = ValidateGearKey, saveKey = SaveGearKey, say = Say })
     RestoreAudio()
     spellName = C_Spell.GetSpellName(FISHING_SPELL_ID)
     castButton:SetAttribute("spell", spellName)
+    castIcon:SetTexture((C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(FISHING_SPELL_ID))
+        or "Interface\\Icons\\Trade_Fishing")
+    toolbar:Show()
+    PositionToolbar()
     SLASH_WOWFFISHING1 = "/wowfish"
     SlashCmdList.WOWFFISHING = HandleCommand
     UpdateEquipment()
@@ -383,6 +430,7 @@ events:SetScript("OnEvent", function(_, event, unitOrSlot)
         UpdateEquipment()
         UpdateChannel(false)
     elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_REGEN_ENABLED" then
+        if event == "PLAYER_REGEN_ENABLED" then StopMovingToolbar() end
         UpdateEquipment()
     elseif event == "EQUIPMENT_SWAP_FINISHED" then
         swappingUntil = 0
