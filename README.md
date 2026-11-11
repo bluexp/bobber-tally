@@ -1,5 +1,7 @@
 # BobberTally · 无限钓鱼助手
 
+**简体中文** · [English](README.en.md)
+
 为《魔兽世界：无限》设计的钓鱼插件。用工具栏切换装备和抛竿，查看本次渔获的估价，并在资料库里查找鱼类、钓点和烹饪配方。
 
 *A fishing add-on for World of Warcraft: Forever with gear swaps, catch tracking, and a fish and cooking catalog.*
