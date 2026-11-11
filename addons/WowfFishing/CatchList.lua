@@ -88,36 +88,18 @@ local status = Label(surface, "GameFontHighlight", 16, -34, 205, nil, colors.gol
 local stats = Label(surface, "GameFontHighlight", 224, -34, 268, "RIGHT", colors.text)
 local recent = Label(surface, "GameFontHighlightSmall", 16, -56, 250, nil, colors.muted)
 local hint = Label(surface, "GameFontHighlightSmall", 269, -56, 223, "RIGHT", colors.muted)
-local setupButton = theme.Button(surface, nil, "配置向导", 92, 25)
-setupButton:SetPoint("TOPLEFT", 14, -75)
-setupButton:SetScript("OnClick", function() addon.ShowSetup() end)
-local audioButton = theme.Button(surface, nil, "", 112, 25)
-audioButton:SetPoint("LEFT", setupButton, "RIGHT", 6, 0)
-local catalogButton = theme.Button(surface, nil, "鱼类资料", 90, 25, true)
-catalogButton:SetPoint("LEFT", audioButton, "RIGHT", 8, 0)
+local settingsButton = theme.Button(surface, nil, "钓鱼设置", 114, 25)
+settingsButton:SetPoint("TOPLEFT", 14, -75)
+settingsButton:SetScript("OnClick", function() addon.ShowSetup("fishing") end)
+local catalogButton = theme.Button(surface, nil, "鱼类资料", 105, 25, true)
+catalogButton:SetPoint("LEFT", settingsButton, "RIGHT", 8, 0)
 catalogButton:SetScript("OnClick", function() addon.ToggleFishCatalog() end)
-local fishKeyButton = theme.Button(surface, "WowfFishingCatchKey", "", 156, 25)
-fishKeyButton:SetPoint("LEFT", catalogButton, "RIGHT", 8, 0)
-local fishKeyCapture
-
-local function RefreshFishKey(notice)
-    local listening = fishKeyCapture:IsListening()
-    fishKeyButton:SetText(listening and L["请按快捷键…"] or L["设置抛竿 / 收竿键"])
-    if notice then
-        hint:SetText(notice)
-    elseif listening then
-        hint:SetText(L["按下快捷键，或按 Esc 取消"])
-    else
-        hint:SetText(settings.fishKey and (L["抛竿 / 收竿  "] .. settings.fishKey) or L["抛竿 / 收竿键未设置"])
-    end
-end
 
 function addon.UpdateCatchSummary(state, castCount, catchCount, itemCount, lastCatch)
     status:SetText(state)
     stats:SetText((L["抛竿 %d 次 · 收获 %d 竿 / %d 件"]):format(castCount, catchCount, itemCount))
     recent:SetText(L["最近渔获 "] .. lastCatch)
-    if not fishKeyCapture:IsListening() then RefreshFishKey() end
-    audioButton:SetText(settings.enhanceSound and L["水花声：增强"] or L["水花声：原音"])
+    hint:SetText(settings.fishKey and (L["抛竿 / 收竿  "] .. settings.fishKey) or L["抛竿 / 收竿键未设置"])
 end
 
 theme.Block(surface, "BORDER", 14, -111, 480, 294, colors.card)
@@ -301,15 +283,10 @@ function addon.RecordCatch(itemID, name, quantity)
     if panel:IsShown() then Refresh() end
 end
 
-function addon.InitializeCatchList(db, toggleAudio, validateFishKey, saveFishKey)
+function addon.InitializeCatchList(db)
     settings = db
     db.auctionQuotes = db.auctionQuotes or {}
     quotes = db.auctionQuotes
-    audioButton:SetScript("OnClick", toggleAudio)
-    if not fishKeyCapture then
-        fishKeyCapture = addon.CreateKeyCapture(panel, "WowfFishingCatchKeyCapture", validateFishKey, saveFishKey, RefreshFishKey)
-        fishKeyButton:SetScript("OnClick", function() fishKeyCapture:ToggleListening() end)
-    end
     local position = db.catchPanelPosition
     if position then
         panel:ClearAllPoints()

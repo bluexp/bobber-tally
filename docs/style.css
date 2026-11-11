@@ -54,7 +54,7 @@ h1 { font-family: "Bricolage Grotesque", Georgia, serif; font-size: clamp(3rem, 
 
 .section { padding-block: 60px; }
 .section h2 { font-size: clamp(1.65rem, 3.4vw, 2.45rem); letter-spacing: -.03em; }
-.features { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; margin-top: 28px; }
+.features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 26px; margin-top: 28px; }
 .features article { border-top: 2px solid #b18b51; padding: 17px 6px 0 0; }
 .features h3, .steps h3 { margin-bottom: 7px; font-size: 1.12rem; }
 .features p, .steps p, .boundary p { color: var(--muted); }
@@ -81,6 +81,7 @@ footer p { margin-top: 3px; }
 
 @media (max-width: 870px) {
   :root { --shell: min(680px, calc(100% - 44px)); }
+  .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero-grid, .setup-grid { grid-template-columns: 1fr; gap: 30px; }
   .hero-grid { padding-block: 53px 48px; }
   .setup-grid { gap: 28px; }

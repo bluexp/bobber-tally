@@ -2,6 +2,10 @@
 
 2026 年 11 月 11 日审查了《魔兽世界：无限》国服规则、v0.3.1 的 Lua 源码及下载包。后续版本的实现变化记录如下。 [v0.3.1 审查原文](https://github.com/bluexp/bobber-tally/blob/01fca65/COMPLIANCE.md)
 
+## v0.6.0 统一设置和鼠标侧键
+
+键盘与鼠标侧键使用同一套游戏内绑定接口。玩家明确确认后，插件可暂时覆盖某个已有游戏绑定；清除插件绑定后，原绑定恢复。交互键、自动拾取和鱼漂搜索选项由玩家在设置页逐项修改。向导仅在玩家点击后请求换装，随后等待装备结果并记录方案。 [FishingSettings.lua](addons/WowfFishing/FishingSettings.lua) · [Setup.lua](addons/WowfFishing/Setup.lua) · [Fishing.lua](addons/WowfFishing/Fishing.lua)
+
 ## v0.5.7 工具栏和钓鱼面板
 
 鱼钩图标由玩家点击后通过游戏的安全动作按钮抛竿。浮漂交互仍由玩家点击或按键触发。工具栏和合并面板的位置按角色保存在本地游戏设置。 [Fishing.lua](addons/WowfFishing/Fishing.lua) · [CatchList.lua](addons/WowfFishing/CatchList.lua)

@@ -109,24 +109,43 @@ local function ApplySaveFlags(api, flags)
     end
 end
 
-local function SaveHands(label, previous)
+local function EquipmentSaveError()
     local api = C_EquipmentSet
     local manager = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
     if manager and manager:IsVisible() then
-        return nil, L["请关闭角色窗口里的装备管理器，然后再保存。"]
+        return L["请关闭角色窗口里的装备管理器，然后再保存。"]
     end
-    if IsInventoryItemLocked and (IsInventoryItemLocked(MAIN_HAND) or IsInventoryItemLocked(OFF_HAND)) then
-        return nil, L["装备正在切换，请稍等后再保存。"]
+    if not api.CanUseEquipmentSets() then
+        return L["装备管理器暂不可用，请稍后再试。"]
     end
+end
+
+local function HandsLocked()
+    return IsInventoryItemLocked and (IsInventoryItemLocked(MAIN_HAND) or IsInventoryItemLocked(OFF_HAND))
+end
+
+local function SaveHands(label, previous, attempt)
+    local api = C_EquipmentSet
     local snapshot = {
         main = GetInventoryItemID("player", MAIN_HAND),
         off = GetInventoryItemID("player", OFF_HAND) or 0,
     }
     db.setupPending = db.setupPending or {}
     local pending = db.setupPending
+    if attempt.hands and (attempt.hands.main ~= snapshot.main or attempt.hands.off ~= snapshot.off) then
+        return nil, L["装备已变化，请确认主副手后重试。"]
+    end
+    attempt.hands = snapshot
+    if attempt.saved then
+        if not HandSetID(attempt.saved) then return nil, nil, true end
+        pending[label] = nil
+        return attempt.saved
+    end
+
     local name, id = pending[label], nil
     if name then
         id = api.GetEquipmentSetID(name)
+        if not id and attempt.creating then return nil, nil, true end
         if id and api.GetEquipmentSetAssignedSpec(id) then
             pending[label] = nil
             return nil, L["待保存方案已关联专精，请重新保存以创建独立方案。"]
@@ -151,27 +170,29 @@ local function SaveHands(label, previous)
         handsOnly[slot] = slot ~= MAIN_HAND and slot ~= OFF_HAND
     end
     snapshot.name = name
-    local ran, saved, message = pcall(function()
+    local ran, saved, retry = pcall(function()
         if not id then
             pending[label] = name
+            attempt.creating = true
             ApplySaveFlags(api, handsOnly)
             api.CreateEquipmentSet(name)
             id = api.GetEquipmentSetID(name)
-            if not id then return nil, L["游戏正在创建方案，请稍等后再试。"] end
+            if not id then return nil, true end
         end
         -- Creating a set can change the shared ignore flags before it is saved.
         ApplySaveFlags(api, handsOnly)
         api.SaveEquipmentSet(id)
         snapshot.id = id
+        attempt.saved = snapshot
         if HandSetID(snapshot) then return snapshot end
-        return nil, L["游戏暂未确认方案内容，请稍等后再试。"]
+        return nil, true
     end)
     ApplySaveFlags(api, original)
     if not ran then error(saved, 0) end
     if saved then
         pending[label] = nil
     end
-    return saved, message
+    return saved, nil, retry
 end
 
 local function RemovePreviousSet(previous, replacement)
@@ -182,22 +203,61 @@ local function RemovePreviousSet(previous, replacement)
 end
 
 local wizard = theme.CreatePanel("WowfFishingSetup")
-wizard:SetSize(456, 350)
+wizard:SetSize(456, 430)
 wizard:SetPoint("CENTER", UIParent, "CENTER", 0, 35)
-local surface = theme.Surface(wizard)
+wizard:SetMovable(true)
+local titleDrag = CreateFrame("Frame", nil, wizard)
+titleDrag:SetPoint("TOPLEFT", 6, 0)
+titleDrag:SetSize(416, 21)
+titleDrag:EnableMouse(true)
+titleDrag:RegisterForDrag("LeftButton")
+titleDrag:SetScript("OnDragStart", function() wizard:StartMoving() end)
+titleDrag:SetScript("OnDragStop", function() wizard:StopMovingOrSizing() end)
+wizard:HookScript("OnHide", wizard.StopMovingOrSizing)
+local background = theme.Surface(wizard)
+local function Page()
+    local frame = CreateFrame("Frame", nil, background)
+    frame:SetPoint("TOPLEFT", background, "TOPLEFT", 0, -44)
+    frame:SetPoint("BOTTOMRIGHT", background, "BOTTOMRIGHT")
+    frame:Hide()
+    return frame
+end
+local surface, fishingPage = Page(), Page()
+local fishingTab = theme.Button(background, nil, "钓鱼操作", 204, 24)
+fishingTab:SetPoint("TOPLEFT", 20, -32)
+local setupTab = theme.Button(background, nil, "换装向导", 204, 24)
+setupTab:SetPoint("LEFT", fishingTab, "RIGHT", 8, 0)
+local tabMarks = {
+    fishing = theme.Block(fishingTab, "ARTWORK", 0, -22, 204, 2, colors.gold),
+    setup = theme.Block(setupTab, "ARTWORK", 0, -22, 204, 2, colors.gold),
+}
+local currentTab, fishingSettings
 
 local Label = theme.Label
 
-addon.SetLocalizedText(Label(wizard, "GameFontHighlight", 16, -4, 360), "无限钓鱼助手 · 配置向导")
-local heading = Label(surface, "GameFontNormalLarge", 20, -40, 412, nil, colors.gold)
-local description = Label(surface, "GameFontHighlight", 20, -70, 412, nil, colors.muted)
-theme.Block(surface, "BORDER", 12, -107, 432, 165, colors.card)
-local message = Label(surface, "GameFontHighlightSmall", 20, -277, 412, nil, colors.gold)
+addon.SetLocalizedText(Label(wizard, "GameFontHighlight", 16, -4, 360), "无限钓鱼助手 · 钓鱼设置")
+local progress = {}
+for i, title in ipairs({ "1  鱼竿", "2  武器", "3  完成" }) do
+    local x = 20 + (i - 1) * 140
+    progress[i] = {
+        fill = theme.Block(surface, "BORDER", x, -36, 132, 24, colors.card),
+        label = Label(surface, "GameFontHighlightSmall", x, -42, 132, "CENTER", colors.muted),
+        title = title,
+    }
+end
+local heading = Label(surface, "GameFontNormalLarge", 20, -72, 416, nil, colors.gold)
+local description = Label(surface, "GameFontHighlight", 20, -96, 416, nil, colors.muted)
+theme.Block(surface, "BORDER", 12, -138, 432, 148, colors.card)
+local message = Label(surface, "GameFontHighlightSmall", 20, -315, 416, nil, colors.gold)
+local itemList = CreateFrame("Frame", nil, surface)
+itemList:SetPoint("TOPLEFT", 20, -144)
+itemList:SetSize(416, 136)
+itemList:EnableMouseWheel(true)
 local rows = {}
 for index = 1, ROW_COUNT do
-    local row = CreateFrame("Button", nil, surface)
-    row:SetPoint("TOPLEFT", 20, -116 - (index - 1) * 27)
-    row:SetSize(412, 26)
+    local row = CreateFrame("Button", nil, itemList)
+    row:SetPoint("TOPLEFT", 0, -(index - 1) * 27)
+    row:SetSize(416, 26)
     row.active = theme.Fill(row, "BACKGROUND", colors.selected)
     row.mark = theme.Block(row, "BORDER", 0, 0, 2, 26, colors.gold)
     theme.Highlight(row)
@@ -221,11 +281,13 @@ for index = 1, ROW_COUNT do
     rows[index] = row
 end
 
-local keyLabel = Label(surface, "GameFontHighlight", 20, -184, 210, nil, colors.muted)
+local keyLabel = Label(surface, "GameFontHighlight", 28, -246, 190, nil, colors.muted)
 addon.SetLocalizedText(keyLabel, "一键换装快捷键")
-local keyButton = theme.Button(surface, "WowfFishingSetupKey", "点击录入", 192, 24, true)
-keyButton:SetPoint("TOPLEFT", 173, -177)
-local selectedKey, keyCapture
+local keyButton = theme.Button(surface, "WowfFishingSetupKey", "", 144, 26)
+keyButton:SetPoint("TOPLEFT", 192, -240)
+local useKey = theme.Button(surface, nil, "使用此键", 86, 26, true)
+useKey:SetPoint("LEFT", keyButton, "RIGHT", 6, 0)
+local selectedKey, selectedOverride, keyCapture
 
 local function KeyChord(key)
     if CreateKeyChordStringUsingMetaKeyState then
@@ -243,18 +305,51 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
     local frame = CreateFrame("Frame", name, parent)
     frame:SetPropagateKeyboardInput(false)
     frame:EnableKeyboard(false)
-    local releaseKey, chord
+    local releaseKey, chord, conflict
 
     function frame:IsListening()
         return activeCapture == self
     end
 
-    function frame:StopListening(acceptedKey)
+    function frame:StopListening(acceptedKey, override)
         if not self:IsListening() then return end
-        activeCapture, releaseKey, chord = nil, nil, nil
+        activeCapture, releaseKey, chord, conflict = nil, nil, nil, nil
         self:EnableKeyboard(false)
-        if acceptedKey then accept(acceptedKey) end
+        if acceptedKey then accept(acceptedKey, override) end
         refresh()
+    end
+
+    local function Accept(input, override)
+        local acceptedKey, errorMessage, canOverride = validate(input, override)
+        if acceptedKey then
+            frame:StopListening(acceptedKey, override)
+        else
+            conflict = canOverride and input or nil
+            refresh(conflict and L["%s 已被游戏占用。使用此键会暂时覆盖原操作。"]:format(input) or errorMessage)
+        end
+    end
+
+    function frame:HasConflict()
+        return conflict ~= nil
+    end
+
+    function frame:UseConflictingKey()
+        if self:IsListening() and conflict and not releaseKey and not InCombatLockdown() then
+            Accept(conflict, true)
+        end
+    end
+
+    function frame:AttachButton(button)
+        button:RegisterForClicks("AnyUp")
+        button:SetScript("OnClick", function(_, mouseButton)
+            if mouseButton == "Button4" or mouseButton == "Button5" then
+                if self:IsListening() and not releaseKey and not InCombatLockdown() then
+                    Accept(KeyChord(mouseButton:upper()))
+                end
+            elseif not mouseButton or mouseButton == "LeftButton" then
+                self:ToggleListening()
+            end
+        end)
     end
 
     function frame:ToggleListening()
@@ -281,13 +376,9 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
             self:StopListening()
             return
         end
-        local acceptedKey, errorMessage = validate(chord)
-        if acceptedKey then
-            self:StopListening(acceptedKey)
-        else
-            releaseKey, chord = nil, nil
-            refresh(errorMessage)
-        end
+        local input = chord
+        releaseKey, chord = nil, nil
+        Accept(input)
     end)
     frame:SetScript("OnEvent", function(self) self:StopListening() end)
     frame:RegisterEvent("PLAYER_REGEN_DISABLED")
@@ -295,24 +386,42 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
     return frame
 end
 
-local summary = Label(surface, "GameFontHighlight", 20, -116, 412, nil, colors.text)
+local summary = {}
+for i, title in ipairs({ "鱼竿", "武器" }) do
+    local y = -152 - (i - 1) * 39
+    local icon = surface:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(26, 26)
+    icon:SetPoint("TOPLEFT", 28, y)
+    icon:SetTexCoord(0.06, 0.94, 0.06, 0.94)
+    local label = Label(surface, "GameFontHighlightSmall", 64, y - 7, 74, nil, colors.muted)
+    addon.SetLocalizedText(label, title)
+    local value = Label(surface, "GameFontHighlight", 140, y - 6, 280)
+    value:SetMaxLines(1)
+    summary[i] = { icon = icon, label = label, value = value }
+end
 
 local previousPage = theme.Button(surface, nil, "上页", 41, 22)
-previousPage:SetPoint("TOPLEFT", 20, -250)
+previousPage:SetPoint("TOPLEFT", 20, -291)
 local nextPage = theme.Button(surface, nil, "下页", 41, 22)
 nextPage:SetPoint("LEFT", previousPage, "RIGHT", 52, 0)
-local pageLabel = Label(surface, "GameFontHighlightSmall", 63, -255, 48, "CENTER", colors.muted)
-local back = theme.Button(surface, nil, "上一步", 77, 25)
+local pageLabel = Label(surface, "GameFontHighlightSmall", 63, -296, 48, "CENTER", colors.muted)
+local back = theme.Button(surface, nil, "上一步", 92, 28)
 back:SetPoint("BOTTOMLEFT", 18, 15)
-local equip = theme.Button(surface, nil, "装备所选", 100, 25)
-equip:SetPoint("BOTTOMRIGHT", -155, 15)
-local nextStep = theme.Button(surface, nil, "下一步", 130, 25, true)
+local nextStep = theme.Button(surface, nil, "", 172, 28, true)
 nextStep:SetPoint("BOTTOMRIGHT", -18, 15)
+local pending, lastNotice
 
 local function Render(notice)
+    lastNotice = notice
     local capturingKey = keyCapture:IsListening()
     local rodPage, weaponPage = step == 1, step == 2
-    local items = step == 3 and {} or Items(rodPage)
+    local finishPage, combat = step == 3, InCombatLockdown()
+    for i, entry in ipairs(progress) do
+        entry.fill:SetColorTexture(unpack(step == i and colors.selected or colors.card))
+        entry.label:SetTextColor(unpack(step == i and colors.gold or colors.muted))
+        entry.label:SetText(L[entry.title])
+    end
+    local items = finishPage and {} or Items(rodPage)
     local chosen
     if rodPage then
         rod = FindItem(items, rod) or items[1]
@@ -322,11 +431,18 @@ local function Render(notice)
         chosen = weapon
     end
     local pageCount = math.max(1, math.ceil(#items / ROW_COUNT))
-    page = math.min(page, pageCount)
+    if not page then
+        for index, item in ipairs(items) do
+            if item == chosen then page = math.ceil(index / ROW_COUNT); break end
+        end
+    end
+    page = math.min(page or 1, pageCount)
+    itemList:SetShown(not finishPage)
     for index, row in ipairs(rows) do
         local item = items[(page - 1) * ROW_COUNT + index]
         row.item = item
         row:SetShown(item ~= nil)
+        row:SetEnabled(not pending)
         if item then
             row.icon:SetTexture(item.icon)
             row.active:SetShown(item == chosen)
@@ -337,158 +453,246 @@ local function Render(notice)
     end
     previousPage:SetShown(pageCount > 1)
     nextPage:SetShown(pageCount > 1)
-    previousPage:SetEnabled(page > 1)
-    nextPage:SetEnabled(page < pageCount)
+    previousPage:SetEnabled(not pending and page > 1)
+    nextPage:SetEnabled(not pending and page < pageCount)
     pageLabel:SetText(pageCount > 1 and ("%d / %d"):format(page, pageCount) or "")
     back:SetShown(not rodPage)
     local selected = rod
     if weaponPage then selected = weapon end
     local equipped = SameItem(selected, CurrentMainHand())
-    local available = step == 3 and FindItem(Items(true), rod) or chosen
-    equip:SetShown(not rodPage and available ~= nil and not equipped)
-    equip:SetText(weaponPage and L["装备所选武器"] or L["装备所选鱼竿"])
-    keyLabel:SetShown(step == 3)
-    keyButton:SetShown(step == 3)
+    local available = finishPage and FindItem(Items(true), rod) or chosen
+    local validKey = finishPage and selectedKey and handlers.validateKey(selectedKey, selectedOverride)
+    keyLabel:SetShown(finishPage)
+    keyButton:SetShown(finishPage)
+    keyButton:SetEnabled(not pending and not combat)
     keyButton:SetText(capturingKey and L["请按快捷键…"] or selectedKey or L["点击录入"])
-    summary:SetShown(step == 3)
-    local ready = (rodPage and rod ~= nil) or (not rodPage and equipped)
-    nextStep:SetEnabled(ready and (step ~= 3 or (selectedKey ~= nil and not capturingKey)))
-    nextStep:SetText(step == 3 and L["保存并显示按钮"] or L["下一步"])
-    message:SetText(notice or "")
-    if rodPage then
-        heading:SetText(L["1 / 3  选择鱼竿"])
-        description:SetText(rod and L["从背包或主手中选择一根鱼竿。"]
-            or L["没有找到鱼竿。请向钓鱼用品商人购买一根，放入背包后会自动刷新。"])
-    elseif weaponPage then
-        heading:SetText(L["2 / 3  选择换回的武器"])
-        description:SetText(L["选择并装备要换回的主手武器。当前副手会一起记录。"])
-        if not weapon and not notice then message:SetText(L["请将可装备的主手武器放入背包。"]) end
-    else
-        heading:SetText(L["3 / 3  设置快捷键"])
-        description:SetText(L["装备所选鱼竿，点击快捷键按钮后按键，再保存。"])
-        summary:SetText(L["鱼竿  "] .. ItemText(rod) .. L["\n武器  "] .. ItemText(weapon))
-        if not notice then
-            message:SetText(available and (capturingKey and L["按下快捷键，或按 Esc 取消录入。"]
-                or L["可录入字母、数字、F1–F12、小键盘和组合键。"])
-                or L["所选鱼竿不在身上，请找回鱼竿或返回重选。"])
+    useKey:SetShown(finishPage and keyCapture:HasConflict())
+    for i, entry in ipairs(summary) do
+        local item = i == 1 and rod or weapon
+        entry.icon:SetShown(finishPage)
+        entry.label:SetShown(finishPage)
+        entry.value:SetShown(finishPage)
+        if finishPage then
+            entry.icon:SetTexture(item and item.icon)
+            entry.value:SetText(ItemText(item))
         end
     end
+    nextStep:SetEnabled(available ~= nil and not pending and not combat and not capturingKey)
+    local action = rodPage and "下一步"
+        or (weaponPage and (equipped and "记录武器并继续" or "装备武器并继续"))
+        or (not validKey and "录入换装键")
+        or (equipped and "保存换装方案" or "装备鱼竿并保存")
+    nextStep:SetText(L[pending and pending.action or action])
+    local hint
+    if rodPage then
+        heading:SetText(L["选择鱼竿"])
+        description:SetText(L["从背包或主手中选择一根鱼竿。"])
+        if not rod then hint = L["没有找到鱼竿。请向钓鱼用品商人购买一根，放入背包后会自动刷新。"] end
+    elseif weaponPage then
+        heading:SetText(L["选择换回的武器"])
+        description:SetText(L["选择要换回的主手武器。装备后会一并记录当时的副手。"])
+        if not weapon then hint = L["请将可装备的主手武器放入背包。"] end
+    else
+        heading:SetText(L["确认换装方案"])
+        description:SetText(L["确认鱼竿和武器，录好换装键后即可保存。"])
+        hint = not available and L["所选鱼竿不在身上，请找回鱼竿或返回重选。"]
+            or (capturingKey and L["按键盘键，或在录入按钮上按鼠标侧键。Esc 取消。"])
+            or (not validKey and L["支持键盘、小键盘、鼠标侧键和组合键。"])
+    end
+    message:SetText(notice or (combat and L["请脱离战斗后再继续。"]) or hint or "")
 end
 
 for _, row in ipairs(rows) do
     row:SetScript("OnClick", function(self)
+        if not self.item or pending then return end
         if step == 1 then rod = self.item else weapon = self.item end
         Render()
     end)
 end
-previousPage:SetScript("OnClick", function()
-    page = page - 1
+local function TurnPage(direction)
+    if pending then return end
+    page = math.max(1, page + direction)
     Render()
-end)
-nextPage:SetScript("OnClick", function()
-    page = page + 1
-    Render()
+end
+previousPage:SetScript("OnClick", function() TurnPage(-1) end)
+nextPage:SetScript("OnClick", function() TurnPage(1) end)
+itemList:SetScript("OnMouseWheel", function(_, delta)
+    TurnPage(delta > 0 and -1 or 1)
 end)
 back:SetScript("OnClick", function()
+    pending = nil
     keyCapture:StopListening()
-    step, page = step - 1, 1
+    step, page = step - 1, nil
     Render()
 end)
 
-equip:SetScript("OnClick", function()
-    keyCapture:StopListening()
-    if InCombatLockdown() then
-        Render(L["请脱离战斗后再换装。"])
+local function Finish(notice)
+    pending = nil
+    Render(notice)
+end
+
+local function CheckWeaponDraft()
+    if weapon and db.setupDraft and db.setupDraft.main == weapon.id and HandSetID(db.setupDraft) then
+        return true
+    end
+    step, page = 2, nil
+    Finish(L["武器方案已变更，请重新记录武器。"])
+end
+
+local function Advance(attempt)
+    if pending ~= attempt then return end
+    if InCombatLockdown() then Finish(L["请脱离战斗后再继续。"]); return end
+    local saveError = EquipmentSaveError()
+    if saveError then Finish(saveError); return end
+    if step == 3 and not CheckWeaponDraft() then return end
+
+    local function Wait(action, notice, timeoutNotice)
+        if GetTime() >= attempt.deadline then
+            Finish(timeoutNotice)
+            return
+        end
+        if attempt.action ~= action or lastNotice ~= notice then
+            attempt.action = action
+            Render(notice)
+        end
+        C_Timer.After(0.12, function() Advance(attempt) end)
+    end
+
+    if not SameItem(attempt.item, CurrentMainHand()) then
+        if attempt.hands then Finish(L["装备已变化，请确认主副手后重试。"]); return end
+        Wait("正在装备…", L["等待游戏完成装备切换。"], L["未能装备所选物品，请从背包手动装备后重试。"])
+        return
+    elseif HandsLocked() then
+        Wait("正在装备…", L["等待游戏完成装备切换。"], L["装备正在切换，请稍等后再保存。"])
         return
     end
-    local selected = step == 2 and weapon or rod
-    local item = FindItem(Items(step == 3), selected)
-    if not item then
-        Render(L["找不到所选物品，请重新选择。"])
+
+    local key
+    if step == 3 then
+        key, saveError = handlers.validateKey(selectedKey or "", selectedOverride)
+        if not key then Finish(saveError); return end
+    end
+    local old = db.setupEquipment
+    local set, errorMessage, retry
+    if step == 2 then
+        set, errorMessage, retry = SaveHands("武器", db.setupDraft, attempt)
+    else
+        set, errorMessage, retry = SaveHands("鱼竿", old and old.rod, attempt)
+    end
+    if retry then
+        Wait("正在保存…", L["等待游戏确认装备方案。"], L["游戏暂未确认方案内容，请稍等后再试。"])
         return
     end
-    local equipItem = C_Item.EquipItemByName or EquipItemByName
-    if equipItem then equipItem(item.link or item.id, MAIN_HAND) end
-    local waiting = not SameItem(item, CurrentMainHand())
-    Render(waiting and L["装备完成后可继续。如未生效，请从背包手动装备所选物品。"] or nil)
-end)
+    if not set then Finish(errorMessage); return end
+    if step == 2 then
+        db.setupDraft = set
+        step, page = 3, nil
+        Finish()
+        return
+    end
+
+    pending = nil
+    db.setupEquipment = { rod = set, weapon = db.setupDraft }
+    db.setupDraft = nil
+    if old then RemovePreviousSet(old.weapon, db.setupEquipment.weapon) end
+    handlers.saveKey(key)
+    step = nil
+    addon.ShowSetup("fishing", L["换装方案已保存。"])
+    handlers.say(L["配置已保存。点击屏幕按钮或按 "] .. key .. L[" 可切换鱼竿与武器。"])
+end
 
 nextStep:SetScript("OnClick", function()
-    if InCombatLockdown() then
-        Render(L["请脱离战斗后再继续。"])
-        return
-    end
+    if pending or keyCapture:IsListening() or InCombatLockdown() then return end
     if step == 1 then
         if not FindItem(Items(true), rod) then Render(); return end
-        step, page = 2, 1
-    elseif step == 2 then
-        if not SameItem(weapon, CurrentMainHand()) then Render(); return end
-        if not C_EquipmentSet.CanUseEquipmentSets() then
-            Render(L["装备管理器暂不可用，请稍后再试。"])
-            return
-        end
-        local draft, saveError = SaveHands("武器", db.setupDraft)
-        if not draft then
-            Render(saveError)
-            return
-        end
-        db.setupDraft = draft
-        step, page = 3, 1
-    else
-        local key, errorMessage = handlers.validateKey(selectedKey or "")
-        if not key then
-            Render(errorMessage)
-            return
-        end
-        if not SameItem(rod, CurrentMainHand()) then Render(); return end
-        if not HandSetID(db.setupDraft) then
-            step, page = 2, 1
-            Render(L["武器方案已变更，请重新记录武器。"])
-            return
-        end
-        local old = db.setupEquipment
-        local rodSet, saveError = SaveHands("鱼竿", old and old.rod)
-        if not rodSet then
-            Render(saveError)
-            return
-        end
-        db.setupEquipment = { rod = rodSet, weapon = db.setupDraft }
-        db.setupDraft = nil
-        if old then RemovePreviousSet(old.weapon, db.setupEquipment.weapon) end
-        handlers.saveKey(key)
-        wizard:Hide()
-        handlers.say(L["配置已保存。点击屏幕按钮或按 "] .. key .. L[" 可切换鱼竿与武器。"])
+        step, page = 2, nil
+        Render()
         return
     end
-    Render()
+    if step == 3 and not CheckWeaponDraft() then return end
+    if step == 3 and not (selectedKey and handlers.validateKey(selectedKey, selectedOverride)) then
+        keyCapture:ToggleListening()
+        return
+    end
+    local saveError = EquipmentSaveError()
+    if saveError then Render(saveError); return end
+    local selected = step == 2 and weapon or rod
+    local item = FindItem(Items(step == 3), selected)
+    if not item then Render(L["找不到所选物品，请重新选择。"]); return end
+
+    local attempt = { item = item, deadline = GetTime() + 3 }
+    pending = attempt
+    if SameItem(item, CurrentMainHand()) then
+        Advance(attempt)
+    else
+        local equipItem = C_Item.EquipItemByName or EquipItemByName
+        if not equipItem then Finish(L["未能装备所选物品，请从背包手动装备后重试。"]); return end
+        attempt.action = "正在装备…"
+        Render(L["等待游戏完成装备切换。"])
+        if not pcall(equipItem, item.link or item.id, MAIN_HAND) then
+            Finish(L["未能装备所选物品，请从背包手动装备后重试。"])
+            return
+        end
+        C_Timer.After(0.12, function() Advance(attempt) end)
+    end
 end)
 
-wizard:SetScript("OnEvent", function()
-    if wizard:IsShown() then Render() end
+local function CancelPending()
+    pending, lastNotice = nil, nil
+end
+surface:HookScript("OnHide", CancelPending)
+wizard:HookScript("OnHide", CancelPending)
+wizard:SetScript("OnEvent", function(_, event)
+    if not wizard:IsShown() or currentTab ~= "setup" then return end
+    if event == "PLAYER_REGEN_DISABLED" then CancelPending() end
+    if not pending then Render(lastNotice) end
 end)
-for _, event in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "GET_ITEM_INFO_RECEIVED" }) do
+for _, event in ipairs({
+    "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "GET_ITEM_INFO_RECEIVED",
+    "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
+}) do
     wizard:RegisterEvent(event)
 end
 
-function addon.ShowSetup()
-    if wizard:IsShown() then wizard:Raise(); return end
-    step, page = 1, 1
-    local setup = db.setupEquipment
-    rod = setup and { id = setup.rod.main } or nil
-    weapon = setup and { id = setup.weapon.main } or nil
-    selectedKey = handlers.key()
+function addon.ShowSetup(tab, notice)
+    tab = tab or "setup"
+    if not wizard:IsShown() then step = nil end
+    currentTab = tab
+    tabMarks.fishing:SetShown(tab == "fishing")
+    tabMarks.setup:SetShown(tab == "setup")
+    if tab == "setup" then
+        fishingPage:Hide()
+        if not step then
+            step, page = 1, nil
+            local setup = db.setupEquipment
+            rod = setup and { id = setup.rod.main } or nil
+            weapon = setup and { id = setup.weapon.main } or nil
+            selectedKey, selectedOverride = handlers.key(), nil
+        end
+        surface:Show()
+        Render(lastNotice)
+    else
+        CancelPending()
+        keyCapture:StopListening()
+        surface:Hide()
+        fishingPage:Show()
+        fishingSettings(notice)
+    end
     theme.ShowPanel(wizard)
-    Render()
 end
+fishingTab:SetScript("OnClick", function() addon.ShowSetup("fishing") end)
+setupTab:SetScript("OnClick", function() addon.ShowSetup() end)
 
 function addon.InitializeSetup(settings, callbacks)
     db, handlers = settings, callbacks
     if not keyCapture then
-        keyCapture = addon.CreateKeyCapture(wizard, "WowfFishingSetupKeyCapture", function(chord)
-            return handlers.validateKey(chord)
-        end, function(key)
-            selectedKey = key
+        keyCapture = addon.CreateKeyCapture(surface, "WowfFishingSetupKeyCapture", function(chord, override)
+            return handlers.validateKey(chord, override)
+        end, function(key, override)
+            selectedKey, selectedOverride = key, override
         end, Render)
-        keyButton:SetScript("OnClick", function() keyCapture:ToggleListening() end)
+        keyCapture:AttachButton(keyButton)
+        useKey:SetScript("OnClick", function() keyCapture:UseConflictingKey() end)
+        fishingSettings = addon.CreateFishingSettings(fishingPage, settings, handlers)
     end
 end

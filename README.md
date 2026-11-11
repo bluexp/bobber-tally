@@ -4,7 +4,7 @@
 
 *A fishing add-on for World of Warcraft: Forever with gear swaps, catch tracking, and a fish and cooking catalog.*
 
-**[下载 v0.5.15 ZIP](https://bluexp.github.io/bobber-tally/downloads/BobberTally-v0.5.15.zip)** · [中文安装指南](https://bluexp.github.io/bobber-tally/) · [English installation guide](https://bluexp.github.io/bobber-tally/en/)
+**[下载 v0.6.0 ZIP](https://bluexp.github.io/bobber-tally/downloads/BobberTally-v0.6.0.zip)** · [中文安装指南](https://bluexp.github.io/bobber-tally/) · [English installation guide](https://bluexp.github.io/bobber-tally/en/)
 
 适用客户端接口 `16001`。插件界面支持简体中文和英文。
 
@@ -13,6 +13,7 @@
 | 功能 | 游戏内操作 |
 | --- | --- |
 | 钓鱼工具栏 | 点击装备图标换装，点击鱼钩抛竿。按住四向箭头拖动工具栏。 |
+| 统一钓鱼设置 | 集中管理换装和抛竿快捷键、水花声增强、交互键、自动拾取和鱼漂搜索。支持小键盘与鼠标侧键。 |
 | 渔获估价 | 查看抛竿次数、渔获数量、拍卖行估价和 NPC 售价。打开拍卖行后可手动更新报价，即使本次还没有渔获也能查询资料库价格。 |
 | 鱼类与烹饪资料库 | 搜索 88 条鱼类记录和 24 条配方。点击参考钓点打开对应地区的地图。 |
 
@@ -20,8 +21,10 @@
 
 1. 解压 ZIP，将 `WowfFishing` 文件夹放入 `_forever_/Interface/AddOns/`。
 2. 重启游戏，在角色选择界面的插件列表中启用「无限钓鱼助手」或「BobberTally」。
-3. 进入游戏后输入 `/wowfish setup`，按向导选择鱼竿、记录要换回的武器并设置换装快捷键。
-4. 如需用同一个键抛竿和收竿，在渔获面板点击「设置抛竿 / 收竿键」，并在游戏设置里开启「交互键」。
+3. 输入 `/wowfish setup`，选择鱼竿和要换回的武器，再录入换装键。向导会在游戏确认装备后继续。
+4. 打开「钓鱼设置 → 钓鱼操作」，录入抛竿 / 收竿键并开启「交互键」。录入鼠标侧键时，把鼠标停在录入按钮上再按侧键。
+
+已占用的游戏按键可在确认后由插件暂时使用。点击「清除」即可释放插件绑定，原来的游戏绑定会恢复。
 
 ## 语言 / Language
 
@@ -43,6 +46,7 @@ The add-on uses the client language by default. Choose a language for the curren
 | --- | --- |
 | `/wowfish` 或 `/wowfish loot` | 打开本次渔获和估价面板 |
 | `/wowfish setup` | 打开换装配置向导 |
+| `/wowfish settings` | 打开统一钓鱼设置 |
 | `/wowfish fish` | 打开鱼类与烹饪资料库 |
 | `/wowfish bind G` | 绑定抛竿和收竿，`G` 可换为空闲键 |
 | `/wowfish about` | 查看插件内说明与致谢 |

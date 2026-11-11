@@ -332,17 +332,18 @@ local function NormalizeKey(input)
     end
     if remaining:match("^[A-Z0-9]$") then return key end
     if remaining:match("^NUMPAD[0-9]$") or numpadOperators[remaining] then return key end
+    if remaining == "BUTTON4" or remaining == "BUTTON5" then return key end
     local number = tonumber(remaining:match("^F(%d+)$"))
     if number and number >= 1 and number <= 12 and remaining == "F" .. number then return key end
 end
 
-local function ValidateGearKey(input)
+local function ValidateGearKey(input, override)
     local key = NormalizeKey(input)
-    if not key then return nil, L["请按字母、数字、F1–F12 或小键盘键，可带修饰键。"] end
+    if not key then return nil, L["支持键盘、小键盘、鼠标侧键和组合键。"] end
     if key == db.fishKey then return nil, key .. L[" 已用于抛竿和收竿。"] end
     local action = GetBindingAction(key, true)
-    if key ~= GearKey() and action and action ~= "" then
-        return nil, key .. L[" 已绑定其他操作，请换一个空闲键。"]
+    if not override and key ~= GearKey() and action and action ~= "" then
+        return nil, key .. L[" 已绑定其他操作，请换一个空闲键。"], true
     end
     return key
 end
@@ -352,15 +353,16 @@ local function SaveGearKey(key)
     db.useM = key == "M"
     db.gearKey = key
     UpdateEquipment()
+    if addon.RefreshFishingSettings then addon.RefreshFishingSettings() end
 end
 
-local function ValidateFishKey(input)
+local function ValidateFishKey(input, override)
     local key = NormalizeKey(input)
-    if not key then return nil, L["请按字母、数字、F1–F12 或小键盘键，可带修饰键。"] end
-    if key == "M" or key == GearKey() then return nil, L["请选择 M 和换装键以外的空闲键。"] end
+    if not key then return nil, L["支持键盘、小键盘、鼠标侧键和组合键。"] end
+    if key == GearKey() then return nil, L["这个按键已用于换装，请换一个。"] end
     local action = GetBindingAction(key, true)
-    if key ~= db.fishKey and action and action ~= "" then
-        return nil, L["按键已被占用，请换一个。"]
+    if not override and key ~= db.fishKey and action and action ~= "" then
+        return nil, L["按键已被占用，请换一个。"], true
     end
     return key
 end
@@ -369,6 +371,7 @@ local function SaveFishKey(key)
     db.fishKey = key
     UpdateBindings()
     RefreshSummary()
+    if addon.RefreshFishingSettings then addon.RefreshFishingSettings() end
     if key then Say(key .. L[" 用于抛竿和收竿。请在游戏设置中开启「交互键」。"]) end
 end
 
@@ -388,6 +391,10 @@ local function HandleCommand(input)
     end
     if command == "setup" then
         addon.ShowSetup()
+        return
+    end
+    if command == "settings" then
+        addon.ShowSetup("fishing")
         return
     end
     if command == "lang" then
@@ -415,7 +422,9 @@ local function HandleCommand(input)
         SaveFishKey(nil)
     elseif command == "m" and (argument == "on" or argument == "off") then
         if argument == "on" then
-            SaveGearKey("M")
+            local key, errorMessage = ValidateGearKey("M", true)
+            if not key then Say(errorMessage); return end
+            SaveGearKey(key)
             Say(L["M 已用于切换钓鱼装备。"])
         elseif GearKey() == "M" then
             SaveGearKey(nil)
@@ -423,7 +432,8 @@ local function HandleCommand(input)
         end
         return
     else
-        Say(L["/wowfish setup 打开配置向导；/wowfish loot 查看本次渔获；/wowfish fish 查看鱼类资料；/wowfish bind G 设置抛竿键；/wowfish unbind 释放抛竿键；/wowfish m on/off 管理 M。"])
+        Say(L["/wowfish settings 打开设置；/wowfish setup 打开换装向导；/wowfish bind G 设置抛竿键；/wowfish unbind 清除抛竿键。"])
+        Say(L["/wowfish loot 查看本次渔获；/wowfish fish 查看鱼类资料；/wowfish m on/off 管理 M。"])
         Say(L["语言设置命令为 /wowfish lang zh、/wowfish lang en 或 /wowfish lang auto。"])
         return
     end
@@ -433,11 +443,14 @@ local function Initialize()
     WowfFishingDB = WowfFishingDB or {}
     db = WowfFishingDB
     addon.InitializeLocale(db.language)
-    addon.InitializeCatchList(db, ToggleAudio, ValidateFishKey, SaveFishKey)
+    addon.InitializeCatchList(db)
     addon.InitializeFishCatalog(db)
     if db.useM == nil then db.useM = false end
     if db.enhanceSound == nil then db.enhanceSound = true end
-    addon.InitializeSetup(db, { key = GearKey, validateKey = ValidateGearKey, saveKey = SaveGearKey, say = Say })
+    addon.InitializeSetup(db, {
+        key = GearKey, validateKey = ValidateGearKey, saveKey = SaveGearKey, say = Say,
+        validateFishKey = ValidateFishKey, saveFishKey = SaveFishKey, toggleAudio = ToggleAudio,
+    })
     RestoreAudio()
     spellName = C_Spell.GetSpellName(FISHING_SPELL_ID)
     castButton:SetAttribute("spell", spellName)
