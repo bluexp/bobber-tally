@@ -1,6 +1,7 @@
 local _, addon = ...
 local MAIN_HAND, OFF_HAND = 16, 17
-local FIRST_SLOT, LAST_SLOT = INVSLOT_FIRST_EQUIPPED or 1, INVSLOT_LAST_EQUIPPED or 19
+local FIRST_SLOT, LAST_SLOT = 1, 19
+local EMPTY_LOCATION, IGNORED_LOCATION = 0, 1
 local ROW_COUNT = 5
 local mainHandTypes = { INVTYPE_WEAPON = true, INVTYPE_WEAPONMAINHAND = true, INVTYPE_2HWEAPON = true }
 local db, handlers, step, rod, weapon, page
@@ -64,11 +65,18 @@ local function HandSetID(set)
     local api = C_EquipmentSet
     if api.GetEquipmentSetID(set.name) ~= set.id then return end
     local items, ignored = api.GetItemIDs(set.id), api.GetIgnoredSlots(set.id)
-    if not items or not ignored or items[MAIN_HAND] ~= set.main
+    local locations = api.GetItemLocations(set.id)
+    if not items or not ignored or not locations or items[MAIN_HAND] ~= set.main
         or math.max(items[OFF_HAND] or 0, 0) ~= set.off then return end
     for slot = FIRST_SLOT, LAST_SLOT do
-        local shouldIgnore = slot ~= MAIN_HAND and slot ~= OFF_HAND
-        if (ignored[slot] == true) ~= shouldIgnore then return end
+        local location = locations[slot]
+        if slot == MAIN_HAND or slot == OFF_HAND then
+            if ignored[slot] or location == IGNORED_LOCATION then return end
+            if slot == OFF_HAND and set.off == 0 and location ~= nil and location ~= EMPTY_LOCATION then return end
+        elseif (not ignored[slot] and location ~= IGNORED_LOCATION)
+            or (location ~= nil and location ~= IGNORED_LOCATION) then
+            return
+        end
     end
     return set.id
 end
@@ -78,43 +86,89 @@ function addon.GetSetupEquipment()
     if setup then return HandSetID(setup.rod), HandSetID(setup.weapon) end
 end
 
+local function ChooseSetName(api, label, snapshot)
+    local base = "BobberTally " .. label
+    local name, suffix = base, 2
+    while true do
+        local id = api.GetEquipmentSetID(name)
+        if not id then return name end
+        snapshot.name, snapshot.id = name, id
+        local _, _, _, equipped = api.GetEquipmentSetInfo(id)
+        if equipped and HandSetID(snapshot) and not api.GetEquipmentSetAssignedSpec(id) then return name, id end
+        name = base .. " " .. suffix
+        suffix = suffix + 1
+    end
+end
+
+local function ApplySaveFlags(api, flags)
+    for slot = FIRST_SLOT, LAST_SLOT do
+        if flags[slot] then api.IgnoreSlotForSave(slot) else api.UnignoreSlotForSave(slot) end
+    end
+end
+
 local function SaveHands(label, previous)
     local api = C_EquipmentSet
-    local name
-    local id = HandSetID(previous)
-    if id and not api.GetEquipmentSetAssignedSpec(id) then
-        name = previous.name
-    else
-        local base = "BobberTally " .. label
-        name = base
-        local suffix = 2
-        while api.GetEquipmentSetID(name) do
-            name = base .. " " .. suffix
-            suffix = suffix + 1
-        end
-        id = nil
+    local manager = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
+    if manager and manager:IsVisible() then
+        return nil, "请关闭角色窗口里的装备管理器，然后再保存。"
+    end
+    if IsInventoryItemLocked and (IsInventoryItemLocked(MAIN_HAND) or IsInventoryItemLocked(OFF_HAND)) then
+        return nil, "装备正在切换，请稍等后再保存。"
     end
     local snapshot = {
-        name = name,
         main = GetInventoryItemID("player", MAIN_HAND),
         off = GetInventoryItemID("player", OFF_HAND) or 0,
     }
-    local ignored = {}
-    for slot = FIRST_SLOT, LAST_SLOT do
-        ignored[slot] = api.IsSlotIgnoredForSave(slot)
-        if slot == MAIN_HAND or slot == OFF_HAND then
-            api.UnignoreSlotForSave(slot)
+    db.setupPending = db.setupPending or {}
+    local pending = db.setupPending
+    local name, id = pending[label], nil
+    if name then
+        id = api.GetEquipmentSetID(name)
+        if id and api.GetEquipmentSetAssignedSpec(id) then
+            pending[label] = nil
+            return nil, "待保存方案已关联专精，请重新保存以创建独立方案。"
+        end
+    else
+        id = HandSetID(previous)
+        if id and not api.GetEquipmentSetAssignedSpec(id) then
+            name = previous.name
         else
-            api.IgnoreSlotForSave(slot)
+            name, id = ChooseSetName(api, label, snapshot)
+            if id then return snapshot end
         end
     end
-    if id then api.SaveEquipmentSet(id) else api.CreateEquipmentSet(name) end
-    for slot = FIRST_SLOT, LAST_SLOT do
-        if ignored[slot] then api.IgnoreSlotForSave(slot) else api.UnignoreSlotForSave(slot) end
+    if not id and MAX_EQUIPMENT_SETS_PER_PLAYER
+        and api.GetNumEquipmentSets() >= MAX_EQUIPMENT_SETS_PER_PLAYER then
+        return nil, "装备方案已满，请在装备管理器中腾出一个位置。"
     end
-    snapshot.id = api.GetEquipmentSetID(name)
-    if snapshot.id and HandSetID(snapshot) then return snapshot end
-    if not id and snapshot.id then api.DeleteEquipmentSet(snapshot.id) end
+
+    local original, handsOnly = {}, {}
+    for slot = FIRST_SLOT, LAST_SLOT do
+        original[slot] = api.IsSlotIgnoredForSave(slot)
+        handsOnly[slot] = slot ~= MAIN_HAND and slot ~= OFF_HAND
+    end
+    snapshot.name = name
+    local ran, saved, message = pcall(function()
+        if not id then
+            pending[label] = name
+            ApplySaveFlags(api, handsOnly)
+            api.CreateEquipmentSet(name)
+            id = api.GetEquipmentSetID(name)
+            if not id then return nil, "游戏正在创建方案，请稍等后再试。" end
+        end
+        -- Creating a set can change the shared ignore flags before it is saved.
+        ApplySaveFlags(api, handsOnly)
+        api.SaveEquipmentSet(id)
+        snapshot.id = id
+        if HandSetID(snapshot) then return snapshot end
+        return nil, "游戏暂未确认方案内容，请稍等后再试。"
+    end)
+    ApplySaveFlags(api, original)
+    if not ran then error(saved, 0) end
+    if saved then
+        pending[label] = nil
+    end
+    return saved, message
 end
 
 local function RemovePreviousSet(previous, replacement)
@@ -268,7 +322,7 @@ local function Render(notice)
         row:SetShown(item ~= nil)
         if item then
             row.icon:SetTexture(item.icon)
-            row.label:SetText((item == chosen and "|cffffd100✓|r " or "   ") .. ItemText(item)
+            row.label:SetText((item == chosen and "|cffffd100已选|r  " or "   ") .. ItemText(item)
                 .. (item.equipped and "  |cffaaaaaa已装备|r" or ""))
         end
     end
@@ -359,9 +413,9 @@ nextStep:SetScript("OnClick", function()
             Render("装备管理器暂不可用，请稍后再试。")
             return
         end
-        local draft = SaveHands("武器", db.setupDraft)
+        local draft, saveError = SaveHands("武器", db.setupDraft)
         if not draft then
-            Render("无法保存武器，请检查装备方案是否已满。")
+            Render(saveError)
             return
         end
         db.setupDraft = draft
@@ -379,9 +433,9 @@ nextStep:SetScript("OnClick", function()
             return
         end
         local old = db.setupEquipment
-        local rodSet = SaveHands("鱼竿", old and old.rod)
+        local rodSet, saveError = SaveHands("鱼竿", old and old.rod)
         if not rodSet then
-            Render("无法保存鱼竿，请检查装备方案是否已满。")
+            Render(saveError)
             return
         end
         db.setupEquipment = { rod = rodSet, weapon = db.setupDraft }

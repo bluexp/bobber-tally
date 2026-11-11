@@ -8,7 +8,7 @@ BobberTally 记录本次钓到的物品和数量，分别计算拍卖行估值�
 
 ## 安装
 
-1. 下载 [BobberTally v0.4.0 ZIP](https://bluexp.github.io/bobber-tally/downloads/BobberTally-v0.4.0.zip) 并解压。
+1. 下载 [BobberTally v0.4.1 ZIP](https://bluexp.github.io/bobber-tally/downloads/BobberTally-v0.4.1.zip) 并解压。
 2. 将解压得到的 `WowfFishing` 文件夹复制到《魔兽世界：无限》客户端的 `_forever_/Interface/AddOns/`。
 3. 重启游戏并启用「无限钓鱼助手」。适用客户端接口版本 16001。
 

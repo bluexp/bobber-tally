@@ -29,7 +29,7 @@ text:SetWidth(515)
 text:SetJustifyH("LEFT")
 text:SetSpacing(3)
 text:SetText(table.concat({
-    "|cffffd100无限钓鱼助手 0.4.0|r",
+    "|cffffd100无限钓鱼助手 0.4.1|r",
     "为《魔兽世界：无限》制作的钓鱼辅助插件。",
     "",
     "|cffffd100使用方法|r",
