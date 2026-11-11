@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="《魔兽世界：无限》钓鱼插件，记录渔获、对比拍卖行估价与 NPC 售价，并搜索鱼类资料。">
+  <meta name="theme-color" content="#102720">
+  <title>BobberTally · 无限钓鱼助手</title>
+  <link rel="alternate" hreflang="zh-CN" href="https://bluexp.github.io/bobber-tally/">
+  <link rel="alternate" hreflang="en" href="https://bluexp.github.io/bobber-tally/en/">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip" href="#content">跳到正文</a>
+  <header class="masthead">
+    <div class="wrap nav">
+      <a class="brand" href="./"><span class="bobber" aria-hidden="true"></span>BobberTally</a>
+      <nav>
+        <a href="#features">功能</a>
+        <a href="#install">安装</a>
+        <a href="#usage">使用边界</a>
+      </nav>
+      <a class="language" href="en/" lang="en" hreflang="en">English</a>
+    </div>
+  </header>
+  <main id="content">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="platform">《魔兽世界：无限》插件</p>
+          <h1>BobberTally</h1>
+          <p class="subtitle">无限钓鱼助手</p>
+          <p class="lead">每次收竿都有记录。看清这一趟钓了什么，按拍卖行挂单或 NPC 售价估算收获。</p>
+          <div class="actions">
+            <a class="button primary" href="downloads/BobberTally-v0.3.1.zip" download>下载插件 ZIP</a>
+            <a class="button secondary" href="https://github.com/bluexp/bobber-tally">查看 GitHub 源码 <span aria-hidden="true">↗</span></a>
+          </div>
+          <p class="version">v0.3.1 · 客户端接口 16001 · 简体中文界面</p>
+        </div>
+        <figure class="preview">
+          <a href="media/gameplay.png"><img src="media/gameplay.png" alt="游戏内渔获列表和钓鱼助手面板，显示物品数量、拍卖行价格、未报价数量及 NPC 售价" width="1534" height="924"></a>
+          <figcaption>实机截图 · 渔获列表与钓鱼面板</figcaption>
+        </figure>
+      </div>
+    </section>
+    <section class="section" id="features">
+      <div class="wrap">
+        <h2>抛竿、记账、查鱼</h2>
+        <div class="features">
+          <article><h3>钓鱼按键</h3><p>可选 M 键切换鱼竿和原装备。设置抛竿键并启用游戏交互键后，每次抛竿和收竿分别按一下。</p></article>
+          <article><h3>两种总价</h3><p>按物品汇总数量。打开拍卖行后手动刷新，按最低挂单单价与 NPC 售价分别计算，标出报价时间和缺价数量。</p></article>
+          <article><h3>88 条鱼类资料</h3><p>按名称、地点、类别或物品编号搜索，累计记录角色实际钓获的地点与数量。参考钓点附来源。</p></article>
+        </div>
+      </div>
+    </section>
+    <section class="section setup" id="install">
+      <div class="wrap setup-grid">
+        <div>
+          <h2>安装与设置</h2>
+          <ol class="steps">
+            <li><h3>解压插件</h3><p>下载 ZIP，把解压出的 <code>WowfFishing</code> 文件夹放入 <code>_forever_/Interface/AddOns/</code>。</p></li>
+            <li><h3>启用插件</h3><p>重启游戏，在角色选择画面启用「无限钓鱼助手」。进入游戏后输入 <code>/wowfish</code>。</p></li>
+            <li><h3>设置按键</h3><p>建立装备方案 <code>F</code> 和 <code>W</code>，分别用于鱼竿与装备备份。启用默认动作条 7 后，输入 <code>/wowfish m on</code>。输入 <code>/wowfish bind G</code> 设置空闲键，并在游戏设置开启交互键。</p></li>
+          </ol>
+        </div>
+        <aside class="commands">
+          <h3>游戏内命令</h3>
+          <dl>
+            <div><dt><code>/wowfish</code></dt><dd>打开主面板</dd></div>
+            <div><dt><code>/wowfish loot</code></dt><dd>查看渔获和估价</dd></div>
+            <div><dt><code>/wowfish fish</code></dt><dd>打开鱼类资料库</dd></div>
+            <div><dt><code>/wowfish about</code></dt><dd>查看说明与致谢</dd></div>
+          </dl>
+        </aside>
+      </div>
+    </section>
+    <section class="section" id="usage">
+      <div class="wrap boundary">
+        <h2>使用边界</h2>
+        <div>
+          <p>免费、源码可查的玩家自制插件。抛竿与收竿均由玩家按键触发。拍卖行报价是查询时的挂单估值。设置、报价和实钓记录保存在本地游戏设置中。</p>
+          <p class="links"><a href="https://github.com/bluexp/bobber-tally/blob/main/COMPLIANCE.md">阅读规则与代码审查</a> <a href="https://github.com/bluexp/bobber-tally/blob/main/addons/WowfFishing/README.md">资料来源与致谢</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer><div class="wrap"><strong>BobberTally</strong><p>《魔兽世界》及实机截图中的游戏内容归 Blizzard Entertainment 所有。BobberTally 为玩家制作的独立插件。</p></div></footer>
+</body>
+</html>

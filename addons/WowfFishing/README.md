@@ -1,0 +1,39 @@
+# 无限钓鱼助手
+
+为《魔兽世界：无限》制作的钓鱼辅助插件，当前版本 0.3.1，客户端接口版本 16001。
+
+## 使用
+
+- `/wowfish m on` 启用 M 键切换钓鱼装备、原装备和默认动作条 7，使用装备管理器的 F 与 W。
+- `/wowfish` 打开主面板。`/wowfish bind G` 设置一个空闲的抛竿键，G 可以替换。在游戏设置启用交互键，听见浮漂水花声后按同一键收竿。
+- `/wowfish loot` 查看本次渔获、数量、拍卖行最低挂单单价、NPC 出售单价和两种合计金额。总价采用当前保存的单价乘数量，缺少价格的数量会另行标明。
+- 打开拍卖行后点「更新拍卖价」，每种报价附查询时间。
+- `/wowfish fish` 打开鱼类资料库，可搜索鱼名、地点、类别和物品编号。
+- `/wowfish about` 或主面板「说明与致谢」查看插件说明和参考来源。
+
+本次渔获在重新登录或重载界面时清零。拍卖报价和本角色的累计钓获数量、地点会保存。累计记录从启用资料库后开始。
+
+## 鱼类资料
+
+当前目录有 88 条记录，包括普通鱼 29 条、任务鱼 7 条、比赛鱼 4 条、纪念鱼 36 条和膨胀鱼 12 条。纪念鱼按不同重量分别列出。物品资料核对客户端版本为 1.60.1.70862。
+
+鱼名和 NPC 价格优先取游戏客户端的当前信息。部分物品在客户端缓存完成前显示英文名称，加载物品资料后会更新。
+
+钓点包含经典旧世的参考资料和无限服玩家报告，游戏内逐项标明。无限服新增鱼类及钓点仍在补充，钓获条件未核实的条目标为待确认。插件会保存本角色在无限服实际钓到的地点和数量，用于持续核对。
+
+## 参考来源与致谢
+
+感谢以下作者与项目公开源码、记录和游戏数据，为这个插件提供实现参考与资料基础。
+
+- **Blizzard Entertainment / Gethe** 提供游戏界面与 API 文档及其源码镜像。装备管理、物品信息、拍卖行接口和事件按该资料核对。感谢暴雪提供插件接口，感谢 Gethe 维护源码镜像。[无限服界面源码](https://github.com/Gethe/wow-ui-source/tree/forever)
+- **DasAoD / Fishing-OneKey** 的公开源码提供同键抛竿与交互键的实现参考。感谢作者分享。[Fishing-OneKey](https://github.com/DasAoD/Fishing-Onekey)
+- **DigitalPenguin1 / Classic Fishing Companion** 的作者源码用于核对钓鱼战利品事件、水花声增强和声音设置恢复。感谢作者分享实现与修复记录。[Classic Fishing Companion](https://github.com/DigitalPenguin1/ClassicFishingCompanion)
+- **xIGBClutchIx / ForeverPlusPlus** 的实测记录提供无限服接口差异和拍卖行首次查询可能返回空结果的参考。感谢维护者分享测试过程。[接口实测记录](https://github.com/xIGBClutchIx/ForeverPlusPlus/blob/main/docs/forever-api.md)
+- **renaud / FishDex** 的 MIT 授权目录为普通鱼、任务鱼、纪念鱼编号与经典钓点提供数据种子。感谢作者开放数据。引用版本为 `603d1c1b776e7d9265c1e57c7233fc84f999e919`，完整授权保存在 `THIRD_PARTY_LICENSES.txt`。[FishDex 数据目录](https://github.com/Renaud-Sto/FishDex/blob/603d1c1b776e7d9265c1e57c7233fc84f999e919/FishDex/Data.lua)
+- **timemir / Pagle** 对无限服鱼类资料范围、客户端数据与钓获地点资料的缺口做了公开研究，用于核对目录覆盖范围。感谢作者分享研究与来源记录。[鱼类数据研究](https://github.com/timemir/pagle-addon/blob/main/docs/research/forever-content-data.md)
+- **Wago.tools** 提供客户端 `ItemSparse` 和 `AreaTable` 的公开数据导出，用于核对物品编号、重量鱼、膨胀鱼、卖价及地区名。感谢提供数据工具。[Wago.tools](https://wago.tools/db2/ItemSparse?build=1.60.1.70862)
+- **无限图鉴 wuxianwow.com** 的公开中文客户端物品数据用于核对名称和 NPC 单价。数据清单版本为 `1.60.1.70862`。感谢整理与开放数据。[数据说明](https://wuxianwow.com/ai)、[物品数据](https://wuxianwow.com/data/items.json)
+- **WOWF.IO** 的钓鱼渔获资料用于补充中文鱼名、配方用途与参考地区。感谢整理鱼类专题。[钓鱼渔获](https://wowf.io/zh/professions/fishing/catch)
+- **Wowhead 玩家报告** 为无限新增鱼「奇想鳍鱼」在赤脊山鱼群的记录提供线索，资料页标为待本角色实钓核对。感谢参与提交钓鱼观察的玩家。[奇想鳍鱼](https://www.wowhead.com/forever/item=251524/whimsyfin)
+
+上述网站与作者各自拥有相关内容的权利。游戏物品名称、图标与游戏数据属于 Blizzard Entertainment。第三方 MIT 授权声明随插件一并保留。
