@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A fishing add-on for World of Warcraft: Forever. Track catches, compare auction and vendor values, and search the fish catalog.">
+  <meta name="description" content="A fishing add-on for World of Warcraft: Forever. Set up a gear swap shortcut, track catches, and compare auction and vendor values.">
   <meta name="theme-color" content="#102720">
   <title>BobberTally · Fishing add-on for WoW Forever</title>
   <link rel="alternate" hreflang="zh-CN" href="https://bluexp.github.io/bobber-tally/">
@@ -32,10 +32,10 @@
           <p class="subtitle">Fishing companion</p>
           <p class="lead">See what you caught, compare auction listings with vendor value, and keep a record of where the fish were biting.</p>
           <div class="actions">
-            <a class="button primary" href="../downloads/BobberTally-v0.3.1.zip" download>Download add-on ZIP</a>
+            <a class="button primary" href="../downloads/BobberTally-v0.4.0.zip" download>Download add-on ZIP</a>
             <a class="button secondary" href="https://github.com/bluexp/bobber-tally">View source on GitHub <span aria-hidden="true">↗</span></a>
           </div>
-          <p class="version">v0.3.1 · Interface 16001 · Simplified Chinese in-game UI</p>
+          <p class="version">v0.4.0 · Interface 16001 · Simplified Chinese in-game UI</p>
         </div>
         <figure class="preview">
           <a href="../media/gameplay.png"><img src="../media/gameplay.png" alt="In-game catch list and fishing panel showing quantities, auction prices, unpriced items, and vendor values" width="1534" height="924"></a>
@@ -47,7 +47,7 @@
       <div class="wrap">
         <h2>Cast, count, look it up</h2>
         <div class="features">
-          <article><h3>Fishing controls</h3><p>Optionally use M to swap between your rod and regular gear. With the game’s Interact Key enabled, press your chosen fishing key once to cast and again to reel in.</p></article>
+          <article><h3>One-click gear swaps</h3><p>Choose your rod and weapon in the setup wizard. Swap with a shortcut or an on-screen button you can move and lock.</p></article>
           <article><h3>Two estimates</h3><p>Catches are grouped by item. Refresh manually at the Auction House to compare the lowest listing with vendor value. Timestamps and unpriced items are shown.</p></article>
           <article><h3>88 catalog entries</h3><p>Search by fish name, location, category, or item ID. Your character’s observed catches are saved alongside reference locations with source labels.</p></article>
         </div>
@@ -60,13 +60,15 @@
           <ol class="steps">
             <li><h3>Unzip the add-on</h3><p>Download the ZIP and copy the extracted <code>WowfFishing</code> folder into <code>_forever_/Interface/AddOns/</code>.</p></li>
             <li><h3>Enable it in game</h3><p>Restart WoW and enable <span lang="zh-CN">「无限钓鱼助手」</span> in the add-on list at character selection. Enter <code>/wowfish</code> after logging in.</p></li>
-            <li><h3>Set your keys</h3><p>Create gear sets <code>F</code> for your rod and <code>W</code> for your regular gear backup. Enable Action Bar 7 and enter <code>/wowfish m on</code> to enable the M shortcut. Enter <code>/wowfish bind G</code> with a free key and turn on the game’s Interact Key.</p></li>
+            <li><h3>Set up gear swaps</h3><p>Enter <code>/wowfish setup</code>. Choose your rod, equip the weapon you want to switch back to, then equip the selected rod and save your shortcut. Drag the on-screen button into place and click <span lang="zh-CN">「固定」</span> to lock it.</p></li>
+            <li><h3>Set a fishing key</h3><p>Enter <code>/wowfish bind G</code>, replacing <code>G</code> with any supported free key. Enable the game’s Interact Key, then press your fishing key once to cast and again to reel in.</p></li>
           </ol>
         </div>
         <aside class="commands">
           <h3>In-game commands</h3>
           <dl>
             <div><dt><code>/wowfish</code></dt><dd>Open the main panel</dd></div>
+            <div><dt><code>/wowfish setup</code></dt><dd>Open the gear setup wizard</dd></div>
             <div><dt><code>/wowfish loot</code></dt><dd>View catches and estimates</dd></div>
             <div><dt><code>/wowfish fish</code></dt><dd>Open the fish catalog</dd></div>
             <div><dt><code>/wowfish about</code></dt><dd>View help and credits</dd></div>

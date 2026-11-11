@@ -1,6 +1,10 @@
-# BobberTally v0.3.1 规则与代码审查
+# BobberTally 规则与代码审查
 
-审查范围为《魔兽世界：无限》国服、此仓库的 Lua 源码和下载包。审查日期为 2026 年 11 月 11 日。
+2026 年 11 月 11 日审查了《魔兽世界：无限》国服规则、v0.3.1 的 Lua 源码及下载包。v0.4.0 换装向导的实现见下节。 [v0.3.1 审查原文](https://github.com/bluexp/bobber-tally/blob/01fca65/COMPLIANCE.md)
+
+## v0.4.0 换装向导
+
+向导读取背包和主手装备以列出鱼竿与武器。玩家点击「装备所选」后，插件调用游戏的装备接口。向导通过游戏装备管理器保存主副手方案，设置完成后由玩家点击屏幕按钮或按换装键触发切换。战斗中会拒绝换装。快捷键、方案引用、按钮坐标和锁定状态保存在本角色的本地设置中。 [Setup.lua](addons/WowfFishing/Setup.lua) · [Fishing.lua](addons/WowfFishing/Fishing.lua)
 
 ## 审查结论
 

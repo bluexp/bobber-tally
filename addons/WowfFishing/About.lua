@@ -29,11 +29,13 @@ text:SetWidth(515)
 text:SetJustifyH("LEFT")
 text:SetSpacing(3)
 text:SetText(table.concat({
-    "|cffffd100无限钓鱼助手 0.3.1|r",
+    "|cffffd100无限钓鱼助手 0.4.0|r",
     "为《魔兽世界：无限》制作的钓鱼辅助插件。",
     "",
     "|cffffd100使用方法|r",
-    "输入 /wowfish m on 启用 M 键换装，使用装备方案 F、W 和动作条 7。",
+    "/wowfish setup 打开配置向导，选择鱼竿、武器和换装快捷键。",
+    "完成后拖动屏幕上的换装按钮，再点「固定」保存位置。",
+    "已有 F、W 方案的角色可继续使用原有 M 键换装。",
     "/wowfish 打开主面板。/wowfish bind G 设置空闲的抛竿键。",
     "在游戏设置开启交互键后，听见浮漂水花声再按同一键收竿。",
     "/wowfish loot 查看本次渔获、两种单价和总价。",

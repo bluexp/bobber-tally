@@ -1,6 +1,7 @@
 local _, addon = ...
 local FISHING_SPELL_ID = 7620
 local GEAR_BUTTON = "WowfFishingGearButton"
+local FLOATING_GEAR_BUTTON = "WowfFishingFloatingGear"
 local CAST_BUTTON = "WowfFishingCastButton"
 local LOOT_ITEM = Enum and Enum.LootSlotType and Enum.LootSlotType.Item or LOOT_SLOT_ITEM or 1
 
@@ -22,7 +23,7 @@ local function Say(message)
 end
 
 local panel = CreateFrame("Frame", "WowfFishingPanel", UIParent, "BasicFrameTemplateWithInset")
-panel:SetSize(310, 160)
+panel:SetSize(310, 190)
 panel:SetPoint("RIGHT", UIParent, "RIGHT", -70, 100)
 panel:SetClampedToScreen(true)
 panel:SetMovable(true)
@@ -61,15 +62,25 @@ catchListButton:SetText("查看全部")
 catchListButton:SetScript("OnClick", addon.ToggleCatchList)
 
 local hint = panel:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-hint:SetPoint("BOTTOMLEFT", 15, 42)
+hint:SetPoint("BOTTOMLEFT", 15, 72)
 
 local gearButton = CreateFrame("Button", GEAR_BUTTON, panel, "UIPanelButtonTemplate")
 gearButton:SetSize(135, 24)
-gearButton:SetPoint("BOTTOMLEFT", 14, 12)
+gearButton:SetPoint("BOTTOMLEFT", 14, 42)
 
 local audioButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 audioButton:SetSize(135, 24)
-audioButton:SetPoint("BOTTOMRIGHT", -14, 12)
+audioButton:SetPoint("BOTTOMRIGHT", -14, 42)
+
+local setupButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+setupButton:SetSize(282, 24)
+setupButton:SetPoint("BOTTOMLEFT", 14, 12)
+setupButton:SetText("配置向导")
+setupButton:SetScript("OnClick", addon.ShowSetup)
+
+local function GearKey()
+    return db.gearKey or (db.useM and "M") or nil
+end
 
 local function RefreshPanel()
     if fishing then
@@ -84,13 +95,16 @@ local function RefreshPanel()
     hint:SetText(db.fishKey and ("抛竿 / 收竿：" .. db.fishKey) or "设置抛竿键：/wowfish bind G")
     gearButton:SetText(hasPole and "恢复原装备" or "装备鱼竿")
     audioButton:SetText(db.enhanceSound and "水花声：增强" or "水花声：原音")
+    addon.UpdateFloatingGear(hasPole)
 end
 
 local function UpdateBindings()
     if InCombatLockdown() then return end
     ClearOverrideBindings(bindings)
-    if db.useM then
-        SetOverrideBindingClick(bindings, true, "M", GEAR_BUTTON, "LeftButton")
+    local key = GearKey()
+    if key then
+        local button = db.setupEquipment and FLOATING_GEAR_BUTTON or GEAR_BUTTON
+        SetOverrideBindingClick(bindings, true, key, button, "LeftButton")
     end
     if db.fishKey and spellName and hasPole then
         if fishing then
@@ -154,15 +168,9 @@ local function UpdateChannel(countCast)
     RefreshPanel()
 end
 
-local function IsFishingPole(itemID)
-    if not itemID or itemID <= 0 then return false end
-    local _, _, _, _, _, classID, subclassID = C_Item.GetItemInfoInstant(itemID)
-    return classID == 2 and subclassID == 20 -- Weapon / Fishing Pole
-end
-
 local function UpdateEquipment()
     local wasEquipped = hasPole
-    hasPole = IsFishingPole(GetInventoryItemID("player", 16))
+    hasPole = addon.IsFishingPole(GetInventoryItemID("player", 16))
     if db.useM and MultiBar6 and not InCombatLockdown() then
         MultiBar6:SetAlpha(hasPole and 1 or 0)
     end
@@ -181,20 +189,36 @@ local function ToggleEquipment()
     end
     if GetTime() < swappingUntil then return end
     local api = C_EquipmentSet
-    local backupID = api.GetEquipmentSetID("W")
-    if not backupID then
-        Say("请先在装备管理器创建 W，用来保存钓鱼前的装备。")
-        return
-    end
-    local targetID = backupID
-    if not IsFishingPole(GetInventoryItemID("player", 16)) then
-        targetID = api.GetEquipmentSetID("F")
-        local items = targetID and api.GetItemIDs(targetID)
-        if not items or not IsFishingPole(items[16]) then
-            Say("请先把鱼竿保存为装备方案 F 的主手武器。")
+    local poleEquipped = addon.IsFishingPole(GetInventoryItemID("player", 16))
+    local targetID
+    if db.setupEquipment then
+        local rodID, weaponID = addon.GetSetupEquipment()
+        if not rodID or not weaponID then
+            Say("鱼竿或武器方案已变更，请重新运行 /wowfish setup。")
             return
         end
-        api.SaveEquipmentSet(backupID)
+        targetID = poleEquipped and weaponID or rodID
+        local _, _, _, _, _, _, _, missing = api.GetEquipmentSetInfo(targetID)
+        if missing and missing > 0 then
+            Say("找不到所需装备，请检查背包。")
+            return
+        end
+    else
+        local backupID = api.GetEquipmentSetID("W")
+        if not backupID then
+            Say("请在配置向导选择武器，或在装备管理器创建 W。")
+            return
+        end
+        targetID = backupID
+        if not poleEquipped then
+            targetID = api.GetEquipmentSetID("F")
+            local items = targetID and api.GetItemIDs(targetID)
+            if not items or not addon.IsFishingPole(items[16]) then
+                Say("请在配置向导选择鱼竿，或把鱼竿保存为装备方案 F 的主手武器。")
+                return
+            end
+            api.SaveEquipmentSet(backupID)
+        end
     end
     swappingUntil = GetTime() + 1
     if not api.UseEquipmentSet(targetID) then
@@ -248,7 +272,7 @@ local function CountLoot(slot)
 end
 
 local function NormalizeKey(input)
-    local key = input:upper()
+    local key = input:match("^%s*(.-)%s*$"):upper()
     local remaining = key
     for _, modifier in ipairs({ "ALT", "CTRL", "SHIFT" }) do
         remaining = remaining:gsub("^" .. modifier .. "%-", "")
@@ -256,6 +280,24 @@ local function NormalizeKey(input)
     if remaining:match("^[A-Z0-9]$") then return key end
     local number = tonumber(remaining:match("^F(%d+)$"))
     if number and number >= 1 and number <= 12 and remaining == "F" .. number then return key end
+end
+
+local function ValidateGearKey(input)
+    local key = NormalizeKey(input)
+    if not key then return nil, "请输入字母、数字或 F1–F12，可带修饰键。" end
+    if key == db.fishKey then return nil, key .. " 已用于抛竿和收竿。" end
+    local action = GetBindingAction(key, true)
+    if key ~= GearKey() and action and action ~= "" then
+        return nil, key .. " 已绑定其他操作，请换一个空闲键。"
+    end
+    return key
+end
+
+local function SaveGearKey(key)
+    if db.useM and key ~= "M" and MultiBar6 then MultiBar6:SetAlpha(1) end
+    db.useM = key == "M"
+    db.gearKey = key
+    UpdateEquipment()
 end
 
 local function HandleCommand(input)
@@ -276,14 +318,18 @@ local function HandleCommand(input)
         addon.ToggleAbout()
         return
     end
+    if command == "setup" then
+        addon.ShowSetup()
+        return
+    end
     if InCombatLockdown() then
         Say("脱离战斗后再修改按键。")
         return
     end
     if command == "bind" then
         local key = NormalizeKey(argument)
-        if not key or key == "M" then
-            Say("请指定字母、数字或 F1–F12，避开 M。例如 /wowfish bind G 或 /wowfish bind SHIFT-G。")
+        if not key or key == "M" or key == GearKey() then
+            Say("请指定空闲的字母、数字或 F1–F12，避开换装键和 M。")
             return
         end
         local action = GetBindingAction(key, true)
@@ -296,11 +342,16 @@ local function HandleCommand(input)
     elseif command == "unbind" then
         db.fishKey = nil
     elseif command == "m" and (argument == "on" or argument == "off") then
-        db.useM = argument == "on"
-        if not db.useM and MultiBar6 then MultiBar6:SetAlpha(1) end
-        Say(db.useM and "M 已用于切换钓鱼装备。" or "已释放 M。")
+        if argument == "on" then
+            SaveGearKey("M")
+            Say("M 已用于切换钓鱼装备。")
+        elseif GearKey() == "M" then
+            SaveGearKey(nil)
+            Say("已释放 M。")
+        end
+        return
     else
-        Say("/wowfish 打开面板；/wowfish loot 查看本次渔获；/wowfish fish 查看鱼类资料；/wowfish bind G 设置抛竿键；/wowfish unbind 释放抛竿键；/wowfish m on/off 管理 M。")
+        Say("/wowfish setup 打开配置向导；/wowfish loot 查看本次渔获；/wowfish fish 查看鱼类资料；/wowfish bind G 设置抛竿键；/wowfish unbind 释放抛竿键；/wowfish m on/off 管理 M。")
         return
     end
     UpdateEquipment()
@@ -313,6 +364,7 @@ local function Initialize()
     addon.InitializeFishCatalog(db)
     if db.useM == nil then db.useM = false end
     if db.enhanceSound == nil then db.enhanceSound = true end
+    addon.InitializeSetup(db, { key = GearKey, validateKey = ValidateGearKey, saveKey = SaveGearKey, toggleGear = ToggleEquipment, say = Say })
     RestoreAudio()
     spellName = C_Spell.GetSpellName(FISHING_SPELL_ID)
     castButton:SetAttribute("spell", spellName)

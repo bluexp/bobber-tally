@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="《魔兽世界：无限》钓鱼插件，记录渔获、对比拍卖行估价与 NPC 售价，并搜索鱼类资料。">
+  <meta name="description" content="《魔兽世界：无限》钓鱼插件，配置鱼竿和武器一键切换、记录渔获、对比拍卖行估价与 NPC 售价。">
   <meta name="theme-color" content="#102720">
   <title>BobberTally · 无限钓鱼助手</title>
   <link rel="alternate" hreflang="zh-CN" href="https://bluexp.github.io/bobber-tally/">
@@ -32,10 +32,10 @@
           <p class="subtitle">无限钓鱼助手</p>
           <p class="lead">每次收竿都有记录。看清这一趟钓了什么，按拍卖行挂单或 NPC 售价估算收获。</p>
           <div class="actions">
-            <a class="button primary" href="downloads/BobberTally-v0.3.1.zip" download>下载插件 ZIP</a>
+            <a class="button primary" href="downloads/BobberTally-v0.4.0.zip" download>下载插件 ZIP</a>
             <a class="button secondary" href="https://github.com/bluexp/bobber-tally">查看 GitHub 源码 <span aria-hidden="true">↗</span></a>
           </div>
-          <p class="version">v0.3.1 · 客户端接口 16001 · 简体中文界面</p>
+          <p class="version">v0.4.0 · 客户端接口 16001 · 简体中文界面</p>
         </div>
         <figure class="preview">
           <a href="media/gameplay.png"><img src="media/gameplay.png" alt="游戏内渔获列表和钓鱼助手面板，显示物品数量、拍卖行价格、未报价数量及 NPC 售价" width="1534" height="924"></a>
@@ -47,7 +47,7 @@
       <div class="wrap">
         <h2>抛竿、记账、查鱼</h2>
         <div class="features">
-          <article><h3>钓鱼按键</h3><p>可选 M 键切换鱼竿和原装备。设置抛竿键并启用游戏交互键后，每次抛竿和收竿分别按一下。</p></article>
+          <article><h3>一键换装</h3><p>用配置向导选择鱼竿和要换回的武器。点击屏幕按钮或按快捷键切换，按钮可拖动和固定。</p></article>
           <article><h3>两种总价</h3><p>按物品汇总数量。打开拍卖行后手动刷新，按最低挂单单价与 NPC 售价分别计算，标出报价时间和缺价数量。</p></article>
           <article><h3>88 条鱼类资料</h3><p>按名称、地点、类别或物品编号搜索，累计记录角色实际钓获的地点与数量。参考钓点附来源。</p></article>
         </div>
@@ -60,13 +60,15 @@
           <ol class="steps">
             <li><h3>解压插件</h3><p>下载 ZIP，把解压出的 <code>WowfFishing</code> 文件夹放入 <code>_forever_/Interface/AddOns/</code>。</p></li>
             <li><h3>启用插件</h3><p>重启游戏，在角色选择画面启用「无限钓鱼助手」。进入游戏后输入 <code>/wowfish</code>。</p></li>
-            <li><h3>设置按键</h3><p>建立装备方案 <code>F</code> 和 <code>W</code>，分别用于鱼竿与装备备份。启用默认动作条 7 后，输入 <code>/wowfish m on</code>。输入 <code>/wowfish bind G</code> 设置空闲键，并在游戏设置开启交互键。</p></li>
+            <li><h3>配置换装</h3><p>输入 <code>/wowfish setup</code>，按提示选择鱼竿、装备要换回的武器，再装备所选鱼竿并保存快捷键。拖动屏幕按钮后可点击「固定」。</p></li>
+            <li><h3>设置抛竿键</h3><p>输入 <code>/wowfish bind G</code> 绑定一个空闲键，<code>G</code> 可换。在游戏设置开启交互键后，抛竿和收竿分别按一下。</p></li>
           </ol>
         </div>
         <aside class="commands">
           <h3>游戏内命令</h3>
           <dl>
             <div><dt><code>/wowfish</code></dt><dd>打开主面板</dd></div>
+            <div><dt><code>/wowfish setup</code></dt><dd>打开换装配置向导</dd></div>
             <div><dt><code>/wowfish loot</code></dt><dd>查看渔获和估价</dd></div>
             <div><dt><code>/wowfish fish</code></dt><dd>打开鱼类资料库</dd></div>
             <div><dt><code>/wowfish about</code></dt><dd>查看说明与致谢</dd></div>

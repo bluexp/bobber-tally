@@ -1,0 +1,427 @@
+local _, addon = ...
+local MAIN_HAND, OFF_HAND = 16, 17
+local FIRST_SLOT, LAST_SLOT = INVSLOT_FIRST_EQUIPPED or 1, INVSLOT_LAST_EQUIPPED or 19
+local ROW_COUNT = 5
+local mainHandTypes = { INVTYPE_WEAPON = true, INVTYPE_WEAPONMAINHAND = true, INVTYPE_2HWEAPON = true }
+local db, handlers, step, rod, weapon, page
+
+function addon.IsFishingPole(id)
+    if not id or id <= 0 then return false end
+    local _, _, _, _, _, class, subclass = C_Item.GetItemInfoInstant(id)
+    return class == 2 and subclass == 20
+end
+
+local function CurrentMainHand()
+    return GetInventoryItemID("player", MAIN_HAND), GetInventoryItemLink("player", MAIN_HAND)
+end
+
+local function SameItem(item, id, link)
+    if not item or item.id ~= id then return false end
+    local first = item.link and item.link:match("|H(item:[^|]+)|h")
+    local second = link and link:match("|H(item:[^|]+)|h")
+    return not first or not second or first == second
+end
+
+local function Items(wantRod)
+    local items = {}
+    local function Add(id, link, equipped)
+        if not id then return end
+        local _, _, _, equipType, icon = C_Item.GetItemInfoInstant(id)
+        if wantRod ~= addon.IsFishingPole(id) or (not wantRod and not mainHandTypes[equipType]) then return end
+        for _, item in ipairs(items) do
+            if SameItem(item, id, link) then return end
+        end
+        local name = C_Item.GetItemInfo(link or id)
+        items[#items + 1] = { id = id, link = link, name = name or ("物品 #%d"):format(id), icon = icon, equipped = equipped }
+    end
+    local id, link = CurrentMainHand()
+    Add(id, link, true)
+    if not wantRod then
+        Add(GetInventoryItemID("player", OFF_HAND), GetInventoryItemLink("player", OFF_HAND))
+    end
+    for bag = 0, NUM_BAG_SLOTS do
+        for slot = 1, C_Container.GetContainerNumSlots(bag) do
+            local itemID = C_Container.GetContainerItemID(bag, slot)
+            if itemID then Add(itemID, C_Container.GetContainerItemLink(bag, slot)) end
+        end
+    end
+    return items
+end
+
+local function FindItem(items, selected)
+    if not selected then return end
+    for _, item in ipairs(items) do
+        if SameItem(item, selected.id, selected.link) then return item end
+    end
+end
+
+local function ItemText(item)
+    return item and (item.link or item.name) or "—"
+end
+
+local function HandSetID(set)
+    if not set then return end
+    local api = C_EquipmentSet
+    if api.GetEquipmentSetID(set.name) ~= set.id then return end
+    local items, ignored = api.GetItemIDs(set.id), api.GetIgnoredSlots(set.id)
+    if not items or not ignored or items[MAIN_HAND] ~= set.main
+        or math.max(items[OFF_HAND] or 0, 0) ~= set.off then return end
+    for slot = FIRST_SLOT, LAST_SLOT do
+        local shouldIgnore = slot ~= MAIN_HAND and slot ~= OFF_HAND
+        if (ignored[slot] == true) ~= shouldIgnore then return end
+    end
+    return set.id
+end
+
+function addon.GetSetupEquipment()
+    local setup = db.setupEquipment
+    if setup then return HandSetID(setup.rod), HandSetID(setup.weapon) end
+end
+
+local function SaveHands(label, previous)
+    local api = C_EquipmentSet
+    local name
+    local id = HandSetID(previous)
+    if id and not api.GetEquipmentSetAssignedSpec(id) then
+        name = previous.name
+    else
+        local base = "BobberTally " .. label
+        name = base
+        local suffix = 2
+        while api.GetEquipmentSetID(name) do
+            name = base .. " " .. suffix
+            suffix = suffix + 1
+        end
+        id = nil
+    end
+    local snapshot = {
+        name = name,
+        main = GetInventoryItemID("player", MAIN_HAND),
+        off = GetInventoryItemID("player", OFF_HAND) or 0,
+    }
+    local ignored = {}
+    for slot = FIRST_SLOT, LAST_SLOT do
+        ignored[slot] = api.IsSlotIgnoredForSave(slot)
+        if slot == MAIN_HAND or slot == OFF_HAND then
+            api.UnignoreSlotForSave(slot)
+        else
+            api.IgnoreSlotForSave(slot)
+        end
+    end
+    if id then api.SaveEquipmentSet(id) else api.CreateEquipmentSet(name) end
+    for slot = FIRST_SLOT, LAST_SLOT do
+        if ignored[slot] then api.IgnoreSlotForSave(slot) else api.UnignoreSlotForSave(slot) end
+    end
+    snapshot.id = api.GetEquipmentSetID(name)
+    if snapshot.id and HandSetID(snapshot) then return snapshot end
+    if not id and snapshot.id then api.DeleteEquipmentSet(snapshot.id) end
+end
+
+local function RemovePreviousSet(previous, replacement)
+    local id = HandSetID(previous)
+    if id and id ~= replacement.id and not C_EquipmentSet.GetEquipmentSetAssignedSpec(id) then
+        C_EquipmentSet.DeleteEquipmentSet(id)
+    end
+end
+
+local wizard = CreateFrame("Frame", "WowfFishingSetup", UIParent, "BasicFrameTemplateWithInset")
+wizard:SetSize(456, 350)
+wizard:SetPoint("CENTER", UIParent, "CENTER", 0, 35)
+wizard:SetFrameStrata("DIALOG")
+wizard:SetClampedToScreen(true)
+wizard:Hide()
+
+local function Label(parent, font, x, y, width)
+    local label = parent:CreateFontString(nil, "OVERLAY", font)
+    label:SetPoint("TOPLEFT", x, y)
+    label:SetWidth(width)
+    label:SetJustifyH("LEFT")
+    return label
+end
+
+local function Button(parent, name, text, width)
+    local button = CreateFrame("Button", name, parent, "UIPanelButtonTemplate")
+    button:SetSize(width, 24)
+    button:SetText(text)
+    return button
+end
+
+Label(wizard, "GameFontHighlight", 12, -6, 360):SetText("无限钓鱼助手 · 配置向导")
+local heading = Label(wizard, "GameFontNormalLarge", 20, -43, 412)
+local description = Label(wizard, "GameFontHighlight", 20, -73, 412)
+local message = Label(wizard, "GameFontNormalSmall", 20, -273, 412)
+local rows = {}
+for index = 1, ROW_COUNT do
+    local row = CreateFrame("Button", nil, wizard)
+    row:SetPoint("TOPLEFT", 20, -116 - (index - 1) * 27)
+    row:SetSize(412, 26)
+    row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    row.icon = row:CreateTexture(nil, "ARTWORK")
+    row.icon:SetPoint("LEFT", 2, 0)
+    row.icon:SetSize(19, 19)
+    row.label = Label(row, "GameFontHighlight", 27, -6, 378)
+    row.label:SetMaxLines(1)
+    row:SetScript("OnEnter", function(self)
+        if not self.item then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        if self.item.link then
+            GameTooltip:SetHyperlink(self.item.link)
+        else
+            GameTooltip:SetItemByID(self.item.id)
+        end
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    rows[index] = row
+end
+
+local keyLabel = Label(wizard, "GameFontNormal", 20, -184, 210)
+keyLabel:SetText("一键换装快捷键")
+local keyInput = CreateFrame("EditBox", nil, wizard, "InputBoxTemplate")
+keyInput:SetPoint("TOPLEFT", 173, -177)
+keyInput:SetSize(145, 29)
+keyInput:SetAutoFocus(false)
+keyInput:SetMaxLetters(22)
+keyInput:SetScript("OnEscapePressed", keyInput.ClearFocus)
+keyInput:SetScript("OnEnterPressed", keyInput.ClearFocus)
+local summary = Label(wizard, "GameFontHighlight", 20, -116, 412)
+
+local previousPage = Button(wizard, nil, "‹", 29)
+previousPage:SetPoint("TOPLEFT", 20, -250)
+local nextPage = Button(wizard, nil, "›", 29)
+nextPage:SetPoint("LEFT", previousPage, "RIGHT", 52, 0)
+local pageLabel = Label(wizard, "GameFontDisableSmall", 56, -256, 42)
+local back = Button(wizard, nil, "上一步", 77)
+back:SetPoint("BOTTOMLEFT", 18, 15)
+local equip = Button(wizard, nil, "装备所选", 100)
+equip:SetPoint("BOTTOMRIGHT", -155, 15)
+local nextStep = Button(wizard, nil, "下一步", 130)
+nextStep:SetPoint("BOTTOMRIGHT", -18, 15)
+
+local floating = CreateFrame("Frame", "WowfFishingFloating", UIParent)
+floating:SetSize(159, 32)
+floating:SetClampedToScreen(true)
+floating:SetMovable(true)
+floating:Hide()
+local floatButton = Button(floating, "WowfFishingFloatingGear", "装备鱼竿", 118)
+floatButton:SetPoint("LEFT", 0, 0)
+floatButton:RegisterForDrag("LeftButton")
+local lock = Button(floating, nil, "固定", 41)
+lock:SetPoint("LEFT", floatButton, "RIGHT", 0, 0)
+
+function addon.UpdateFloatingGear(hasPole)
+    if not db then return end
+    floatButton:SetText(hasPole and "恢复武器" or "装备鱼竿")
+    floating:SetShown(db.setupEquipment ~= nil)
+end
+
+local function StopMoving()
+    if not floating.moving then return end
+    floating:StopMovingOrSizing()
+    floating.moving = nil
+    local x, y = floating:GetCenter()
+    local parentX, parentY = UIParent:GetCenter()
+    if not x or not parentX then return end
+    db.floatPosition = { x = x - parentX, y = y - parentY }
+    floating:ClearAllPoints()
+    floating:SetPoint("CENTER", UIParent, "CENTER", db.floatPosition.x, db.floatPosition.y)
+end
+
+floatButton:SetScript("OnDragStart", function()
+    if db.floatLocked then return end
+    floating.moving = true
+    floating:StartMoving()
+end)
+floatButton:SetScript("OnDragStop", StopMoving)
+floatButton:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(self:GetText())
+    local key = handlers.key()
+    if key then GameTooltip:AddLine("快捷键  " .. key) end
+    if not db.floatLocked then GameTooltip:AddLine("拖动按钮调整位置。") end
+    GameTooltip:Show()
+end)
+floatButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+floating:SetScript("OnHide", StopMoving)
+lock:SetScript("OnClick", function()
+    StopMoving()
+    db.floatLocked = not db.floatLocked
+    lock:SetText(db.floatLocked and "解锁" or "固定")
+end)
+
+local function Render(notice)
+    local rodPage, weaponPage = step == 1, step == 2
+    local items = step == 3 and {} or Items(rodPage)
+    local chosen
+    if rodPage then
+        rod = FindItem(items, rod) or items[1]
+        chosen = rod
+    elseif weaponPage then
+        weapon = FindItem(items, weapon) or items[1]
+        chosen = weapon
+    end
+    local pageCount = math.max(1, math.ceil(#items / ROW_COUNT))
+    page = math.min(page, pageCount)
+    for index, row in ipairs(rows) do
+        local item = items[(page - 1) * ROW_COUNT + index]
+        row.item = item
+        row:SetShown(item ~= nil)
+        if item then
+            row.icon:SetTexture(item.icon)
+            row.label:SetText((item == chosen and "|cffffd100✓|r " or "   ") .. ItemText(item)
+                .. (item.equipped and "  |cffaaaaaa已装备|r" or ""))
+        end
+    end
+    previousPage:SetShown(pageCount > 1)
+    nextPage:SetShown(pageCount > 1)
+    previousPage:SetEnabled(page > 1)
+    nextPage:SetEnabled(page < pageCount)
+    pageLabel:SetText(pageCount > 1 and ("%d / %d"):format(page, pageCount) or "")
+    back:SetShown(not rodPage)
+    local selected = rod
+    if weaponPage then selected = weapon end
+    local equipped = SameItem(selected, CurrentMainHand())
+    local available = step == 3 and FindItem(Items(true), rod) or chosen
+    equip:SetShown(not rodPage and available ~= nil and not equipped)
+    equip:SetText(weaponPage and "装备所选武器" or "装备所选鱼竿")
+    keyLabel:SetShown(step == 3)
+    keyInput:SetShown(step == 3)
+    summary:SetShown(step == 3)
+    nextStep:SetEnabled((rodPage and rod ~= nil) or (not rodPage and equipped))
+    nextStep:SetText(step == 3 and "保存并显示按钮" or "下一步")
+    message:SetText(notice or "")
+    if rodPage then
+        heading:SetText("1 / 3  选择鱼竿")
+        description:SetText(rod and "从背包或主手中选择一根鱼竿。"
+            or "没有找到鱼竿。请向钓鱼用品商人购买一根，放入背包后会自动刷新。")
+    elseif weaponPage then
+        heading:SetText("2 / 3  选择换回的武器")
+        description:SetText("选择并装备要换回的主手武器。当前副手会一起记录。")
+        if not weapon and not notice then message:SetText("请将可装备的主手武器放入背包。") end
+    else
+        heading:SetText("3 / 3  设置快捷键")
+        description:SetText("装备所选鱼竿，输入空闲快捷键，再保存屏幕按钮。")
+        summary:SetText("鱼竿  " .. ItemText(rod) .. "\n武器  " .. ItemText(weapon))
+        if not notice then
+            message:SetText(available and "例如 M、F8 或 SHIFT-G。保存后可拖动按钮，再点「固定」。"
+                or "所选鱼竿不在身上，请找回鱼竿或返回重选。")
+        end
+    end
+end
+
+for _, row in ipairs(rows) do
+    row:SetScript("OnClick", function(self)
+        if step == 1 then rod = self.item else weapon = self.item end
+        Render()
+    end)
+end
+previousPage:SetScript("OnClick", function()
+    page = page - 1
+    Render()
+end)
+nextPage:SetScript("OnClick", function()
+    page = page + 1
+    Render()
+end)
+back:SetScript("OnClick", function()
+    step, page = step - 1, 1
+    Render()
+end)
+
+equip:SetScript("OnClick", function()
+    if InCombatLockdown() then
+        Render("请脱离战斗后再换装。")
+        return
+    end
+    local selected = step == 2 and weapon or rod
+    local item = FindItem(Items(step == 3), selected)
+    if not item then
+        Render("找不到所选物品，请重新选择。")
+        return
+    end
+    local equipItem = C_Item.EquipItemByName or EquipItemByName
+    if equipItem then equipItem(item.link or item.id, MAIN_HAND) end
+    local waiting = not SameItem(item, CurrentMainHand())
+    Render(waiting and "装备完成后可继续。如未生效，请从背包手动装备所选物品。" or nil)
+end)
+
+nextStep:SetScript("OnClick", function()
+    if InCombatLockdown() then
+        Render("请脱离战斗后再继续。")
+        return
+    end
+    if step == 1 then
+        if not FindItem(Items(true), rod) then Render(); return end
+        step, page = 2, 1
+    elseif step == 2 then
+        if not SameItem(weapon, CurrentMainHand()) then Render(); return end
+        if not C_EquipmentSet.CanUseEquipmentSets() then
+            Render("装备管理器暂不可用，请稍后再试。")
+            return
+        end
+        local draft = SaveHands("武器", db.setupDraft)
+        if not draft then
+            Render("无法保存武器，请检查装备方案是否已满。")
+            return
+        end
+        db.setupDraft = draft
+        step, page = 3, 1
+    else
+        local key, errorMessage = handlers.validateKey(keyInput:GetText())
+        if not key then
+            Render(errorMessage)
+            return
+        end
+        if not SameItem(rod, CurrentMainHand()) then Render(); return end
+        if not HandSetID(db.setupDraft) then
+            step, page = 2, 1
+            Render("武器方案已变更，请重新记录武器。")
+            return
+        end
+        local old = db.setupEquipment
+        local rodSet = SaveHands("鱼竿", old and old.rod)
+        if not rodSet then
+            Render("无法保存鱼竿，请检查装备方案是否已满。")
+            return
+        end
+        db.setupEquipment = { rod = rodSet, weapon = db.setupDraft }
+        db.setupDraft = nil
+        if old then RemovePreviousSet(old.weapon, db.setupEquipment.weapon) end
+        handlers.saveKey(key)
+        keyInput:ClearFocus()
+        wizard:Hide()
+        handlers.say("配置已保存。点击屏幕按钮或按 " .. key .. " 可切换鱼竿与武器。")
+        return
+    end
+    Render()
+end)
+
+wizard:SetScript("OnEvent", function()
+    if wizard:IsShown() then Render() end
+end)
+for _, event in ipairs({ "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "GET_ITEM_INFO_RECEIVED" }) do
+    wizard:RegisterEvent(event)
+end
+
+function addon.ShowSetup()
+    if wizard:IsShown() then wizard:Raise(); return end
+    step, page = 1, 1
+    local setup = db.setupEquipment
+    rod = setup and { id = setup.rod.main } or nil
+    weapon = setup and { id = setup.weapon.main } or nil
+    keyInput:SetText(handlers.key() or "")
+    wizard:Show()
+    Render()
+end
+
+function addon.InitializeSetup(settings, callbacks)
+    db, handlers = settings, callbacks
+    local position = db.floatPosition
+    if position then
+        floating:SetPoint("CENTER", UIParent, "CENTER", position.x, position.y)
+    else
+        floating:SetPoint("RIGHT", UIParent, "RIGHT", -145, -115)
+    end
+    lock:SetText(db.floatLocked and "解锁" or "固定")
+    floatButton:SetScript("OnClick", handlers.toggleGear)
+end
