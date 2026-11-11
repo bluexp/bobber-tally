@@ -1,4 +1,6 @@
 local _, addon = ...
+local theme = addon.Theme
+local colors = theme.colors
 local MAIN_HAND, OFF_HAND = 16, 17
 local FIRST_SLOT, LAST_SLOT = 1, 19
 local EMPTY_LOCATION, IGNORED_LOCATION = 0, 1
@@ -178,42 +180,31 @@ local function RemovePreviousSet(previous, replacement)
     end
 end
 
-local wizard = CreateFrame("Frame", "WowfFishingSetup", UIParent, "BasicFrameTemplateWithInset")
+local wizard = theme.CreatePanel("WowfFishingSetup")
 wizard:SetSize(456, 350)
 wizard:SetPoint("CENTER", UIParent, "CENTER", 0, 35)
-wizard:SetFrameStrata("DIALOG")
-wizard:SetClampedToScreen(true)
-wizard:Hide()
+local surface = theme.Surface(wizard)
 
-local function Label(parent, font, x, y, width)
-    local label = parent:CreateFontString(nil, "OVERLAY", font)
-    label:SetPoint("TOPLEFT", x, y)
-    label:SetWidth(width)
-    label:SetJustifyH("LEFT")
-    return label
-end
+local Label = theme.Label
 
-local function Button(parent, name, text, width)
-    local button = CreateFrame("Button", name, parent, "UIPanelButtonTemplate")
-    button:SetSize(width, 24)
-    button:SetText(text)
-    return button
-end
-
-Label(wizard, "GameFontHighlight", 12, -6, 360):SetText("无限钓鱼助手 · 配置向导")
-local heading = Label(wizard, "GameFontNormalLarge", 20, -43, 412)
-local description = Label(wizard, "GameFontHighlight", 20, -73, 412)
-local message = Label(wizard, "GameFontNormalSmall", 20, -273, 412)
+Label(wizard, "GameFontHighlight", 16, -4, 360):SetText("无限钓鱼助手 · 配置向导")
+local heading = Label(surface, "GameFontNormalLarge", 20, -40, 412, nil, colors.gold)
+local description = Label(surface, "GameFontHighlight", 20, -70, 412, nil, colors.muted)
+theme.Block(surface, "BORDER", 12, -107, 432, 165, colors.card)
+local message = Label(surface, "GameFontHighlightSmall", 20, -277, 412, nil, colors.gold)
 local rows = {}
 for index = 1, ROW_COUNT do
-    local row = CreateFrame("Button", nil, wizard)
+    local row = CreateFrame("Button", nil, surface)
     row:SetPoint("TOPLEFT", 20, -116 - (index - 1) * 27)
     row:SetSize(412, 26)
-    row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    row.active = theme.Fill(row, "BACKGROUND", colors.selected)
+    row.mark = theme.Block(row, "BORDER", 0, 0, 2, 26, colors.gold)
+    theme.Highlight(row)
     row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetPoint("LEFT", 2, 0)
-    row.icon:SetSize(19, 19)
-    row.label = Label(row, "GameFontHighlight", 27, -6, 378)
+    row.icon:SetPoint("LEFT", 7, 0)
+    row.icon:SetSize(21, 21)
+    row.icon:SetTexCoord(0.06, 0.94, 0.06, 0.94)
+    row.label = Label(row, "GameFontHighlight", 36, -6, 365)
     row.label:SetMaxLines(1)
     row:SetScript("OnEnter", function(self)
         if not self.item then return end
@@ -229,30 +220,96 @@ for index = 1, ROW_COUNT do
     rows[index] = row
 end
 
-local keyLabel = Label(wizard, "GameFontNormal", 20, -184, 210)
+local keyLabel = Label(surface, "GameFontHighlight", 20, -184, 210, nil, colors.muted)
 keyLabel:SetText("一键换装快捷键")
-local keyInput = CreateFrame("EditBox", nil, wizard, "InputBoxTemplate")
-keyInput:SetPoint("TOPLEFT", 173, -177)
-keyInput:SetSize(145, 29)
-keyInput:SetAutoFocus(false)
-keyInput:SetMaxLetters(22)
-keyInput:SetScript("OnEscapePressed", keyInput.ClearFocus)
-keyInput:SetScript("OnEnterPressed", keyInput.ClearFocus)
-local summary = Label(wizard, "GameFontHighlight", 20, -116, 412)
+local keyButton = theme.Button(surface, "WowfFishingSetupKey", "点击录入", 192, 24, true)
+keyButton:SetPoint("TOPLEFT", 173, -177)
+local selectedKey, keyCapture
 
-local previousPage = Button(wizard, nil, "‹", 29)
+local function KeyChord(key)
+    if CreateKeyChordStringUsingMetaKeyState then
+        return CreateKeyChordStringUsingMetaKeyState(key)
+    end
+    return (IsAltKeyDown() and "ALT-" or "")
+        .. (IsControlKeyDown() and "CTRL-" or "")
+        .. (IsShiftKeyDown() and "SHIFT-" or "") .. key
+end
+
+local activeCapture
+local modifierKeys = { ALT = true, CTRL = true, SHIFT = true, META = true, CMD = true }
+
+function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
+    local frame = CreateFrame("Frame", name, parent)
+    frame:SetPropagateKeyboardInput(false)
+    frame:EnableKeyboard(false)
+    local releaseKey, chord
+
+    function frame:IsListening()
+        return activeCapture == self
+    end
+
+    function frame:StopListening(acceptedKey)
+        if not self:IsListening() then return end
+        activeCapture, releaseKey, chord = nil, nil, nil
+        self:EnableKeyboard(false)
+        if acceptedKey then accept(acceptedKey) end
+        refresh()
+    end
+
+    function frame:ToggleListening()
+        if self:IsListening() then
+            self:StopListening()
+        elseif InCombatLockdown() then
+            refresh("请脱离战斗后再录入快捷键。")
+        else
+            if activeCapture then activeCapture:StopListening() end
+            activeCapture = self
+            self:EnableKeyboard(true)
+            refresh()
+        end
+    end
+
+    frame:SetScript("OnKeyDown", function(self, key)
+        if not self:IsListening() or releaseKey or modifierKeys[key:gsub("^[LR]", "")] then return end
+        releaseKey = key
+        if key ~= "ESCAPE" then chord = KeyChord(key) end
+    end)
+    frame:SetScript("OnKeyUp", function(self, key)
+        if not self:IsListening() or key ~= releaseKey then return end
+        if not chord then
+            self:StopListening()
+            return
+        end
+        local acceptedKey, errorMessage = validate(chord)
+        if acceptedKey then
+            self:StopListening(acceptedKey)
+        else
+            releaseKey, chord = nil, nil
+            refresh(errorMessage)
+        end
+    end)
+    frame:SetScript("OnEvent", function(self) self:StopListening() end)
+    frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    parent:HookScript("OnHide", function() frame:StopListening() end)
+    return frame
+end
+
+local summary = Label(surface, "GameFontHighlight", 20, -116, 412, nil, colors.text)
+
+local previousPage = theme.Button(surface, nil, "上页", 41, 22)
 previousPage:SetPoint("TOPLEFT", 20, -250)
-local nextPage = Button(wizard, nil, "›", 29)
+local nextPage = theme.Button(surface, nil, "下页", 41, 22)
 nextPage:SetPoint("LEFT", previousPage, "RIGHT", 52, 0)
-local pageLabel = Label(wizard, "GameFontDisableSmall", 56, -256, 42)
-local back = Button(wizard, nil, "上一步", 77)
+local pageLabel = Label(surface, "GameFontHighlightSmall", 63, -255, 48, "CENTER", colors.muted)
+local back = theme.Button(surface, nil, "上一步", 77, 25)
 back:SetPoint("BOTTOMLEFT", 18, 15)
-local equip = Button(wizard, nil, "装备所选", 100)
+local equip = theme.Button(surface, nil, "装备所选", 100, 25)
 equip:SetPoint("BOTTOMRIGHT", -155, 15)
-local nextStep = Button(wizard, nil, "下一步", 130)
+local nextStep = theme.Button(surface, nil, "下一步", 130, 25, true)
 nextStep:SetPoint("BOTTOMRIGHT", -18, 15)
 
 local function Render(notice)
+    local capturingKey = keyCapture:IsListening()
     local rodPage, weaponPage = step == 1, step == 2
     local items = step == 3 and {} or Items(rodPage)
     local chosen
@@ -271,8 +328,10 @@ local function Render(notice)
         row:SetShown(item ~= nil)
         if item then
             row.icon:SetTexture(item.icon)
-            row.label:SetText((item == chosen and "|cffffd100已选|r  " or "   ") .. ItemText(item)
-                .. (item.equipped and "  |cffaaaaaa已装备|r" or ""))
+            row.active:SetShown(item == chosen)
+            row.mark:SetShown(item == chosen)
+            row.label:SetTextColor(unpack(item == chosen and colors.gold or colors.text))
+            row.label:SetText(ItemText(item) .. (item.equipped and "  |cff9cbaca已装备|r" or ""))
         end
     end
     previousPage:SetShown(pageCount > 1)
@@ -288,9 +347,11 @@ local function Render(notice)
     equip:SetShown(not rodPage and available ~= nil and not equipped)
     equip:SetText(weaponPage and "装备所选武器" or "装备所选鱼竿")
     keyLabel:SetShown(step == 3)
-    keyInput:SetShown(step == 3)
+    keyButton:SetShown(step == 3)
+    keyButton:SetText(capturingKey and "请按快捷键…" or selectedKey or "点击录入")
     summary:SetShown(step == 3)
-    nextStep:SetEnabled((rodPage and rod ~= nil) or (not rodPage and equipped))
+    local ready = (rodPage and rod ~= nil) or (not rodPage and equipped)
+    nextStep:SetEnabled(ready and (step ~= 3 or (selectedKey ~= nil and not capturingKey)))
     nextStep:SetText(step == 3 and "保存并显示按钮" or "下一步")
     message:SetText(notice or "")
     if rodPage then
@@ -303,10 +364,11 @@ local function Render(notice)
         if not weapon and not notice then message:SetText("请将可装备的主手武器放入背包。") end
     else
         heading:SetText("3 / 3  设置快捷键")
-        description:SetText("装备所选鱼竿，输入空闲快捷键，再保存屏幕按钮。")
+        description:SetText("装备所选鱼竿，点击快捷键按钮后按键，再保存。")
         summary:SetText("鱼竿  " .. ItemText(rod) .. "\n武器  " .. ItemText(weapon))
         if not notice then
-            message:SetText(available and "例如 M、F8 或 SHIFT-G。保存后可拖动按钮，再点「固定」。"
+            message:SetText(available and (capturingKey and "按下快捷键，或按 Esc 取消录入。"
+                or "可录入字母、数字、F1–F12、小键盘和组合键。")
                 or "所选鱼竿不在身上，请找回鱼竿或返回重选。")
         end
     end
@@ -327,11 +389,13 @@ nextPage:SetScript("OnClick", function()
     Render()
 end)
 back:SetScript("OnClick", function()
+    keyCapture:StopListening()
     step, page = step - 1, 1
     Render()
 end)
 
 equip:SetScript("OnClick", function()
+    keyCapture:StopListening()
     if InCombatLockdown() then
         Render("请脱离战斗后再换装。")
         return
@@ -370,7 +434,7 @@ nextStep:SetScript("OnClick", function()
         db.setupDraft = draft
         step, page = 3, 1
     else
-        local key, errorMessage = handlers.validateKey(keyInput:GetText())
+        local key, errorMessage = handlers.validateKey(selectedKey or "")
         if not key then
             Render(errorMessage)
             return
@@ -391,7 +455,6 @@ nextStep:SetScript("OnClick", function()
         db.setupDraft = nil
         if old then RemovePreviousSet(old.weapon, db.setupEquipment.weapon) end
         handlers.saveKey(key)
-        keyInput:ClearFocus()
         wizard:Hide()
         handlers.say("配置已保存。点击屏幕按钮或按 " .. key .. " 可切换鱼竿与武器。")
         return
@@ -412,11 +475,19 @@ function addon.ShowSetup()
     local setup = db.setupEquipment
     rod = setup and { id = setup.rod.main } or nil
     weapon = setup and { id = setup.weapon.main } or nil
-    keyInput:SetText(handlers.key() or "")
-    wizard:Show()
+    selectedKey = handlers.key()
+    theme.ShowPanel(wizard)
     Render()
 end
 
 function addon.InitializeSetup(settings, callbacks)
     db, handlers = settings, callbacks
+    if not keyCapture then
+        keyCapture = addon.CreateKeyCapture(wizard, "WowfFishingSetupKeyCapture", function(chord)
+            return handlers.validateKey(chord)
+        end, function(key)
+            selectedKey = key
+        end, Render)
+        keyButton:SetScript("OnClick", function() keyCapture:ToggleListening() end)
+    end
 end

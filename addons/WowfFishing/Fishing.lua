@@ -1,4 +1,6 @@
 local _, addon = ...
+local theme = addon.Theme
+local colors = theme.colors
 local FISHING_SPELL_ID = 7620
 local GEAR_BUTTON = "WowfFishingFloatingGear"
 local CAST_BUTTON = "WowfFishingCastButton"
@@ -7,29 +9,23 @@ local LOOT_ITEM = Enum and Enum.LootSlotType and Enum.LootSlotType.Item or LOOT_
 
 local events = CreateFrame("Frame")
 local bindings = CreateFrame("Frame")
-local toolbar = CreateFrame("Frame", "WowfFishingToolbar", UIParent, "BackdropTemplate")
+local toolbar = CreateFrame("Frame", "WowfFishingToolbar", UIParent)
 toolbar:SetSize(184, 54)
 toolbar:SetClampedToScreen(true)
 toolbar:SetMovable(true)
-toolbar:SetBackdrop({
-    bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
-    edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-    edgeSize = 14,
-    insets = { left = 4, right = 4, top = 4, bottom = 4 },
-})
+theme.Fill(toolbar, "BACKGROUND", colors.control)
+theme.Block(toolbar, "BORDER", 1, -1, 182, 52, colors.surface)
 toolbar:Hide()
 
 local function ToolbarIcon(button)
     button:SetSize(ICON_SIZE, ICON_SIZE)
     button:EnableMouse(true)
-    button:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    theme.Fill(button, "BACKGROUND", colors.control)
+    theme.Highlight(button)
     local icon = button:CreateTexture(nil, "ARTWORK")
     icon:SetPoint("TOPLEFT", 2, -2)
     icon:SetPoint("BOTTOMRIGHT", -2, 2)
-    local border = button:CreateTexture(nil, "OVERLAY")
-    border:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-    border:SetPoint("CENTER")
-    border:SetSize(64, 64)
+    icon:SetTexCoord(0.06, 0.94, 0.06, 0.94)
     return icon
 end
 
@@ -42,12 +38,12 @@ gearButton:SetPoint("LEFT", castButton, "RIGHT", 6, 0)
 local gearIcon = ToolbarIcon(gearButton)
 local panelButton = CreateFrame("Button", "WowfFishingPanelToggle", toolbar)
 panelButton:SetPoint("LEFT", gearButton, "RIGHT", 6, 0)
-ToolbarIcon(panelButton):SetColorTexture(0.12, 0.09, 0.06)
+ToolbarIcon(panelButton):SetColorTexture(unpack(colors.selected))
 for y = -6, 6, 6 do
     local bar = panelButton:CreateTexture(nil, "ARTWORK", nil, 1)
     bar:SetPoint("CENTER", panelButton, "CENTER", 0, y)
     bar:SetSize(20, 2)
-    bar:SetColorTexture(0.91, 0.76, 0.47)
+    bar:SetColorTexture(unpack(colors.gold))
 end
 
 local dragHandle = addon.CreateDragHandle(toolbar, "WowfFishingToolbarGrip", "按住左键拖动工具栏")
@@ -318,6 +314,15 @@ local function CountLoot(slot)
     RefreshSummary()
 end
 
+local numpadOperators = {
+    NUMPADDECIMAL = true,
+    NUMPADDIVIDE = true,
+    NUMPADEQUALS = true,
+    NUMPADMINUS = true,
+    NUMPADMULTIPLY = true,
+    NUMPADPLUS = true,
+}
+
 local function NormalizeKey(input)
     local key = input:match("^%s*(.-)%s*$"):upper()
     local remaining = key
@@ -325,13 +330,14 @@ local function NormalizeKey(input)
         remaining = remaining:gsub("^" .. modifier .. "%-", "")
     end
     if remaining:match("^[A-Z0-9]$") then return key end
+    if remaining:match("^NUMPAD[0-9]$") or numpadOperators[remaining] then return key end
     local number = tonumber(remaining:match("^F(%d+)$"))
     if number and number >= 1 and number <= 12 and remaining == "F" .. number then return key end
 end
 
 local function ValidateGearKey(input)
     local key = NormalizeKey(input)
-    if not key then return nil, "请输入字母、数字或 F1–F12，可带修饰键。" end
+    if not key then return nil, "请按字母、数字、F1–F12 或小键盘键，可带修饰键。" end
     if key == db.fishKey then return nil, key .. " 已用于抛竿和收竿。" end
     local action = GetBindingAction(key, true)
     if key ~= GearKey() and action and action ~= "" then
@@ -345,6 +351,24 @@ local function SaveGearKey(key)
     db.useM = key == "M"
     db.gearKey = key
     UpdateEquipment()
+end
+
+local function ValidateFishKey(input)
+    local key = NormalizeKey(input)
+    if not key then return nil, "请按字母、数字、F1–F12 或小键盘键，可带修饰键。" end
+    if key == "M" or key == GearKey() then return nil, "请选择 M 和换装键以外的空闲键。" end
+    local action = GetBindingAction(key, true)
+    if key ~= db.fishKey and action and action ~= "" then
+        return nil, "按键已被占用，请换一个。"
+    end
+    return key
+end
+
+local function SaveFishKey(key)
+    db.fishKey = key
+    UpdateBindings()
+    RefreshSummary()
+    if key then Say(key .. " 用于抛竿和收竿。请在游戏设置中开启「交互键」。") end
 end
 
 local function HandleCommand(input)
@@ -370,20 +394,14 @@ local function HandleCommand(input)
         return
     end
     if command == "bind" then
-        local key = NormalizeKey(argument)
-        if not key or key == "M" or key == GearKey() then
-            Say("请指定空闲的字母、数字或 F1–F12，避开换装键和 M。")
+        local key, errorMessage = ValidateFishKey(argument)
+        if not key then
+            Say(errorMessage)
             return
         end
-        local action = GetBindingAction(key, true)
-        if key ~= db.fishKey and action and action ~= "" then
-            Say(key .. " 已绑定其他操作，请选一个空闲按键。")
-            return
-        end
-        db.fishKey = key
-        Say(key .. " 用于抛竿和收竿。请在游戏设置中开启「交互键」。")
+        SaveFishKey(key)
     elseif command == "unbind" then
-        db.fishKey = nil
+        SaveFishKey(nil)
     elseif command == "m" and (argument == "on" or argument == "off") then
         if argument == "on" then
             SaveGearKey("M")
@@ -397,13 +415,12 @@ local function HandleCommand(input)
         Say("/wowfish setup 打开配置向导；/wowfish loot 查看本次渔获；/wowfish fish 查看鱼类资料；/wowfish bind G 设置抛竿键；/wowfish unbind 释放抛竿键；/wowfish m on/off 管理 M。")
         return
     end
-    UpdateEquipment()
 end
 
 local function Initialize()
     WowfFishingDB = WowfFishingDB or {}
     db = WowfFishingDB
-    addon.InitializeCatchList(db, ToggleAudio)
+    addon.InitializeCatchList(db, ToggleAudio, ValidateFishKey, SaveFishKey)
     addon.InitializeFishCatalog(db)
     if db.useM == nil then db.useM = false end
     if db.enhanceSound == nil then db.enhanceSound = true end

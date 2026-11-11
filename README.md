@@ -1,14 +1,14 @@
 # BobberTally · 无限钓鱼助手
 
-A fishing companion for World of Warcraft: Forever with a movable fishing toolbar, a gear setup wizard, catch tracking, auction house estimates, and a searchable fish catalog.
+A fishing companion for World of Warcraft: Forever with a movable fishing toolbar, a gear setup wizard, catch tracking, auction house estimates, and a searchable catalog of fish and cooking recipes.
 
 [中文主页与安装说明](https://bluexp.github.io/bobber-tally/) · [English homepage and installation guide](https://bluexp.github.io/bobber-tally/en/)
 
-BobberTally 记录本次钓到的物品和数量，分别计算拍卖行估值与 NPC 售价。鱼类资料库收录 88 条记录，并保存角色实际钓获的地点和数量。
+BobberTally 记录本次钓到的物品和数量，分别计算拍卖行估值与 NPC 售价。资料库收录 88 条鱼类记录和 24 条烹饪配方。点击参考钓点可打开游戏地图，角色实际钓获的地点和数量会保存在本地。
 
 ## 安装
 
-1. 下载 [BobberTally v0.5.7 ZIP](https://bluexp.github.io/bobber-tally/downloads/BobberTally-v0.5.7.zip) 并解压。
+1. 下载 [BobberTally v0.5.14 ZIP](https://bluexp.github.io/bobber-tally/downloads/BobberTally-v0.5.14.zip) 并解压。
 2. 将解压得到的 `WowfFishing` 文件夹复制到《魔兽世界：无限》客户端的 `_forever_/Interface/AddOns/`。
 3. 重启游戏并启用「无限钓鱼助手」。适用客户端接口版本 16001。
 

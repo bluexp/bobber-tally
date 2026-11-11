@@ -1,4 +1,6 @@
 local _, addon = ...
+local theme = addon.Theme
+local colors = theme.colors
 local catches, catchesByName, catchesByID = {}, {}, {}
 local rows = {}
 local visibleRows, rowHeight = 7, 33
@@ -12,11 +14,13 @@ function addon.CreateDragHandle(parent, name, tooltip)
     handle:SetSize(26, 26)
     handle:EnableMouse(true)
     handle:RegisterForDrag("LeftButton")
+    theme.Fill(handle, "BACKGROUND", colors.control)
+    theme.Highlight(handle)
     local function DrawMark(x, y, width, height)
         local mark = handle:CreateTexture(nil, "ARTWORK")
         mark:SetPoint("CENTER", handle, "CENTER", x, y)
         mark:SetSize(width, height)
-        mark:SetColorTexture(0.91, 0.76, 0.47)
+        mark:SetColorTexture(unpack(colors.gold))
     end
     DrawMark(0, 0, 16, 2)
     DrawMark(0, 0, 2, 16)
@@ -37,17 +41,14 @@ function addon.CreateDragHandle(parent, name, tooltip)
     return handle
 end
 
-local panel = CreateFrame("Frame", "WowfFishingCatchList", UIParent, "BasicFrameTemplateWithInset")
+local panel = theme.CreatePanel("WowfFishingCatchList")
 local detailOffset = 82
 local footerExtra = 28
 local panelHeight = 366 + detailOffset + footerExtra
 panel:SetSize(508, panelHeight)
 panel:SetPoint("CENTER", UIParent, "CENTER", 0, 35)
-panel:SetClampedToScreen(true)
-panel:SetFrameStrata("DIALOG")
 panel:SetMovable(true)
-panel:EnableMouse(true)
-panel:Hide()
+local surface = theme.Surface(panel)
 
 local titleBar = CreateFrame("Frame", "WowfFishingCatchListTitleBar", panel)
 titleBar:SetPoint("TOPLEFT", 8, -2)
@@ -74,54 +75,57 @@ end
 titleBar:SetScript("OnDragStop", StopMoving)
 panel:SetScript("OnHide", StopMoving)
 
-local function Label(parent, font, x, y, width, alignment)
-    local label = parent:CreateFontString(nil, "OVERLAY", font)
-    label:SetPoint("TOPLEFT", x, y)
-    label:SetWidth(width)
-    label:SetJustifyH(alignment or "LEFT")
+local function Label(parent, font, x, y, width, alignment, color)
+    local label = theme.Label(parent, font, x, y, width, alignment, color)
     label:SetMaxLines(1)
     return label
 end
 
-local title = Label(panel, "GameFontHighlight", 12, -6, 240)
-title:SetText("无限钓鱼助手 · 本次渔获")
+Label(panel, "GameFontHighlight", 16, -4, 240):SetText("无限钓鱼助手 · 本次渔获")
 
-local status = Label(panel, "GameFontNormal", 16, -34, 205)
-local stats = Label(panel, "GameFontHighlight", 224, -34, 268, "RIGHT")
-local recent = Label(panel, "GameFontHighlightSmall", 16, -56, 250)
-local hint = Label(panel, "GameFontDisableSmall", 269, -56, 223, "RIGHT")
-local setupButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-setupButton:SetSize(92, 24)
+local status = Label(surface, "GameFontHighlight", 16, -34, 205, nil, colors.gold)
+local stats = Label(surface, "GameFontHighlight", 224, -34, 268, "RIGHT", colors.text)
+local recent = Label(surface, "GameFontHighlightSmall", 16, -56, 250, nil, colors.muted)
+local hint = Label(surface, "GameFontHighlightSmall", 269, -56, 223, "RIGHT", colors.muted)
+local setupButton = theme.Button(surface, nil, "配置向导", 92, 25)
 setupButton:SetPoint("TOPLEFT", 14, -75)
-setupButton:SetText("配置向导")
 setupButton:SetScript("OnClick", function() addon.ShowSetup() end)
-local audioButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-audioButton:SetSize(112, 24)
+local audioButton = theme.Button(surface, nil, "", 112, 25)
 audioButton:SetPoint("LEFT", setupButton, "RIGHT", 6, 0)
-local catalogButton = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-catalogButton:SetSize(90, 24)
+local catalogButton = theme.Button(surface, nil, "鱼类资料", 90, 25, true)
 catalogButton:SetPoint("LEFT", audioButton, "RIGHT", 8, 0)
-catalogButton:SetText("鱼类资料")
 catalogButton:SetScript("OnClick", function() addon.ToggleFishCatalog() end)
+local fishKeyButton = theme.Button(surface, "WowfFishingCatchKey", "", 156, 25)
+fishKeyButton:SetPoint("LEFT", catalogButton, "RIGHT", 8, 0)
+local fishKeyCapture
+
+local function RefreshFishKey(notice)
+    local listening = fishKeyCapture:IsListening()
+    fishKeyButton:SetText(listening and "请按快捷键…" or "设置抛竿 / 收竿键")
+    if notice then
+        hint:SetText(notice)
+    elseif listening then
+        hint:SetText("按下快捷键，或按 Esc 取消")
+    else
+        hint:SetText(settings.fishKey and ("抛竿 / 收竿  " .. settings.fishKey) or "抛竿 / 收竿键未设置")
+    end
+end
 
 function addon.UpdateCatchSummary(state, castCount, catchCount, itemCount, lastCatch)
     status:SetText(state)
     stats:SetText(("抛竿 %d 次 · 收获 %d 竿 / %d 件"):format(castCount, catchCount, itemCount))
     recent:SetText("最近渔获 " .. lastCatch)
-    hint:SetText(settings.fishKey and ("抛竿 / 收竿  " .. settings.fishKey) or "设置抛竿键  /wowfish bind G")
+    if not fishKeyCapture:IsListening() then RefreshFishKey() end
     audioButton:SetText(settings.enhanceSound and "水花声：增强" or "水花声：原音")
 end
 
-local summaryDivider = panel:CreateTexture(nil, "ARTWORK")
-summaryDivider:SetPoint("TOPLEFT", 15, -108)
-summaryDivider:SetSize(478, 1)
-summaryDivider:SetColorTexture(1, 1, 1, 0.18)
-Label(panel, "GameFontNormalSmall", 16, -37 - detailOffset, 180):SetText("物品")
-Label(panel, "GameFontNormalSmall", 208, -37 - detailOffset, 48, "RIGHT"):SetText("数量")
-Label(panel, "GameFontNormalSmall", 268, -37 - detailOffset, 132):SetText("拍卖行最低单价")
-Label(panel, "GameFontNormalSmall", 405, -37 - detailOffset, 90):SetText("卖给 NPC")
+theme.Block(surface, "BORDER", 14, -111, 480, 294, colors.card)
+Label(surface, "GameFontHighlightSmall", 24, -37 - detailOffset, 172, nil, colors.gold):SetText("物品")
+Label(surface, "GameFontHighlightSmall", 208, -37 - detailOffset, 48, "RIGHT", colors.gold):SetText("数量")
+Label(surface, "GameFontHighlightSmall", 268, -37 - detailOffset, 132, nil, colors.gold):SetText("拍卖行最低单价")
+Label(surface, "GameFontHighlightSmall", 405, -37 - detailOffset, 89, nil, colors.gold):SetText("卖给 NPC")
 
-local list = CreateFrame("Frame", nil, panel)
+local list = CreateFrame("Frame", nil, surface)
 list:SetPoint("TOPLEFT", 14, -54 - detailOffset)
 list:SetSize(480, visibleRows * rowHeight)
 list:EnableMouseWheel(true)
@@ -133,14 +137,21 @@ for i = 1, visibleRows do
     local background = row:CreateTexture(nil, "BACKGROUND")
     background:SetAllPoints()
     background:SetColorTexture(1, 1, 1, i % 2 == 0 and 0.045 or 0.015)
-    row.name = Label(row, "GameFontHighlight", 2, -8, 184)
+    row.hover = theme.Fill(row, "ARTWORK", colors.hover)
+    row.hover:Hide()
+    row.icon = row:CreateTexture(nil, "ARTWORK", nil, 1)
+    row.icon:SetPoint("LEFT", 10, 0)
+    row.icon:SetSize(21, 21)
+    row.icon:SetTexCoord(0.06, 0.94, 0.06, 0.94)
+    row.name = Label(row, "GameFontHighlight", 39, -8, 147, nil, colors.text)
     row.quantity = Label(row, "GameFontHighlight", 194, -8, 48, "RIGHT")
     row.auction = Label(row, "GameFontHighlight", 254, -3, 132)
-    row.quoteTime = Label(row, "GameFontDisableSmall", 254, -18, 132)
+    row.quoteTime = Label(row, "GameFontHighlightSmall", 254, -18, 132, nil, colors.muted)
     row.vendor = Label(row, "GameFontHighlight", 391, -8, 88)
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
         if not self.item then return end
+        self.hover:Show()
         GameTooltip:SetOwner(self, "ANCHOR_LEFT")
         if self.item.itemID then
             GameTooltip:SetItemByID(self.item.itemID)
@@ -149,39 +160,37 @@ for i = 1, visibleRows do
         end
         GameTooltip:Show()
     end)
-    row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    row:SetScript("OnLeave", function(self)
+        self.hover:Hide()
+        GameTooltip:Hide()
+    end)
     rows[i] = row
 end
 
-local empty = Label(list, "GameFontDisable", 0, -85, 480, "CENTER")
+local empty = Label(list, "GameFontHighlight", 0, -107, 480, "CENTER", colors.muted)
 empty:SetText("本次还没有钓到物品")
 
-local divider = panel:CreateTexture(nil, "ARTWORK")
-divider:SetPoint("TOPLEFT", 15, -286 - detailOffset)
-divider:SetSize(478, 1)
-divider:SetColorTexture(1, 1, 1, 0.18)
-Label(panel, "GameFontNormal", 16, -295 - detailOffset, 180):SetText("本次合计")
-local totalQuantity = Label(panel, "GameFontHighlight", 208, -295 - detailOffset, 48, "RIGHT")
-local auctionTotal = Label(panel, "GameFontHighlight", 268, -295 - detailOffset, 132)
-local auctionCoverage = Label(panel, "GameFontDisableSmall", 268, -310 - detailOffset, 132)
-local vendorTotal = Label(panel, "GameFontHighlight", 405, -295 - detailOffset, 90)
-local vendorCoverage = Label(panel, "GameFontDisableSmall", 405, -310 - detailOffset, 90)
+theme.Block(surface, "ARTWORK", 24, -286 - detailOffset, 460, 1, colors.divider)
+Label(surface, "GameFontHighlight", 24, -295 - detailOffset, 180, nil, colors.gold):SetText("本次合计")
+local totalQuantity = Label(surface, "GameFontHighlight", 208, -295 - detailOffset, 48, "RIGHT")
+local auctionTotal = Label(surface, "GameFontHighlight", 268, -295 - detailOffset, 132)
+local auctionCoverage = Label(surface, "GameFontHighlightSmall", 268, -310 - detailOffset, 132, nil, colors.muted)
+local vendorTotal = Label(surface, "GameFontHighlight", 405, -295 - detailOffset, 89)
+local vendorCoverage = Label(surface, "GameFontHighlightSmall", 405, -310 - detailOffset, 89, nil, colors.muted)
 
-local function FooterButton(text, width, x, y)
-    local button = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
-    button:SetSize(width, 24)
+local function FooterButton(text, width, x, y, primary)
+    local button = theme.Button(surface, nil, text, width, 24, primary)
     button:SetPoint("BOTTOMLEFT", x, y)
-    button:SetText(text)
     return button
 end
 
-local refresh = FooterButton("更新拍卖价", 108, 14, 12 + footerExtra)
-local previous = FooterButton("‹", 25, 370, 12 + footerExtra)
-local following = FooterButton("›", 25, 471, 12 + footerExtra)
+local refresh = FooterButton("更新拍卖价", 108, 14, 12 + footerExtra, true)
+local previous = FooterButton("上页", 40, 344, 12 + footerExtra)
+local following = FooterButton("下页", 40, 454, 12 + footerExtra)
 local footerTextY = 31 + footerExtra - panelHeight
-local page = Label(panel, "GameFontDisableSmall", 399, footerTextY, 68, "CENTER")
-local message = Label(panel, "GameFontDisableSmall", 128, footerTextY, 235)
-local aboutButton = FooterButton("关于", 64, 432, 10)
+local page = Label(surface, "GameFontHighlightSmall", 387, footerTextY, 64, "CENTER", colors.muted)
+local message = Label(surface, "GameFontHighlightSmall", 130, footerTextY, 209, nil, colors.muted)
+local aboutButton = FooterButton("关于", 64, 430, 10)
 aboutButton:SetScript("OnClick", function() addon.ToggleAbout() end)
 
 local function Money(copper)
@@ -231,6 +240,7 @@ local function Refresh()
         if item then
             local quote = item.itemID and quotes[item.itemID]
             local vendor = item.vendorPrice
+            row.icon:SetTexture(theme.ItemIcon(item.itemID))
             row.name:SetText(item.name)
             row.quantity:SetText(item.quantity)
             row.auction:SetText(quote and Money(quote.copper) or "未报价")
@@ -239,11 +249,14 @@ local function Refresh()
         end
     end
     RefreshTotals()
+    previous:SetShown(total > visibleRows)
+    following:SetShown(total > visibleRows)
     previous:SetEnabled(firstRow > 1)
     following:SetEnabled(lastRow < total)
     page:SetText(total > 0 and ("%d–%d / %d"):format(firstRow, lastRow, total) or "")
-    refresh:SetEnabled(auctionOpen and not scan and total > 0)
-    message:SetText(auctionMessage or (auctionOpen and "查询当前挂单" or "打开拍卖行后可更新"))
+    refresh:SetEnabled(auctionOpen and not scan)
+    local queryHint = next(catchesByID) and "查询当前挂单" or "查询资料库鱼类和成品"
+    message:SetText(auctionMessage or (auctionOpen and queryHint or "打开拍卖行后可更新"))
     addon.RefreshFishCatalog()
 end
 
@@ -287,11 +300,15 @@ function addon.RecordCatch(itemID, name, quantity)
     if panel:IsShown() then Refresh() end
 end
 
-function addon.InitializeCatchList(db, toggleAudio)
+function addon.InitializeCatchList(db, toggleAudio, validateFishKey, saveFishKey)
     settings = db
     db.auctionQuotes = db.auctionQuotes or {}
     quotes = db.auctionQuotes
     audioButton:SetScript("OnClick", toggleAudio)
+    if not fishKeyCapture then
+        fishKeyCapture = addon.CreateKeyCapture(panel, "WowfFishingCatchKeyCapture", validateFishKey, saveFishKey, RefreshFishKey)
+        fishKeyButton:SetScript("OnClick", function() fishKeyCapture:ToggleListening() end)
+    end
     local position = db.catchPanelPosition
     if position then
         panel:ClearAllPoints()
@@ -304,7 +321,7 @@ function addon.IsCatchListShown()
 end
 
 function addon.ToggleCatchList()
-    panel:SetShown(not panel:IsShown())
+    theme.TogglePanel(panel)
 end
 
 local function FinishScan(text)
@@ -343,13 +360,16 @@ refresh:SetScript("OnClick", function()
         end
     end
     if #ids == 0 then
-        auctionMessage = "渔获没有可查询的物品编号"
-        Refresh()
-        return
+        for _, fish in ipairs(addon.FishData.entries) do
+            ids[#ids + 1] = fish.id
+        end
+        for _, recipe in ipairs(addon.CookingData.entries) do
+            ids[#ids + 1] = recipe.itemID
+        end
     end
     scan = { ids = ids, offset = 1, found = 0 }
     scan.timeout = C_Timer.NewTimer(45, function() FinishScan("查询超时，可重新更新") end)
-    auctionMessage = "正在查询拍卖行…"
+    auctionMessage = ("正在查询 %d 种物品…"):format(#ids)
     Refresh()
     SendQuery()
 end)
