@@ -1,4 +1,5 @@
 local _, addon = ...
+local L = addon.L
 local theme = addon.Theme
 local colors = theme.colors
 local FISHING_SPELL_ID = 7620
@@ -52,7 +53,7 @@ dragHandle:SetPoint("LEFT", panelButton, "RIGHT", 6, 0)
 panelButton:SetScript("OnClick", addon.ToggleCatchList)
 panelButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(addon.IsCatchListShown() and "收起钓鱼面板" or "打开钓鱼面板")
+    GameTooltip:SetText(addon.IsCatchListShown() and L["收起钓鱼面板"] or L["打开钓鱼面板"])
     GameTooltip:Show()
 end)
 panelButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -95,12 +96,12 @@ dragHandle:SetScript("OnDragStop", StopMovingToolbar)
 toolbar:SetScript("OnHide", StopMovingToolbar)
 castButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(fishing and "正在钓鱼" or (hasPole and "点击抛竿" or "请先装备鱼竿"))
+    GameTooltip:SetText(fishing and L["正在钓鱼"] or (hasPole and L["点击抛竿"] or L["请先装备鱼竿"]))
     if fishing then
-        GameTooltip:AddLine("听到水花声后，右键点击浮漂。", 1, 1, 1)
+        GameTooltip:AddLine(L["听到水花声后，右键点击浮漂。"], 1, 1, 1)
     end
     if db.fishKey then
-        GameTooltip:AddLine("抛竿与收竿快捷键  " .. db.fishKey, 1, 1, 1)
+        GameTooltip:AddLine(L["抛竿与收竿快捷键  "] .. db.fishKey, 1, 1, 1)
     end
     GameTooltip:Show()
 end)
@@ -114,7 +115,7 @@ local function UpdateCastButton()
 end
 
 local function Say(message)
-    print("|cff63c6ea无限钓鱼助手|r " .. message)
+    print("|cff63c6ea" .. L["无限钓鱼助手"] .. "|r " .. message)
 end
 
 local function GearKey()
@@ -123,19 +124,19 @@ end
 
 gearButton:SetScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(hasPole and "恢复武器" or "装备鱼竿")
+    GameTooltip:SetText(hasPole and L["恢复武器"] or L["装备鱼竿"])
     local key = GearKey()
-    if key then GameTooltip:AddLine("换装快捷键  " .. key, 1, 1, 1) end
+    if key then GameTooltip:AddLine(L["换装快捷键  "] .. key, 1, 1, 1) end
     GameTooltip:Show()
 end)
 gearButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 local function RefreshSummary()
-    local state = "普通装备"
+    local state = L["普通装备"]
     if fishing then
-        state = "已抛竿，等待浮漂水花声"
+        state = L["已抛竿，等待浮漂水花声"]
     elseif hasPole then
-        state = "鱼竿已装备，可以抛竿"
+        state = L["鱼竿已装备，可以抛竿"]
     end
     addon.UpdateCatchSummary(state, casts, catches, itemCount, lastCatch)
 end
@@ -227,7 +228,7 @@ end
 
 local function ToggleEquipment()
     if InCombatLockdown() then
-        Say("脱离战斗后再切换装备。")
+        Say(L["脱离战斗后再切换装备。"])
         return
     end
     if GetTime() < swappingUntil then return end
@@ -237,19 +238,19 @@ local function ToggleEquipment()
     if db.setupEquipment then
         local rodID, weaponID = addon.GetSetupEquipment()
         if not rodID or not weaponID then
-            Say("鱼竿或武器方案已变更，请重新运行 /wowfish setup。")
+            Say(L["鱼竿或武器方案已变更，请重新运行 /wowfish setup。"])
             return
         end
         targetID = poleEquipped and weaponID or rodID
         local _, _, _, _, _, _, _, missing = api.GetEquipmentSetInfo(targetID)
         if missing and missing > 0 then
-            Say("找不到所需装备，请检查背包。")
+            Say(L["找不到所需装备，请检查背包。"])
             return
         end
     else
         local backupID = api.GetEquipmentSetID("W")
         if not backupID then
-            Say("请在配置向导选择武器，或在装备管理器创建 W。")
+            Say(L["请在配置向导选择武器，或在装备管理器创建 W。"])
             return
         end
         targetID = backupID
@@ -257,7 +258,7 @@ local function ToggleEquipment()
             targetID = api.GetEquipmentSetID("F")
             local items = targetID and api.GetItemIDs(targetID)
             if not items or not addon.IsFishingPole(items[16]) then
-                Say("请在配置向导选择鱼竿，或把鱼竿保存为装备方案 F 的主手武器。")
+                Say(L["请在配置向导选择鱼竿，或把鱼竿保存为装备方案 F 的主手武器。"])
                 return
             end
             api.SaveEquipmentSet(backupID)
@@ -266,7 +267,7 @@ local function ToggleEquipment()
     swappingUntil = GetTime() + 1
     if not api.UseEquipmentSet(targetID) then
         swappingUntil = 0
-        Say("切换装备失败，请检查背包空间和装备方案。")
+        Say(L["切换装备失败，请检查背包空间和装备方案。"])
         return
     end
     UpdateEquipment()
@@ -337,11 +338,11 @@ end
 
 local function ValidateGearKey(input)
     local key = NormalizeKey(input)
-    if not key then return nil, "请按字母、数字、F1–F12 或小键盘键，可带修饰键。" end
-    if key == db.fishKey then return nil, key .. " 已用于抛竿和收竿。" end
+    if not key then return nil, L["请按字母、数字、F1–F12 或小键盘键，可带修饰键。"] end
+    if key == db.fishKey then return nil, key .. L[" 已用于抛竿和收竿。"] end
     local action = GetBindingAction(key, true)
     if key ~= GearKey() and action and action ~= "" then
-        return nil, key .. " 已绑定其他操作，请换一个空闲键。"
+        return nil, key .. L[" 已绑定其他操作，请换一个空闲键。"]
     end
     return key
 end
@@ -355,11 +356,11 @@ end
 
 local function ValidateFishKey(input)
     local key = NormalizeKey(input)
-    if not key then return nil, "请按字母、数字、F1–F12 或小键盘键，可带修饰键。" end
-    if key == "M" or key == GearKey() then return nil, "请选择 M 和换装键以外的空闲键。" end
+    if not key then return nil, L["请按字母、数字、F1–F12 或小键盘键，可带修饰键。"] end
+    if key == "M" or key == GearKey() then return nil, L["请选择 M 和换装键以外的空闲键。"] end
     local action = GetBindingAction(key, true)
     if key ~= db.fishKey and action and action ~= "" then
-        return nil, "按键已被占用，请换一个。"
+        return nil, L["按键已被占用，请换一个。"]
     end
     return key
 end
@@ -368,7 +369,7 @@ local function SaveFishKey(key)
     db.fishKey = key
     UpdateBindings()
     RefreshSummary()
-    if key then Say(key .. " 用于抛竿和收竿。请在游戏设置中开启「交互键」。") end
+    if key then Say(key .. L[" 用于抛竿和收竿。请在游戏设置中开启「交互键」。"]) end
 end
 
 local function HandleCommand(input)
@@ -389,8 +390,18 @@ local function HandleCommand(input)
         addon.ShowSetup()
         return
     end
+    if command == "lang" then
+        argument = argument:lower()
+        if argument == "zh" or argument == "en" or argument == "auto" then
+            db.language = argument ~= "auto" and argument or nil
+            Say(L["语言已保存。输入 /reload 应用。"])
+        else
+            Say(L["语言设置命令为 /wowfish lang zh、/wowfish lang en 或 /wowfish lang auto。"])
+        end
+        return
+    end
     if InCombatLockdown() then
-        Say("脱离战斗后再修改按键。")
+        Say(L["脱离战斗后再修改按键。"])
         return
     end
     if command == "bind" then
@@ -405,14 +416,15 @@ local function HandleCommand(input)
     elseif command == "m" and (argument == "on" or argument == "off") then
         if argument == "on" then
             SaveGearKey("M")
-            Say("M 已用于切换钓鱼装备。")
+            Say(L["M 已用于切换钓鱼装备。"])
         elseif GearKey() == "M" then
             SaveGearKey(nil)
-            Say("已释放 M。")
+            Say(L["已释放 M。"])
         end
         return
     else
-        Say("/wowfish setup 打开配置向导；/wowfish loot 查看本次渔获；/wowfish fish 查看鱼类资料；/wowfish bind G 设置抛竿键；/wowfish unbind 释放抛竿键；/wowfish m on/off 管理 M。")
+        Say(L["/wowfish setup 打开配置向导；/wowfish loot 查看本次渔获；/wowfish fish 查看鱼类资料；/wowfish bind G 设置抛竿键；/wowfish unbind 释放抛竿键；/wowfish m on/off 管理 M。"])
+        Say(L["语言设置命令为 /wowfish lang zh、/wowfish lang en 或 /wowfish lang auto。"])
         return
     end
 end
@@ -420,6 +432,7 @@ end
 local function Initialize()
     WowfFishingDB = WowfFishingDB or {}
     db = WowfFishingDB
+    addon.InitializeLocale(db.language)
     addon.InitializeCatchList(db, ToggleAudio, ValidateFishKey, SaveFishKey)
     addon.InitializeFishCatalog(db)
     if db.useM == nil then db.useM = false end

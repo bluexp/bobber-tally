@@ -1,7 +1,9 @@
 local _, addon = ...
+local L = addon.L
 local theme = addon.Theme
 local colors = theme.colors
 local data, cooking = addon.FishData, addon.CookingData
+local english = addon.EnglishCatalog
 local fishByID, recipesByFish, items = {}, {}, {}
 
 for _, fish in ipairs(data.entries) do
@@ -53,7 +55,7 @@ titleBar:RegisterForDrag("LeftButton")
 titleBar:SetScript("OnDragStart", function() panel:StartMoving() end)
 titleBar:SetScript("OnDragStop", function() panel:StopMovingOrSizing() end)
 panel:SetScript("OnHide", function() panel:StopMovingOrSizing() end)
-Label(panel, "GameFontHighlight", 16, -4, 400):SetText("无限钓鱼助手 · 资料库")
+addon.SetLocalizedText(Label(panel, "GameFontHighlight", 16, -4, 400), "无限钓鱼助手 · 资料库")
 
 local function Button(parent, x, y, width, height, text)
     local button = CreateFrame("Button", nil, parent)
@@ -62,7 +64,7 @@ local function Button(parent, x, y, width, height, text)
     theme.Highlight(button)
     button.label = Label(button, "GameFontHighlightSmall", 0, -(height - 12) / 2, width)
     button.label:SetJustifyH("CENTER")
-    button.label:SetText(text)
+    addon.SetLocalizedText(button.label, text)
     return button
 end
 
@@ -125,7 +127,15 @@ end)
 local source = Label(surface, "GameFontDisableSmall", 276, -431, 461)
 
 local function ItemName(itemID)
-    return C_Item.GetItemInfo(itemID) or items[itemID] or ("物品 %d"):format(itemID)
+    local fallback = (addon.IsEnglish() and english.items[itemID]) or items[itemID]
+    if addon.PreferClientNames() then
+        return C_Item.GetItemInfo(itemID) or fallback or (L["物品 %d"]):format(itemID)
+    end
+    return fallback or C_Item.GetItemInfo(itemID) or (L["物品 %d"]):format(itemID)
+end
+
+local function RecipeName(recipe)
+    return (addon.PreferClientNames() and C_Spell.GetSpellName(recipe.spellID)) or ItemName(recipe.itemID)
 end
 
 local ItemIcon = theme.ItemIcon
@@ -142,57 +152,63 @@ end
 AttachItemTooltip(iconButton)
 
 local function ZoneName(areaID)
-    return C_Map.GetAreaInfo(areaID) or data.zones[areaID] or tostring(areaID)
+    local fallback = (addon.IsEnglish() and english.zones[areaID]) or data.zones[areaID]
+    if addon.PreferClientNames() then
+        return C_Map.GetAreaInfo(areaID) or fallback or tostring(areaID)
+    end
+    return fallback or C_Map.GetAreaInfo(areaID) or tostring(areaID)
 end
 
 local function ZoneNames(ids)
     local names = {}
     for _, id in ipairs(ids) do names[#names + 1] = ZoneName(id) end
-    return table.concat(names, "、")
+    return table.concat(names, L["、"])
 end
 
 local function PriceLines(itemID, fallbackVendor)
     local vendor = select(11, C_Item.GetItemInfo(itemID)) or fallbackVendor
     local quote = quotes[itemID]
     local lines = {
-        "NPC 出售  " .. (vendor and (vendor > 0 and addon.FormatMoney(vendor) or "不可出售") or "待查询"),
-        "拍卖行单价  " .. (quote and addon.FormatMoney(quote.copper) or "未报价"),
+        L["NPC 出售  "] .. (vendor and (vendor > 0 and addon.FormatMoney(vendor) or L["不可出售"]) or L["待查询"]),
+        L["拍卖行单价  "] .. (quote and addon.FormatMoney(quote.copper) or L["未报价"]),
     }
-    if quote then lines[#lines + 1] = "报价时间  " .. date("%m-%d %H:%M", quote.time) end
+    if quote then lines[#lines + 1] = L["报价时间  "] .. date("%m-%d %H:%M", quote.time) end
     return table.concat(lines, "\n")
 end
 
 local function FishDetails(fish)
     local text = {
-        "|cffe9c483价格|r",
+        L["|cffe9c483价格|r"],
         PriceLines(fish.id, fish.vendorPrice),
     }
     local recipes = recipesByFish[fish.id]
     if recipes then
         local names = {}
-        for _, recipe in ipairs(recipes) do names[#names + 1] = recipe.name end
-        text[#text + 1] = "\n|cffe9c483烹饪配方|r"
-        text[#text + 1] = table.concat(names, "、")
+        for _, recipe in ipairs(recipes) do names[#names + 1] = RecipeName(recipe) end
+        text[#text + 1] = L["\n|cffe9c483烹饪配方|r"]
+        text[#text + 1] = table.concat(names, L["、"])
     end
     if fish.uses then
-        text[#text + 1] = "\n|cffe9c483其他用途|r"
-        text[#text + 1] = table.concat(fish.uses, "、")
+        text[#text + 1] = L["\n|cffe9c483其他用途|r"]
+        local uses = {}
+        for _, key in ipairs(fish.uses) do uses[#uses + 1] = L[key] end
+        text[#text + 1] = table.concat(uses, L["、"])
     end
     return table.concat(text, "\n")
 end
 
 local function FishNotes(fish)
-    local text = { fish.zoneSource }
-    if fish.note then text[#text + 1] = fish.note end
+    local text = { L[fish.zoneSource] }
+    if fish.note then text[#text + 1] = L[fish.note] end
     local observed = observations[fish.id]
-    text[#text + 1] = "\n|cffe9c483本角色钓获|r"
-    text[#text + 1] = ("累计 %d 件"):format(observed and observed.quantity or 0)
+    text[#text + 1] = L["\n|cffe9c483本角色钓获|r"]
+    text[#text + 1] = (L["累计 %d 件"]):format(observed and observed.quantity or 0)
     local zones = {}
     for zone, quantity in pairs(observed and observed.zones or {}) do
         zones[#zones + 1] = ("%s ×%d"):format(zone, quantity)
     end
     table.sort(zones)
-    if #zones > 0 then text[#text + 1] = table.concat(zones, "、") end
+    if #zones > 0 then text[#text + 1] = table.concat(zones, L["、"]) end
     return table.concat(text, "\n")
 end
 
@@ -221,7 +237,7 @@ local function RenderLocations(fish)
 
     local x, y = 0, height + 14
     locationsTitle:SetPoint("TOPLEFT", 0, -y)
-    locationsTitle:SetText("参考钓点")
+    locationsTitle:SetText(L["参考钓点"])
     y = y + locationsTitle:GetStringHeight() + 6
     for index, areaID in ipairs(fish.zones) do
         local button = locationButtons[index]
@@ -232,7 +248,7 @@ local function RenderLocations(fish)
                 if not self.mapID then return end
                 local map = C_Map.GetMapInfo(self.mapID)
                 GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                GameTooltip:SetText("打开地图 · " .. (map and map.name or self:GetText()))
+                GameTooltip:SetText(L["打开地图 · "] .. (map and map.name or self:GetText()))
                 GameTooltip:Show()
             end)
             button:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -257,7 +273,7 @@ local function RenderLocations(fish)
     if zoneCount > 0 then y = y + 30 end
     locationNotes:SetPoint("TOPLEFT", 0, -y)
     local notes = FishNotes(fish)
-    locationNotes:SetText(zoneCount > 0 and notes or ("待确认\n" .. notes))
+    locationNotes:SetText(zoneCount > 0 and notes or (L["待确认\n"] .. notes))
     return y + locationNotes:GetStringHeight()
 end
 
@@ -268,11 +284,11 @@ local function CookingDetails(recipe)
         materials[#materials + 1] = ("|T%d:16:16|t  %s ×%d"):format(ItemIcon(itemID), ItemName(itemID), quantity)
     end
     return table.concat({
-        "|cffe9c483技能与材料|r",
-        ("烹饪 %d 变黄  ·  %d 变绿  ·  %d 变灰"):format(recipe.yellow, math.floor((recipe.yellow + recipe.grey) / 2), recipe.grey),
+        L["|cffe9c483技能与材料|r"],
+        (L["烹饪 %d 变黄  ·  %d 变绿  ·  %d 变灰"]):format(recipe.yellow, math.floor((recipe.yellow + recipe.grey) / 2), recipe.grey),
         table.concat(materials, "\n"),
         "",
-        "|cffe9c483成品|r",
+        L["|cffe9c483成品|r"],
         ("%s ×%d"):format(ItemName(recipe.itemID), recipe.quantity),
         PriceLines(recipe.itemID),
     }, "\n")
@@ -280,14 +296,14 @@ end
 
 local function EntryName(entry)
     if entry.id then return ItemName(entry.id) end
-    return C_Spell.GetSpellName(entry.spellID) or entry.name
+    return RecipeName(entry)
 end
 
 local function RenderDetails()
     iconButton:SetShown(selected ~= nil)
     related:SetShown(selected ~= nil and recipesByFish[selected.id] ~= nil)
     if not selected then
-        nameLabel:SetText("没有匹配的条目")
+        nameLabel:SetText(L["没有匹配的条目"])
         subtitle:SetText("")
         description:SetText("")
         RenderLocations(nil)
@@ -299,10 +315,10 @@ local function RenderDetails()
     largeIcon:SetTexture(ItemIcon(itemID))
     nameLabel:SetText(EntryName(selected))
     if selected.id then
-        subtitle:SetText(("%s  ·  物品 %d"):format(selected.category, itemID))
+        subtitle:SetText((L["%s  ·  物品 %d"]):format(L[selected.category], itemID))
         description:SetText(FishDetails(selected))
     else
-        subtitle:SetText(("烹饪配方  ·  成品 %d"):format(itemID))
+        subtitle:SetText((L["烹饪配方  ·  成品 %d"]):format(itemID))
         description:SetText(CookingDetails(selected))
     end
     content:SetHeight(math.max(256, RenderLocations(selected.id and selected) + 10))
@@ -324,7 +340,7 @@ local function RenderList()
         end
     end
     local total = mode == "fish" and #data.entries or #cooking.entries
-    count:SetText(("%d / %d 条"):format(#filtered, total))
+    count:SetText((L["%d / %d 条"]):format(#filtered, total))
 end
 
 for i = 1, visibleRows do
@@ -363,7 +379,7 @@ local function Matches(entry, query, numeric)
     if query == "" then return true end
     if entry.id then
         if numeric then return entry.id == numeric end
-        return table.concat({ItemName(entry.id), entry.category, ZoneNames(entry.zones)}, " "):lower():find(query, 1, true)
+        return table.concat({ItemName(entry.id), L[entry.category], ZoneNames(entry.zones)}, " "):lower():find(query, 1, true)
     end
     if numeric and (entry.itemID == numeric or entry.spellID == numeric) then return true end
     if not numeric and (EntryName(entry) .. " " .. ItemName(entry.itemID)):lower():find(query, 1, true) then return true end
@@ -407,8 +423,8 @@ local function SelectMode(value, query, preferred)
         tab.line:SetShown(active)
         tab.label:SetTextColor(active and 0.94 or 0.66, active and 0.75 or 0.74, active and 0.44 or 0.8)
     end
-    searchHint:SetText(mode == "fish" and "搜索鱼名、地点、类别或物品编号" or "搜索配方、材料、成品或编号")
-    source:SetText("客户端 " .. data.build .. (mode == "fish" and "  ·  钓点含经典参考" or "  ·  悬停成品图标查看游戏说明"))
+    searchHint:SetText(mode == "fish" and L["搜索鱼名、地点、类别或物品编号"] or L["搜索配方、材料、成品或编号"])
+    source:SetText(L["客户端 "] .. data.build .. (mode == "fish" and L["  ·  钓点含经典参考"] or L["  ·  悬停成品图标查看游戏说明"]))
     search:ClearFocus()
     query = query or ""
     if search:GetText() ~= query then search:SetText(query) end

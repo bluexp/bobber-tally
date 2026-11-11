@@ -1,12 +1,18 @@
 ## Interface: 16001
-## Title: 无限钓鱼助手
-## Notes: 钓鱼装备、抛竿收竿、渔获估价与鱼类烹饪资料。参考来源与作者感谢见插件内「关于」。
-## Version: 0.5.14
+## Title: BobberTally
+## Title-zhCN: 无限钓鱼助手
+## Title-zhTW: 无限钓鱼助手
+## Notes: Fishing toolbar, catch estimates, and a fish and cooking catalog for WoW Forever.
+## Notes-zhCN: 钓鱼装备、抛竿收竿、渔获估价与鱼类烹饪资料。
+## Notes-zhTW: 钓鱼装备、抛竿收竿、渔获估价与鱼类烹饪资料。
+## Version: 0.5.15
 ## SavedVariablesPerCharacter: WowfFishingDB
 
+Localization.lua
 Theme.lua
 FishData.lua
 CookingData.lua
+EnglishCatalog.lua
 FishCatalog.lua
 About.lua
 CatchList.lua

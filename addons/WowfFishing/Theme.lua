@@ -97,7 +97,7 @@ function theme.Button(parent, name, text, width, height, primary)
     label:SetJustifyH("CENTER")
     label:SetMaxLines(1)
     button:SetFontString(label)
-    button:SetText(text)
+    if text ~= "" then addon.SetLocalizedText(button, text) end
     local function RefreshStyle(self)
         local enabled = self:IsEnabled()
         local color = enabled and (primary and colors.gold or colors.text) or colors.disabled

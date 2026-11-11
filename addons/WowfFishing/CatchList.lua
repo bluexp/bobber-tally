@@ -1,4 +1,5 @@
 local _, addon = ...
+local L = addon.L
 local theme = addon.Theme
 local colors = theme.colors
 local catches, catchesByName, catchesByID = {}, {}, {}
@@ -34,7 +35,7 @@ function addon.CreateDragHandle(parent, name, tooltip)
     end
     handle:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText(tooltip)
+        GameTooltip:SetText(L[tooltip])
         GameTooltip:Show()
     end)
     handle:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -81,7 +82,7 @@ local function Label(parent, font, x, y, width, alignment, color)
     return label
 end
 
-Label(panel, "GameFontHighlight", 16, -4, 240):SetText("无限钓鱼助手 · 本次渔获")
+addon.SetLocalizedText(Label(panel, "GameFontHighlight", 16, -4, 240), "无限钓鱼助手 · 本次渔获")
 
 local status = Label(surface, "GameFontHighlight", 16, -34, 205, nil, colors.gold)
 local stats = Label(surface, "GameFontHighlight", 224, -34, 268, "RIGHT", colors.text)
@@ -101,29 +102,29 @@ local fishKeyCapture
 
 local function RefreshFishKey(notice)
     local listening = fishKeyCapture:IsListening()
-    fishKeyButton:SetText(listening and "请按快捷键…" or "设置抛竿 / 收竿键")
+    fishKeyButton:SetText(listening and L["请按快捷键…"] or L["设置抛竿 / 收竿键"])
     if notice then
         hint:SetText(notice)
     elseif listening then
-        hint:SetText("按下快捷键，或按 Esc 取消")
+        hint:SetText(L["按下快捷键，或按 Esc 取消"])
     else
-        hint:SetText(settings.fishKey and ("抛竿 / 收竿  " .. settings.fishKey) or "抛竿 / 收竿键未设置")
+        hint:SetText(settings.fishKey and (L["抛竿 / 收竿  "] .. settings.fishKey) or L["抛竿 / 收竿键未设置"])
     end
 end
 
 function addon.UpdateCatchSummary(state, castCount, catchCount, itemCount, lastCatch)
     status:SetText(state)
-    stats:SetText(("抛竿 %d 次 · 收获 %d 竿 / %d 件"):format(castCount, catchCount, itemCount))
-    recent:SetText("最近渔获 " .. lastCatch)
+    stats:SetText((L["抛竿 %d 次 · 收获 %d 竿 / %d 件"]):format(castCount, catchCount, itemCount))
+    recent:SetText(L["最近渔获 "] .. lastCatch)
     if not fishKeyCapture:IsListening() then RefreshFishKey() end
-    audioButton:SetText(settings.enhanceSound and "水花声：增强" or "水花声：原音")
+    audioButton:SetText(settings.enhanceSound and L["水花声：增强"] or L["水花声：原音"])
 end
 
 theme.Block(surface, "BORDER", 14, -111, 480, 294, colors.card)
-Label(surface, "GameFontHighlightSmall", 24, -37 - detailOffset, 172, nil, colors.gold):SetText("物品")
-Label(surface, "GameFontHighlightSmall", 208, -37 - detailOffset, 48, "RIGHT", colors.gold):SetText("数量")
-Label(surface, "GameFontHighlightSmall", 268, -37 - detailOffset, 132, nil, colors.gold):SetText("拍卖行最低单价")
-Label(surface, "GameFontHighlightSmall", 405, -37 - detailOffset, 89, nil, colors.gold):SetText("卖给 NPC")
+addon.SetLocalizedText(Label(surface, "GameFontHighlightSmall", 24, -37 - detailOffset, 172, nil, colors.gold), "物品")
+addon.SetLocalizedText(Label(surface, "GameFontHighlightSmall", 208, -37 - detailOffset, 48, "RIGHT", colors.gold), "数量")
+addon.SetLocalizedText(Label(surface, "GameFontHighlightSmall", 268, -37 - detailOffset, 132, nil, colors.gold), "拍卖行最低单价")
+addon.SetLocalizedText(Label(surface, "GameFontHighlightSmall", 405, -37 - detailOffset, 89, nil, colors.gold), "卖给 NPC")
 
 local list = CreateFrame("Frame", nil, surface)
 list:SetPoint("TOPLEFT", 14, -54 - detailOffset)
@@ -168,10 +169,10 @@ for i = 1, visibleRows do
 end
 
 local empty = Label(list, "GameFontHighlight", 0, -107, 480, "CENTER", colors.muted)
-empty:SetText("本次还没有钓到物品")
+addon.SetLocalizedText(empty, "本次还没有钓到物品")
 
 theme.Block(surface, "ARTWORK", 24, -286 - detailOffset, 460, 1, colors.divider)
-Label(surface, "GameFontHighlight", 24, -295 - detailOffset, 180, nil, colors.gold):SetText("本次合计")
+addon.SetLocalizedText(Label(surface, "GameFontHighlight", 24, -295 - detailOffset, 180, nil, colors.gold), "本次合计")
 local totalQuantity = Label(surface, "GameFontHighlight", 208, -295 - detailOffset, 48, "RIGHT")
 local auctionTotal = Label(surface, "GameFontHighlight", 268, -295 - detailOffset, 132)
 local auctionCoverage = Label(surface, "GameFontHighlightSmall", 268, -310 - detailOffset, 132, nil, colors.muted)
@@ -194,14 +195,14 @@ local aboutButton = FooterButton("关于", 64, 430, 10)
 aboutButton:SetScript("OnClick", function() addon.ToggleAbout() end)
 
 local function Money(copper)
-    if copper == 0 then return "0铜" end
+    if copper == 0 then return "0" .. L["铜"] end
     local gold = math.floor(copper / 10000)
     local silver = math.floor(copper / 100) % 100
     local remainder = copper % 100
     local text = {}
-    if gold > 0 then text[#text + 1] = gold .. "金" end
-    if silver > 0 then text[#text + 1] = silver .. "银" end
-    if remainder > 0 then text[#text + 1] = remainder .. "铜" end
+    if gold > 0 then text[#text + 1] = gold .. L["金"] end
+    if silver > 0 then text[#text + 1] = silver .. L["银"] end
+    if remainder > 0 then text[#text + 1] = remainder .. L["铜"] end
     return table.concat(text, " ")
 end
 addon.FormatMoney = Money
@@ -223,9 +224,9 @@ local function RefreshTotals()
     end
     totalQuantity:SetText(quantity)
     auctionTotal:SetText(auctionCount > 0 and Money(auctionCopper) or "—")
-    auctionCoverage:SetText(auctionCount < quantity and ("%d 件未报价"):format(quantity - auctionCount) or "")
+    auctionCoverage:SetText(auctionCount < quantity and (L["%d 件未报价"]):format(quantity - auctionCount) or "")
     vendorTotal:SetText(vendorCount > 0 and Money(vendorCopper) or "—")
-    vendorCoverage:SetText(vendorCount < quantity and ("%d 件未知"):format(quantity - vendorCount) or "")
+    vendorCoverage:SetText(vendorCount < quantity and (L["%d 件未知"]):format(quantity - vendorCount) or "")
 end
 
 local function Refresh()
@@ -243,9 +244,9 @@ local function Refresh()
             row.icon:SetTexture(theme.ItemIcon(item.itemID))
             row.name:SetText(item.name)
             row.quantity:SetText(item.quantity)
-            row.auction:SetText(quote and Money(quote.copper) or "未报价")
+            row.auction:SetText(quote and Money(quote.copper) or L["未报价"])
             row.quoteTime:SetText(quote and date("%m-%d %H:%M", quote.time) or "")
-            row.vendor:SetText(vendor and (vendor > 0 and Money(vendor) or "不可出售") or "—")
+            row.vendor:SetText(vendor and (vendor > 0 and Money(vendor) or L["不可出售"]) or "—")
         end
     end
     RefreshTotals()
@@ -255,8 +256,8 @@ local function Refresh()
     following:SetEnabled(lastRow < total)
     page:SetText(total > 0 and ("%d–%d / %d"):format(firstRow, lastRow, total) or "")
     refresh:SetEnabled(auctionOpen and not scan)
-    local queryHint = next(catchesByID) and "查询当前挂单" or "查询资料库鱼类和成品"
-    message:SetText(auctionMessage or (auctionOpen and queryHint or "打开拍卖行后可更新"))
+    local queryHint = next(catchesByID) and L["查询当前挂单"] or L["查询资料库鱼类和成品"]
+    message:SetText(auctionMessage or (auctionOpen and queryHint or L["打开拍卖行后可更新"]))
     addon.RefreshFishCatalog()
 end
 
@@ -368,8 +369,8 @@ refresh:SetScript("OnClick", function()
         end
     end
     scan = { ids = ids, offset = 1, found = 0 }
-    scan.timeout = C_Timer.NewTimer(45, function() FinishScan("查询超时，可重新更新") end)
-    auctionMessage = ("正在查询 %d 种物品…"):format(#ids)
+    scan.timeout = C_Timer.NewTimer(45, function() FinishScan(L["查询超时，可重新更新"]) end)
+    auctionMessage = (L["正在查询 %d 种物品…"]):format(#ids)
     Refresh()
     SendQuery()
 end)
@@ -380,7 +381,7 @@ local function ReceiveQuotes()
     for _, result in ipairs(auction.GetBrowseResults()) do
         local itemID = result.itemKey.itemID
         if not scan.pending[itemID] then
-            FinishScan("拍卖行搜索已切换，请重新更新")
+            FinishScan(L["拍卖行搜索已切换，请重新更新"])
             return
         end
         if result.totalQuantity > 0 and result.minPrice > 0 then
@@ -397,7 +398,7 @@ local function ReceiveQuotes()
     if not next(scan.pending) or scan.attempt >= 3 then
         scan.pending = nil
         if scan.offset > #scan.ids then
-            FinishScan(("已更新 %d 种，%d 种未查到"):format(scan.found, #scan.ids - scan.found))
+            FinishScan((L["已更新 %d 种，%d 种未查到"]):format(scan.found, #scan.ids - scan.found))
             return
         end
     end
@@ -413,11 +414,11 @@ events:SetScript("OnEvent", function(_, event, itemID, success)
         Refresh()
     elseif event == "AUCTION_HOUSE_CLOSED" then
         auctionOpen, auctionMessage = false, nil
-        if scan then FinishScan("已关闭拍卖行，查询停止") else Refresh() end
+        if scan then FinishScan(L["已关闭拍卖行，查询停止"]) else Refresh() end
     elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" then
         ReceiveQuotes()
     elseif event == "AUCTION_HOUSE_BROWSE_FAILURE" then
-        if scan then FinishScan("查询失败，可重新更新") end
+        if scan then FinishScan(L["查询失败，可重新更新"]) end
     elseif event == "AUCTION_HOUSE_THROTTLED_SYSTEM_READY" then
         SendQuery()
     elseif success then

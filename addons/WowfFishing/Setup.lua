@@ -1,4 +1,5 @@
 local _, addon = ...
+local L = addon.L
 local theme = addon.Theme
 local colors = theme.colors
 local MAIN_HAND, OFF_HAND = 16, 17
@@ -35,7 +36,7 @@ local function Items(wantRod)
             if SameItem(item, id, link) then return end
         end
         local name = C_Item.GetItemInfo(link or id)
-        items[#items + 1] = { id = id, link = link, name = name or ("物品 #%d"):format(id), icon = icon, equipped = equipped }
+        items[#items + 1] = { id = id, link = link, name = name or (L["物品 #%d"]):format(id), icon = icon, equipped = equipped }
     end
     local id, link = CurrentMainHand()
     Add(id, link, true)
@@ -112,10 +113,10 @@ local function SaveHands(label, previous)
     local api = C_EquipmentSet
     local manager = PaperDollFrame and PaperDollFrame.EquipmentManagerPane
     if manager and manager:IsVisible() then
-        return nil, "请关闭角色窗口里的装备管理器，然后再保存。"
+        return nil, L["请关闭角色窗口里的装备管理器，然后再保存。"]
     end
     if IsInventoryItemLocked and (IsInventoryItemLocked(MAIN_HAND) or IsInventoryItemLocked(OFF_HAND)) then
-        return nil, "装备正在切换，请稍等后再保存。"
+        return nil, L["装备正在切换，请稍等后再保存。"]
     end
     local snapshot = {
         main = GetInventoryItemID("player", MAIN_HAND),
@@ -128,7 +129,7 @@ local function SaveHands(label, previous)
         id = api.GetEquipmentSetID(name)
         if id and api.GetEquipmentSetAssignedSpec(id) then
             pending[label] = nil
-            return nil, "待保存方案已关联专精，请重新保存以创建独立方案。"
+            return nil, L["待保存方案已关联专精，请重新保存以创建独立方案。"]
         end
     else
         id = HandSetID(previous)
@@ -141,7 +142,7 @@ local function SaveHands(label, previous)
     end
     if not id and MAX_EQUIPMENT_SETS_PER_PLAYER
         and api.GetNumEquipmentSets() >= MAX_EQUIPMENT_SETS_PER_PLAYER then
-        return nil, "装备方案已满，请在装备管理器中腾出一个位置。"
+        return nil, L["装备方案已满，请在装备管理器中腾出一个位置。"]
     end
 
     local original, handsOnly = {}, {}
@@ -156,14 +157,14 @@ local function SaveHands(label, previous)
             ApplySaveFlags(api, handsOnly)
             api.CreateEquipmentSet(name)
             id = api.GetEquipmentSetID(name)
-            if not id then return nil, "游戏正在创建方案，请稍等后再试。" end
+            if not id then return nil, L["游戏正在创建方案，请稍等后再试。"] end
         end
         -- Creating a set can change the shared ignore flags before it is saved.
         ApplySaveFlags(api, handsOnly)
         api.SaveEquipmentSet(id)
         snapshot.id = id
         if HandSetID(snapshot) then return snapshot end
-        return nil, "游戏暂未确认方案内容，请稍等后再试。"
+        return nil, L["游戏暂未确认方案内容，请稍等后再试。"]
     end)
     ApplySaveFlags(api, original)
     if not ran then error(saved, 0) end
@@ -187,7 +188,7 @@ local surface = theme.Surface(wizard)
 
 local Label = theme.Label
 
-Label(wizard, "GameFontHighlight", 16, -4, 360):SetText("无限钓鱼助手 · 配置向导")
+addon.SetLocalizedText(Label(wizard, "GameFontHighlight", 16, -4, 360), "无限钓鱼助手 · 配置向导")
 local heading = Label(surface, "GameFontNormalLarge", 20, -40, 412, nil, colors.gold)
 local description = Label(surface, "GameFontHighlight", 20, -70, 412, nil, colors.muted)
 theme.Block(surface, "BORDER", 12, -107, 432, 165, colors.card)
@@ -221,7 +222,7 @@ for index = 1, ROW_COUNT do
 end
 
 local keyLabel = Label(surface, "GameFontHighlight", 20, -184, 210, nil, colors.muted)
-keyLabel:SetText("一键换装快捷键")
+addon.SetLocalizedText(keyLabel, "一键换装快捷键")
 local keyButton = theme.Button(surface, "WowfFishingSetupKey", "点击录入", 192, 24, true)
 keyButton:SetPoint("TOPLEFT", 173, -177)
 local selectedKey, keyCapture
@@ -260,7 +261,7 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
         if self:IsListening() then
             self:StopListening()
         elseif InCombatLockdown() then
-            refresh("请脱离战斗后再录入快捷键。")
+            refresh(L["请脱离战斗后再录入快捷键。"])
         else
             if activeCapture then activeCapture:StopListening() end
             activeCapture = self
@@ -331,7 +332,7 @@ local function Render(notice)
             row.active:SetShown(item == chosen)
             row.mark:SetShown(item == chosen)
             row.label:SetTextColor(unpack(item == chosen and colors.gold or colors.text))
-            row.label:SetText(ItemText(item) .. (item.equipped and "  |cff9cbaca已装备|r" or ""))
+            row.label:SetText(ItemText(item) .. (item.equipped and L["  |cff9cbaca已装备|r"] or ""))
         end
     end
     previousPage:SetShown(pageCount > 1)
@@ -345,31 +346,31 @@ local function Render(notice)
     local equipped = SameItem(selected, CurrentMainHand())
     local available = step == 3 and FindItem(Items(true), rod) or chosen
     equip:SetShown(not rodPage and available ~= nil and not equipped)
-    equip:SetText(weaponPage and "装备所选武器" or "装备所选鱼竿")
+    equip:SetText(weaponPage and L["装备所选武器"] or L["装备所选鱼竿"])
     keyLabel:SetShown(step == 3)
     keyButton:SetShown(step == 3)
-    keyButton:SetText(capturingKey and "请按快捷键…" or selectedKey or "点击录入")
+    keyButton:SetText(capturingKey and L["请按快捷键…"] or selectedKey or L["点击录入"])
     summary:SetShown(step == 3)
     local ready = (rodPage and rod ~= nil) or (not rodPage and equipped)
     nextStep:SetEnabled(ready and (step ~= 3 or (selectedKey ~= nil and not capturingKey)))
-    nextStep:SetText(step == 3 and "保存并显示按钮" or "下一步")
+    nextStep:SetText(step == 3 and L["保存并显示按钮"] or L["下一步"])
     message:SetText(notice or "")
     if rodPage then
-        heading:SetText("1 / 3  选择鱼竿")
-        description:SetText(rod and "从背包或主手中选择一根鱼竿。"
-            or "没有找到鱼竿。请向钓鱼用品商人购买一根，放入背包后会自动刷新。")
+        heading:SetText(L["1 / 3  选择鱼竿"])
+        description:SetText(rod and L["从背包或主手中选择一根鱼竿。"]
+            or L["没有找到鱼竿。请向钓鱼用品商人购买一根，放入背包后会自动刷新。"])
     elseif weaponPage then
-        heading:SetText("2 / 3  选择换回的武器")
-        description:SetText("选择并装备要换回的主手武器。当前副手会一起记录。")
-        if not weapon and not notice then message:SetText("请将可装备的主手武器放入背包。") end
+        heading:SetText(L["2 / 3  选择换回的武器"])
+        description:SetText(L["选择并装备要换回的主手武器。当前副手会一起记录。"])
+        if not weapon and not notice then message:SetText(L["请将可装备的主手武器放入背包。"]) end
     else
-        heading:SetText("3 / 3  设置快捷键")
-        description:SetText("装备所选鱼竿，点击快捷键按钮后按键，再保存。")
-        summary:SetText("鱼竿  " .. ItemText(rod) .. "\n武器  " .. ItemText(weapon))
+        heading:SetText(L["3 / 3  设置快捷键"])
+        description:SetText(L["装备所选鱼竿，点击快捷键按钮后按键，再保存。"])
+        summary:SetText(L["鱼竿  "] .. ItemText(rod) .. L["\n武器  "] .. ItemText(weapon))
         if not notice then
-            message:SetText(available and (capturingKey and "按下快捷键，或按 Esc 取消录入。"
-                or "可录入字母、数字、F1–F12、小键盘和组合键。")
-                or "所选鱼竿不在身上，请找回鱼竿或返回重选。")
+            message:SetText(available and (capturingKey and L["按下快捷键，或按 Esc 取消录入。"]
+                or L["可录入字母、数字、F1–F12、小键盘和组合键。"])
+                or L["所选鱼竿不在身上，请找回鱼竿或返回重选。"])
         end
     end
 end
@@ -397,24 +398,24 @@ end)
 equip:SetScript("OnClick", function()
     keyCapture:StopListening()
     if InCombatLockdown() then
-        Render("请脱离战斗后再换装。")
+        Render(L["请脱离战斗后再换装。"])
         return
     end
     local selected = step == 2 and weapon or rod
     local item = FindItem(Items(step == 3), selected)
     if not item then
-        Render("找不到所选物品，请重新选择。")
+        Render(L["找不到所选物品，请重新选择。"])
         return
     end
     local equipItem = C_Item.EquipItemByName or EquipItemByName
     if equipItem then equipItem(item.link or item.id, MAIN_HAND) end
     local waiting = not SameItem(item, CurrentMainHand())
-    Render(waiting and "装备完成后可继续。如未生效，请从背包手动装备所选物品。" or nil)
+    Render(waiting and L["装备完成后可继续。如未生效，请从背包手动装备所选物品。"] or nil)
 end)
 
 nextStep:SetScript("OnClick", function()
     if InCombatLockdown() then
-        Render("请脱离战斗后再继续。")
+        Render(L["请脱离战斗后再继续。"])
         return
     end
     if step == 1 then
@@ -423,7 +424,7 @@ nextStep:SetScript("OnClick", function()
     elseif step == 2 then
         if not SameItem(weapon, CurrentMainHand()) then Render(); return end
         if not C_EquipmentSet.CanUseEquipmentSets() then
-            Render("装备管理器暂不可用，请稍后再试。")
+            Render(L["装备管理器暂不可用，请稍后再试。"])
             return
         end
         local draft, saveError = SaveHands("武器", db.setupDraft)
@@ -442,7 +443,7 @@ nextStep:SetScript("OnClick", function()
         if not SameItem(rod, CurrentMainHand()) then Render(); return end
         if not HandSetID(db.setupDraft) then
             step, page = 2, 1
-            Render("武器方案已变更，请重新记录武器。")
+            Render(L["武器方案已变更，请重新记录武器。"])
             return
         end
         local old = db.setupEquipment
@@ -456,7 +457,7 @@ nextStep:SetScript("OnClick", function()
         if old then RemovePreviousSet(old.weapon, db.setupEquipment.weapon) end
         handlers.saveKey(key)
         wizard:Hide()
-        handlers.say("配置已保存。点击屏幕按钮或按 " .. key .. " 可切换鱼竿与武器。")
+        handlers.say(L["配置已保存。点击屏幕按钮或按 "] .. key .. L[" 可切换鱼竿与武器。"])
         return
     end
     Render()
