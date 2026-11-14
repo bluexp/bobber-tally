@@ -4,7 +4,7 @@
 
 BobberTally is a fishing add-on for **World of Warcraft: Forever**. Swap between your fishing pole and weapons, track what you catch, compare Auction House listings with vendor prices, and look up fishing spots and cooking recipes.
 
-**[Download v0.7.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.7.0/BobberTally-v0.7.0.zip)** · [English installation guide](https://wfdb.cc/en/)
+**[Download v0.7.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.7.0/BobberTally-v0.7.0.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
 
 Requires the WoW Forever client (add-on interface `16001`). The add-on supports English and Simplified Chinese.
 

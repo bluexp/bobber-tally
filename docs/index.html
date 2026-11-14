@@ -3,94 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="《魔兽世界：无限》钓鱼插件，配置鱼竿和武器一键切换、记录渔获、对比拍卖行估价与 NPC 售价。">
-  <meta name="theme-color" content="#102720">
-  <title>BobberTally · 魔兽世界：无限钓鱼插件 · 无限库 WFDB</title>
+  <meta name="description" content="无限库 WFDB 收录《魔兽世界：无限》的玩家插件与工具。">
+  <meta name="theme-color" content="#090a0f">
+  <title>无限库 WFDB · 魔兽世界：无限</title>
   <link rel="canonical" href="https://wfdb.cc/">
   <link rel="alternate" hreflang="zh-CN" href="https://wfdb.cc/">
   <link rel="alternate" hreflang="en" href="https://wfdb.cc/en/">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="directory">
   <a class="skip" href="#content">跳到正文</a>
   <header class="masthead">
-    <div class="wrap nav">
-      <a class="brand" href="./"><span class="bobber" aria-hidden="true"></span>无限库 WFDB</a>
-      <nav>
-        <a href="#features">功能</a>
-        <a href="#install">安装</a>
-        <a href="#usage">使用边界</a>
-      </nav>
+    <div class="wrap nav directory-nav">
+      <a class="brand" href="./" aria-current="page">WFDB<span>无限库</span></a>
+      <nav aria-label="主导航"><a href="addons/">插件</a></nav>
       <a class="language" href="en/" lang="en" hreflang="en">English</a>
     </div>
   </header>
-  <main id="content">
-    <section class="hero">
-      <div class="wrap hero-grid">
-        <div>
-          <p class="platform">《魔兽世界：无限》插件 · 收录于无限库 WFDB</p>
-          <h1>BobberTally</h1>
-          <p class="subtitle">无限钓鱼助手</p>
-          <p class="lead">每次收竿都有记录。看清这一趟钓了什么，按拍卖行挂单或 NPC 售价估算收获。</p>
-          <div class="actions">
-            <a class="button primary" href="downloads/BobberTally-v0.7.0.zip" download>下载插件 ZIP</a>
-            <a class="button secondary" href="https://github.com/bluexp/bobber-tally">查看 GitHub 源码 <span aria-hidden="true">↗</span></a>
-          </div>
-          <p class="version">v0.7.0 · 客户端接口 16001 · 简体中文与英文</p>
-        </div>
-        <figure class="preview">
-          <a href="media/gameplay-v0.6.0.webp"><img src="media/gameplay-v0.6.0.webp" alt="v0.6.0 游戏内截图，统一钓鱼设置、渔获估价与鱼类资料库同时打开" width="2250" height="1382"></a>
-          <figcaption>v0.6.0 实机截图 · 钓鱼设置、渔获与资料库</figcaption>
-        </figure>
-      </div>
+  <main class="wrap directory-main" id="content">
+    <section class="directory-intro">
+      <p class="directory-kicker">魔兽世界：无限</p>
+      <h1>无限库 <span>WFDB</span></h1>
+      <p>收录《魔兽世界：无限》的玩家插件与工具。</p>
+      <a class="button directory-button" href="addons/">浏览插件 <span aria-hidden="true">→</span></a>
     </section>
-    <section class="section" id="features">
-      <div class="wrap">
-        <h2>抛竿、记账、查鱼</h2>
-        <div class="features">
-          <article><h3>钓鱼工具栏</h3><p>点击鱼钩抛竿，点击装备图标换装。柱状图打开渔获统计，齿轮打开钓鱼设置。用最右侧的四向箭头拖动工具栏。</p></article>
-          <article><h3>抛竿统计与渔获估价</h3><p>查看本次渔获、用时和每小时估价。直接在拍卖行「购买」页刷新报价并查看查询进度。</p></article>
-          <article><h3>鱼类与烹饪资料库</h3><p>查阅 88 条鱼类记录和 24 条烹饪配方。点击参考钓点打开游戏地图，也可查看角色实际钓获的地点与数量。</p></article>
-          <article><h3>统一钓鱼设置</h3><p>在一个窗口管理快捷键、水花声、交互键、自动拾取和鱼漂搜索。换装向导与钓鱼操作可随时切换。</p></article>
+    <section class="directory-list" aria-labelledby="addons-heading">
+      <h2 id="addons-heading">插件</h2>
+      <article class="addon-card">
+        <div class="addon-image"><img src="media/gameplay-v0.6.0.webp" alt="" width="2250" height="1382"></div>
+        <div class="addon-copy">
+          <h3>BobberTally</h3>
+          <p>无限钓鱼助手。切换鱼竿和武器，统计渔获，在拍卖行查询报价。</p>
+          <a class="directory-link" href="addons/bobber-tally/">查看详情与下载 <span aria-hidden="true">→</span></a>
         </div>
-      </div>
-    </section>
-    <section class="section setup" id="install">
-      <div class="wrap setup-grid">
-        <div>
-          <h2>安装与设置</h2>
-          <ol class="steps">
-            <li><h3>解压插件</h3><p>下载 ZIP，把解压出的 <code>WowfFishing</code> 文件夹放入 <code>_forever_/Interface/AddOns/</code>。</p></li>
-            <li><h3>启用插件</h3><p>重启游戏，在角色选择画面启用「无限钓鱼助手」。进入游戏后输入 <code>/wowfish</code>。</p></li>
-            <li><h3>配置换装</h3><p>输入 <code>/wowfish setup</code>，选择鱼竿和要换回的武器，再录入换装键。向导会等游戏确认装备后继续。保存时请关闭装备管理器。</p></li>
-            <li><h3>设置抛竿键</h3><p>打开「钓鱼设置」，录入抛竿 / 收竿键并开启「交互键」。录入鼠标侧键时，把鼠标停在按钮上再按侧键。按一次抛竿，听见水花声后再按一次收竿。</p></li>
-          </ol>
-        </div>
-        <aside class="commands">
-          <h3>游戏内命令</h3>
-          <dl>
-            <div><dt><code>/wowfish</code></dt><dd>打开统计与渔获面板</dd></div>
-            <div><dt><code>/wowfish setup</code></dt><dd>打开换装配置向导</dd></div>
-            <div><dt><code>/wowfish gear</code></dt><dd>查看换装方案和最近一次结果</dd></div>
-            <div><dt><code>/wowfish settings</code></dt><dd>打开统一钓鱼设置</dd></div>
-            <div><dt><code>/wowfish loot</code></dt><dd>打开同一钓鱼面板</dd></div>
-            <div><dt><code>/wowfish fish</code></dt><dd>打开鱼类资料库</dd></div>
-            <div><dt><code>/wowfish about</code></dt><dd>打开关于窗口</dd></div>
-            <div><dt><code>/wowfish lang zh|en|auto</code></dt><dd>选择中文、英文或跟随客户端，再用 <code>/reload</code> 应用</dd></div>
-          </dl>
-        </aside>
-      </div>
-    </section>
-    <section class="section" id="usage">
-      <div class="wrap boundary">
-        <h2>使用边界</h2>
-        <div>
-          <p>免费、源码可查的玩家自制插件。抛竿与收竿均由玩家按键触发。拍卖行报价是查询时的挂单估值。设置、报价和实钓记录保存在本地游戏设置中。</p>
-          <p class="links"><a href="https://github.com/bluexp/bobber-tally/blob/main/COMPLIANCE.md">阅读规则与代码审查</a> <a href="https://github.com/bluexp/bobber-tally/blob/main/addons/WowfFishing/README.md">资料来源与致谢</a></p>
-        </div>
-      </div>
+      </article>
     </section>
   </main>
-  <footer><div class="wrap"><strong>BobberTally</strong><p>《魔兽世界》及实机截图中的游戏内容归 Blizzard Entertainment 所有。BobberTally 为玩家制作的独立插件。</p></div></footer>
+  <footer><div class="wrap"><strong>无限库 WFDB</strong><p>《魔兽世界：无限》玩家资料站。</p></div></footer>
 </body>
 </html>

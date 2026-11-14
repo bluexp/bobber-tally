@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A fishing add-on for World of Warcraft: Forever. Set up a gear swap shortcut, track catches, and compare auction and vendor values.">
+  <meta name="theme-color" content="#102720">
+  <title>BobberTally · Fishing add-on for WoW Forever · WFDB</title>
+  <link rel="canonical" href="https://wfdb.cc/en/addons/bobber-tally/">
+  <link rel="alternate" hreflang="zh-CN" href="https://wfdb.cc/addons/bobber-tally/">
+  <link rel="alternate" hreflang="en" href="https://wfdb.cc/en/addons/bobber-tally/">
+  <link rel="stylesheet" href="../../../style.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="masthead">
+    <div class="wrap nav">
+      <a class="brand" href="../../"><span class="bobber" aria-hidden="true"></span>WFDB</a>
+      <nav>
+        <a href="../">Add-ons</a>
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="#usage">Usage</a>
+      </nav>
+      <a class="language" href="../../../addons/bobber-tally/" lang="zh-CN" hreflang="zh-CN">简体中文</a>
+    </div>
+  </header>
+  <main id="content">
+    <section class="hero">
+      <div class="wrap detail-breadcrumb"><a href="../../">Home</a> <span aria-hidden="true">/</span> <a href="../">Add-ons</a> <span aria-hidden="true">/</span> <span aria-current="page">BobberTally</span></div>
+      <div class="wrap hero-grid">
+        <div>
+          <p class="platform">World of Warcraft: Forever add-on · Listed on WFDB</p>
+          <h1>BobberTally</h1>
+          <p class="subtitle">Fishing companion</p>
+          <p class="lead">See what you caught, compare auction listings with vendor value, and keep a record of where the fish were biting.</p>
+          <div class="actions">
+            <a class="button primary" href="../../../downloads/BobberTally-v0.7.0.zip" download>Download add-on ZIP</a>
+            <a class="button secondary" href="https://github.com/bluexp/bobber-tally">View source on GitHub <span aria-hidden="true">↗</span></a>
+          </div>
+          <p class="version">v0.7.0 · Interface 16001 · English and Simplified Chinese</p>
+        </div>
+        <figure class="preview">
+          <a href="../../../media/gameplay-v0.6.0.webp"><img src="../../../media/gameplay-v0.6.0.webp" alt="BobberTally v0.6.0 in game with Fishing Settings, catch estimates, and the fish catalog open together" width="2250" height="1382"></a>
+          <figcaption>v0.6.0 in-game screenshot · Settings, catches, and fish catalog</figcaption>
+        </figure>
+      </div>
+    </section>
+    <section class="section" id="features">
+      <div class="wrap">
+        <h2>Cast, count, look it up</h2>
+        <div class="features">
+          <article><h3>Fishing toolbar</h3><p>Click the hook to cast or the equipment icon to swap gear. The bar chart opens catch statistics and the cog opens Fishing Settings. Drag the four-way arrow to move the toolbar.</p></article>
+          <article><h3>Catch stats and estimates</h3><p>See session catches, fishing time, and hourly estimates. Refresh prices and follow lookup progress directly on the Auction House Buy page.</p></article>
+          <article><h3>Fish and cooking catalog</h3><p>Browse 88 fish entries and 24 cooking recipes. Click a reference fishing spot to open the in-game map, and see where your character has caught each fish.</p></article>
+          <article><h3>Fishing settings in one place</h3><p>Manage both bindings, splash sound, Interact Key, Auto Loot, and bobber search. Switch between Fishing Controls and Gear Setup in one window.</p></article>
+        </div>
+      </div>
+    </section>
+    <section class="section setup" id="install">
+      <div class="wrap setup-grid">
+        <div>
+          <h2>Installation and setup</h2>
+          <ol class="steps">
+            <li><h3>Unzip the add-on</h3><p>Download the ZIP and copy the extracted <code>WowfFishing</code> folder into <code>_forever_/Interface/AddOns/</code>.</p></li>
+            <li><h3>Enable it in game</h3><p>Restart WoW and enable BobberTally in the add-on list at character selection. Enter <code>/wowfish</code> after logging in.</p></li>
+            <li><h3>Set up gear swaps</h3><p>Enter <code>/wowfish setup</code>, choose your pole and weapon, then record a swap key. The wizard waits for the game to confirm the gear changes. Close the Equipment Manager before saving.</p></li>
+            <li><h3>Set a fishing key</h3><p>Open Fishing Settings, record a Cast / Reel Key, and enable Interact Key. To record a mouse side button, keep the cursor over the binding field. Press once to cast and again after the splash to reel in.</p></li>
+          </ol>
+        </div>
+        <aside class="commands">
+          <h3>In-game commands</h3>
+          <dl>
+            <div><dt><code>/wowfish</code></dt><dd>Open the statistics and catches panel</dd></div>
+            <div><dt><code>/wowfish setup</code></dt><dd>Open the gear setup wizard</dd></div>
+            <div><dt><code>/wowfish gear</code></dt><dd>View gear sets and the latest swap result</dd></div>
+            <div><dt><code>/wowfish settings</code></dt><dd>Open Fishing Settings</dd></div>
+            <div><dt><code>/wowfish loot</code></dt><dd>Open the same fishing panel</dd></div>
+            <div><dt><code>/wowfish fish</code></dt><dd>Open the fish catalog</dd></div>
+            <div><dt><code>/wowfish about</code></dt><dd>Open the About window</dd></div>
+            <div><dt><code>/wowfish lang en|zh|auto</code></dt><dd>Choose English, Simplified Chinese, or the client default, then run <code>/reload</code></dd></div>
+          </dl>
+        </aside>
+      </div>
+    </section>
+    <section class="section" id="usage">
+      <div class="wrap boundary">
+        <h2>How it works</h2>
+        <div>
+          <p>A free, independently maintained add-on with publicly readable source. Casting and reeling each require a player key press. Auction values reflect listings at the time of lookup. Settings, quotes, and catch observations are saved locally by the game.</p>
+          <p class="links"><a href="https://github.com/bluexp/bobber-tally/blob/main/COMPLIANCE.md">Read the policy and code review</a> <a href="https://github.com/bluexp/bobber-tally/blob/main/addons/WowfFishing/README.md">Sources and credits</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer><div class="wrap"><strong>BobberTally</strong><p>World of Warcraft and game content in the screenshot belong to Blizzard Entertainment. BobberTally is an independent fan project.</p></div></footer>
+</body>
+</html>
