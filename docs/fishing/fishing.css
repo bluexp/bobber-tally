@@ -1,0 +1,47 @@
+.fishing section[id] { scroll-margin-top: 20px; }
+.fishing h2 { margin-bottom: 14px; }
+.fishing button, .fishing select, .fishing input, .fishing textarea {
+  border: 1px solid #495167;
+  border-radius: 6px;
+  padding: 9px 11px;
+  background: #12151e;
+  color: #f3f3f2;
+  font: inherit;
+}
+.fishing button { cursor: pointer; color: #f8d373; }
+.fishing button:hover { background: #282518; }
+.fishing button:disabled { cursor: default; opacity: .6; }
+.fishing input, .fishing select, .fishing textarea { min-width: 0; }
+.fishing label { color: #d6d8e2; }
+.fishing-jumps { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 18px; }
+.fishing-jumps a, .fishing-muted a { color: #f8d373; text-underline-offset: 4px; }
+.fishing-section { margin-bottom: 38px; }
+.fishing-filters { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; padding: 0; border: 0; margin: 0 0 12px; min-width: 0; }
+.fishing-filters label { display: grid; gap: 5px; }
+.fishing-muted { color: #b8bdcb; }
+.cooking-filters { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); max-width: 600px; }
+.fish-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.fish-entry { padding: 16px; border: 1px solid #30364b; border-radius: 8px; background: #12151e; }
+.fish-entry > div:first-child { display: flex; align-items: baseline; gap: 10px; }
+.fish-entry span, .fish-entry p, .fishing-section > p { color: #b8bdcb; }
+.fish-entry span { font-size: .8rem; }
+.fish-entry p { margin-top: 8px; overflow-wrap: anywhere; }
+.fish-entry button { margin: 8px 8px 0 0; }
+.ingredients { padding: 0; list-style: none; }
+.ingredients li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 0; border-top: 1px solid #30364b; }
+.ingredients label input { margin-left: 8px; width: 6rem; }
+.fishing-form { display: grid; gap: 8px; margin-top: 14px; max-width: 800px; }
+.fishing-form button { justify-self: start; }
+.fishing textarea { width: 100%; resize: vertical; }
+#post-area, #preview-results { margin-top: 16px; }
+#post-text { display: block; max-width: 800px; }
+#submit-status { margin-top: 8px; color: #f8d373; }
+.table-scroll { max-width: 100%; overflow-x: auto; margin: 10px 0; }
+.fishing table { width: 100%; border-collapse: collapse; text-align: left; }
+.fishing th, .fishing td { padding: 7px 9px; border: 1px solid #30364b; white-space: nowrap; }
+.fishing th { color: #f8d373; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+@media (max-width: 600px) {
+  .fishing-filters:not(.cooking-filters), .fish-list { grid-template-columns: 1fr; }
+  .fishing input, .fishing select, .fishing textarea { font-size: 16px; }
+}

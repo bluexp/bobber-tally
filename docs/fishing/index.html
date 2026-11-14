@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="按鱼名和地区查钓点，查看实测来源并计算烹饪材料。">
+  <title>钓点实测 · 无限库 WFDB</title>
+  <link rel="canonical" href="https://wfdb.cc/fishing/">
+  <link rel="alternate" hreflang="zh-CN" href="https://wfdb.cc/fishing/">
+  <link rel="alternate" hreflang="en" href="https://wfdb.cc/en/fishing/">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="fishing.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body class="directory fishing">
+  <a class="skip" href="#content">跳到正文</a>
+  <header class="masthead">
+    <div class="wrap nav directory-nav">
+      <a class="brand" href="../">WFDB<span>无限库</span></a>
+      <nav aria-label="主导航">
+        <a href="./" aria-current="page">钓鱼</a>
+        <a href="../addons/">插件</a>
+      </nav>
+      <a class="language" href="../en/fishing/" lang="en" hreflang="en">English</a>
+    </div>
+  </header>
+  <main id="content" class="wrap directory-main">
+    <section class="directory-intro directory-intro-compact">
+      <h1>钓点实测</h1>
+      <p>查鱼和水域、算食材，也可以分享你在《魔兽世界：无限》的实钓记录。</p>
+      <div class="fishing-jumps"><a href="#cooking">食材清单</a><a href="#submit">预览投稿</a></div>
+    </section>
+    <section class="fishing-section" id="lookup">
+      <h2>查钓点</h2>
+      <fieldset class="fishing-filters" id="lookup-controls" disabled>
+        <legend class="sr-only">筛选钓点</legend>
+        <label>鱼名或物品编号<input type="search" id="query" placeholder="例如 奇想鳍鱼"></label>
+        <label>游戏区域<select id="zone"><option value="">所有区域</option></select></label>
+        <label>实测所在地区<select id="region"><option value="">所有地区</option></select></label>
+      </fieldset>
+      <p id="result-count" class="fishing-muted" aria-live="polite">正在加载资料…</p>
+      <div class="fish-list" id="fish-list"></div>
+    </section>
+    <section class="fishing-section" id="cooking">
+      <h2>食材清单</h2>
+      <fieldset class="fishing-filters cooking-filters" id="recipe-controls" disabled>
+        <legend class="sr-only">选择料理与份数</legend>
+        <label>料理<select id="recipe"></select></label>
+        <label>目标份数<input id="servings" type="number" min="1" max="9999" step="1" value="20"></label>
+      </fieldset>
+      <p id="recipe-result" class="fishing-muted" aria-live="polite"></p>
+      <ul id="ingredients" class="ingredients"></ul>
+    </section>
+    <section class="fishing-section" id="submit">
+      <h2>预览投稿</h2>
+      <p>用 BobberTally 输入 /wowfish export，也可用 WFDB Mac 客户端读取并复制记录。审核收录后可署名。</p>
+      <form id="submit-form" class="fishing-form">
+        <label for="record-code">WFDB 实测记录</label>
+        <textarea id="record-code" rows="3" maxlength="1500" placeholder="WFDB1:…" required></textarea>
+        <button id="preview-button" type="submit" disabled>预览记录</button>
+      </form>
+      <p id="submit-status" role="status"></p>
+      <div id="preview-results" hidden>
+        <div class="table-scroll"><table><thead><tr><th scope="col">鱼类</th><th scope="col">地图</th><th scope="col">地区</th><th scope="col">日期（UTC）</th><th scope="col">构建</th><th scope="col">鱼饵</th><th scope="col">数量</th></tr></thead><tbody id="preview-body"></tbody></table></div>
+        <p>此记录包含物品、地图、日期、地区、构建号、鱼饵状态和数量。</p>
+        <label for="credit">署名（可选）</label>
+        <input id="credit" type="text" maxlength="24">
+        <button id="prepare-post" type="button">生成投稿文本</button>
+      </div>
+      <div id="post-area" hidden>
+        <label for="post-text">复制下方文本，贴到公开的 GitHub Issue 后提交。GitHub 会显示发帖账号。</label>
+        <textarea id="post-text" rows="5" readonly></textarea>
+        <a class="directory-link" href="https://github.com/bluexp/bobber-tally/issues/new?title=WFDB%20fishing%20observation" target="_blank" rel="noopener">打开 GitHub 投稿页 ↗</a>
+      </div>
+    </section>
+    <section class="fishing-section fishing-muted" aria-label="资料来源">
+      <p id="catalog-build"></p>
+      <p>实钓记录显示钓获数量。计算命中率还需要同条件下的总抛竿数。</p>
+      <p><a href="https://github.com/bluexp/bobber-tally/blob/main/addons/WowfFishing/README.md#参考来源与致谢">资料来源</a> · <a href="THIRD_PARTY_LICENSES.txt">第三方授权</a> · <a href="../addons/bobber-tally/">BobberTally</a></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><strong>WFDB</strong><p>Forever &amp; Fish</p></div></footer>
+</body>
+</html>

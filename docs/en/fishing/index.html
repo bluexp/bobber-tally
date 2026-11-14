@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Find fishing waters, check their sources and calculate cooking ingredients.">
+  <title>Fishing observations · WFDB</title>
+  <link rel="canonical" href="https://wfdb.cc/en/fishing/">
+  <link rel="alternate" hreflang="zh-CN" href="https://wfdb.cc/fishing/">
+  <link rel="alternate" hreflang="en" href="https://wfdb.cc/en/fishing/">
+  <link rel="stylesheet" href="../../style.css">
+  <link rel="stylesheet" href="../../fishing/fishing.css">
+  <script type="module" src="../../fishing/app.js"></script>
+</head>
+<body class="directory fishing">
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="masthead">
+    <div class="wrap nav directory-nav">
+      <a class="brand" href="../">WFDB</a>
+      <nav aria-label="Main navigation">
+        <a href="./" aria-current="page">Fishing</a>
+        <a href="../addons/">Add-ons</a>
+      </nav>
+      <a class="language" href="../../fishing/" lang="zh-CN" hreflang="zh-CN">简体中文</a>
+    </div>
+  </header>
+  <main id="content" class="wrap directory-main">
+    <section class="directory-intro directory-intro-compact">
+      <h1>Fishing observations</h1>
+      <p>Find fish and waters, plan cooking ingredients, and share catches from World of Warcraft: Forever.</p>
+      <div class="fishing-jumps"><a href="#cooking">Ingredients</a><a href="#submit">Preview a contribution</a></div>
+    </section>
+    <section class="fishing-section" id="lookup">
+      <h2>Find waters</h2>
+      <fieldset class="fishing-filters" id="lookup-controls" disabled>
+        <legend class="sr-only">Filter fishing waters</legend>
+        <label>Fish name or item ID<input type="search" id="query" placeholder="e.g. Whimsyfin"></label>
+        <label>Game zone<select id="zone"><option value="">All zones</option></select></label>
+        <label>Observation region<select id="region"><option value="">All regions</option></select></label>
+      </fieldset>
+      <p id="result-count" class="fishing-muted" aria-live="polite">Loading catalog…</p>
+      <div class="fish-list" id="fish-list"></div>
+    </section>
+    <section class="fishing-section" id="cooking">
+      <h2>Cooking ingredients</h2>
+      <fieldset class="fishing-filters cooking-filters" id="recipe-controls" disabled>
+        <legend class="sr-only">Choose a recipe and servings</legend>
+        <label>Recipe<select id="recipe"></select></label>
+        <label>Servings needed<input id="servings" type="number" min="1" max="9999" step="1" value="20"></label>
+      </fieldset>
+      <p id="recipe-result" class="fishing-muted" aria-live="polite"></p>
+      <ul id="ingredients" class="ingredients"></ul>
+    </section>
+    <section class="fishing-section" id="submit">
+      <h2>Preview a contribution</h2>
+      <p>Run /wowfish export in BobberTally or copy records using the WFDB Mac client. Reviewed entries may include a display name.</p>
+      <form id="submit-form" class="fishing-form">
+        <label for="record-code">WFDB observation code</label>
+        <textarea id="record-code" rows="3" maxlength="1500" placeholder="WFDB1:…" required></textarea>
+        <button id="preview-button" type="submit" disabled>Preview records</button>
+      </form>
+      <p id="submit-status" role="status"></p>
+      <div id="preview-results" hidden>
+        <div class="table-scroll"><table><thead><tr><th scope="col">Fish</th><th scope="col">Map</th><th scope="col">Region</th><th scope="col">Date (UTC)</th><th scope="col">Build</th><th scope="col">Lure</th><th scope="col">Count</th></tr></thead><tbody id="preview-body"></tbody></table></div>
+        <p>These records include the item, map, date, region, build, lure status, and quantity.</p>
+        <label for="credit">Display name (optional)</label>
+        <input id="credit" type="text" maxlength="24">
+        <button id="prepare-post" type="button">Prepare submission</button>
+      </div>
+      <div id="post-area" hidden>
+        <label for="post-text">Copy this text into a public GitHub issue and submit it. GitHub will show the posting account.</label>
+        <textarea id="post-text" rows="5" readonly></textarea>
+        <a class="directory-link" href="https://github.com/bluexp/bobber-tally/issues/new?title=WFDB%20fishing%20observation" target="_blank" rel="noopener">Open GitHub submission form ↗</a>
+      </div>
+    </section>
+    <section class="fishing-section fishing-muted" aria-label="Sources">
+      <p id="catalog-build"></p>
+      <p>Observations show fish caught. Catch rates require total casts under the same conditions.</p>
+      <p><a href="https://github.com/bluexp/bobber-tally/blob/main/addons/WowfFishing/README.md#参考来源与致谢">Data sources</a> · <a href="../../fishing/THIRD_PARTY_LICENSES.txt">Third-party licenses</a> · <a href="../addons/bobber-tally/">BobberTally</a></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><strong>WFDB</strong><p>Forever &amp; Fish</p></div></footer>
+</body>
+</html>
