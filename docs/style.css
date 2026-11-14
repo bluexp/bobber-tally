@@ -149,7 +149,7 @@ footer p { margin-top: 3px; }
   .features, .boundary { grid-template-columns: 1fr; gap: 18px; }
   .features { margin-top: 22px; }
   .commands { padding: 18px; }
-  .directory-nav nav { display: flex; }
+  .directory-nav nav { display: flex; gap: 10px; }
   .addon-card { grid-template-columns: 1fr; }
   .addon-image img { height: auto; max-height: 230px; }
 }
