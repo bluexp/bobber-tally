@@ -6,16 +6,17 @@ local FISHING_SPELL_ID = 7620
 local GEAR_BUTTON = "WowfFishingFloatingGear"
 local CAST_BUTTON = "WowfFishingCastButton"
 local ICON_SIZE, CAST_OFFSET = 42, 7
+local TOOLBAR_WIDTH = 232
 local LOOT_ITEM = Enum and Enum.LootSlotType and Enum.LootSlotType.Item or LOOT_SLOT_ITEM or 1
 
 local events = CreateFrame("Frame")
 local bindings = CreateFrame("Frame")
 local toolbar = CreateFrame("Frame", "WowfFishingToolbar", UIParent)
-toolbar:SetSize(184, 54)
+toolbar:SetSize(TOOLBAR_WIDTH, 54)
 toolbar:SetClampedToScreen(true)
 toolbar:SetMovable(true)
 theme.Fill(toolbar, "BACKGROUND", colors.control)
-theme.Block(toolbar, "BORDER", 1, -1, 182, 52, colors.surface)
+theme.Block(toolbar, "BORDER", 1, -1, TOOLBAR_WIDTH - 2, 52, colors.surface)
 toolbar:Hide()
 
 local function ToolbarIcon(button)
@@ -30,6 +31,12 @@ local function ToolbarIcon(button)
     return icon
 end
 
+local function ToolbarControl(button)
+    local background = ToolbarIcon(button)
+    background:SetDrawLayer("BORDER")
+    background:SetColorTexture(unpack(colors.selected))
+end
+
 local castButton = CreateFrame("Button", CAST_BUTTON, toolbar, "SecureActionButtonTemplate")
 castButton:SetPoint("LEFT", CAST_OFFSET, 0)
 castButton:RegisterForClicks("LeftButtonUp", "LeftButtonDown")
@@ -39,29 +46,64 @@ gearButton:SetPoint("LEFT", castButton, "RIGHT", 6, 0)
 local gearIcon = ToolbarIcon(gearButton)
 local panelButton = CreateFrame("Button", "WowfFishingPanelToggle", toolbar)
 panelButton:SetPoint("LEFT", gearButton, "RIGHT", 6, 0)
-ToolbarIcon(panelButton):SetColorTexture(unpack(colors.selected))
-for y = -6, 6, 6 do
-    local bar = panelButton:CreateTexture(nil, "ARTWORK", nil, 1)
-    bar:SetPoint("CENTER", panelButton, "CENTER", 0, y)
-    bar:SetSize(20, 2)
-    bar:SetColorTexture(unpack(colors.gold))
+ToolbarControl(panelButton)
+for index, height in ipairs({ 8, 13, 20 }) do
+    theme.Block(panelButton, "ARTWORK", 10 + (index - 1) * 8, -31 + height, 5, height, colors.gold)
+end
+
+local settingsButton = CreateFrame("Button", "WowfFishingSettingsToggle", toolbar)
+settingsButton:SetPoint("LEFT", panelButton, "RIGHT", 6, 0)
+ToolbarControl(settingsButton)
+local settingsIcon = settingsButton:CreateTexture(nil, "ARTWORK")
+-- Crop the white uitools-icon-settings glyph from the client's 1024 × 256 texture.
+if settingsIcon:SetTexture(5400310) then
+    settingsIcon:SetTexCoord(555 / 1024, 575 / 1024, 61 / 256, 81 / 256)
+    settingsIcon:SetPoint("CENTER", settingsButton, "CENTER")
+    settingsIcon:SetSize(22, 22)
+    settingsIcon:SetVertexColor(unpack(colors.gold))
+else
+    settingsIcon:Hide()
+    local cogRows = {
+        "....###....",
+        ".##.###.##.",
+        ".#########.",
+        "..###.###..",
+        "####...####",
+        "###.....###",
+        "####...####",
+        "..###.###..",
+        ".#########.",
+        ".##.###.##.",
+        "....###....",
+    }
+    for row, pixels in ipairs(cogRows) do
+        for column, teeth in pixels:gmatch("()(#+)") do
+            theme.Block(settingsButton, "ARTWORK", 10 + (column - 1) * 2, -10 - (row - 1) * 2,
+                #teeth * 2, 2, colors.gold)
+        end
+    end
 end
 
 local dragHandle = addon.CreateDragHandle(toolbar, "WowfFishingToolbarGrip", "按住左键拖动工具栏")
-dragHandle:SetPoint("LEFT", panelButton, "RIGHT", 6, 0)
+dragHandle:SetPoint("LEFT", settingsButton, "RIGHT", 6, 0)
 
 panelButton:SetScript("OnClick", addon.ToggleCatchList)
-panelButton:SetScript("OnEnter", function(self)
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText(addon.IsCatchListShown() and L["收起钓鱼面板"] or L["打开钓鱼面板"])
-    GameTooltip:Show()
-end)
-panelButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+settingsButton:SetScript("OnClick", function() addon.ToggleFishingSettings() end)
+local function ToolbarTooltip(button, title)
+    button:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(L[title])
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+end
+ToolbarTooltip(panelButton, "渔获统计")
+ToolbarTooltip(settingsButton, "钓鱼设置")
 
 local db, spellName, audioTimer, lootSlots
-local swappingUntil = 0
-local casts, catches, itemCount = 0, 0, 0
-local lastCatch = "—"
+local pendingSwap, session, castStarted
+local MAIN_HAND, OFF_HAND = 16, 17
+local lureTicker, lureWasActive, lureWarned
 local fishing, hasPole, caughtFromWindow = false, false, false
 
 local function PositionToolbar()
@@ -138,7 +180,55 @@ local function RefreshSummary()
     elseif hasPole then
         state = L["鱼竿已装备，可以抛竿"]
     end
-    addon.UpdateCatchSummary(state, casts, catches, itemCount, lastCatch)
+    addon.UpdateCatchSummary(state, session)
+end
+
+local function RefreshLure()
+    local weaponSlot = Enum and Enum.WeaponSlot and Enum.WeaponSlot.MainHand
+    if not hasPole or not C_Item.GetWeaponEnchantInfo or weaponSlot == nil then
+        addon.UpdateLureStatus()
+        return
+    end
+    local enchants = C_Item.GetWeaponEnchantInfo(weaponSlot)
+    if type(enchants) ~= "table" then addon.UpdateLureStatus(); return end
+    local remaining
+    local temporary = Enum.ItemEnchantType and Enum.ItemEnchantType.Temporary
+    for _, enchant in pairs(enchants) do
+        if enchant.hasEnchant and (not temporary or enchant.enchantType == temporary)
+            and type(enchant.timeLeft) == "number" and enchant.timeLeft > 0 then
+            remaining = math.max(remaining or 0, math.ceil(enchant.timeLeft / 1000))
+        end
+    end
+    if remaining then
+        if not lureWasActive or remaining > 30 then lureWarned = false end
+        if remaining <= 30 and not lureWarned then
+            lureWarned = true
+            Say(L["鱼饵将在 %d 秒内到期。"]:format(remaining))
+        end
+        lureWasActive = true
+        addon.UpdateLureStatus(remaining)
+    elseif lureWasActive then
+        lureWasActive = false
+        addon.UpdateLureStatus(0)
+        Say(L["鱼饵已到期。"])
+    end
+end
+
+function addon.GetFishingSeconds()
+    return session.seconds + (castStarted and math.max(0, GetTime() - castStarted) or 0)
+end
+
+local function SaveFishingTime()
+    session.seconds = addon.GetFishingSeconds()
+    castStarted = nil
+end
+
+function addon.EndFishingSession()
+    if fishing or lootSlots then return false end
+    session.casts, session.catches, session.count, session.seconds, session.lastCatch = 0, 0, 0, 0, nil
+    addon.ClearSessionCatches()
+    RefreshSummary()
+    return true
 end
 
 local function UpdateBindings()
@@ -202,10 +292,12 @@ local function UpdateChannel(countCast)
     if isFishing == fishing then return end
     fishing = isFishing
     if fishing then
-        if countCast then casts = casts + 1 end
+        if countCast then session.casts = session.casts + 1 end
+        castStarted = GetTime()
         EnhanceAudio()
-    elseif db.audioBeforeFishing then
-        audioTimer = C_Timer.NewTimer(5, RestoreAudio)
+    else
+        SaveFishingTime()
+        if db.audioBeforeFishing then audioTimer = C_Timer.NewTimer(5, RestoreAudio) end
     end
     UpdateBindings()
     RefreshSummary()
@@ -222,55 +314,101 @@ local function UpdateEquipment()
         MultiBar6:SetAlpha(hasPole and 1 or 0)
     end
     if wasEquipped and not hasPole then RestoreAudio() end
+    if hasPole and not lureTicker then
+        RefreshLure()
+        lureTicker = C_Timer.NewTicker(1, RefreshLure)
+    elseif not hasPole and lureTicker then
+        lureTicker:Cancel()
+        lureTicker, lureWasActive, lureWarned = nil, nil, nil
+        addon.UpdateLureStatus()
+    end
     UpdateBindings()
     RefreshSummary()
 end
 
-local function ToggleEquipment()
-    if InCombatLockdown() then
-        Say(L["脱离战斗后再切换装备。"])
-        return
+local function FinishSwap(target, success, message, ...)
+    pendingSwap = nil
+    db.lastGearSwap = { target = target, success = success, message = message, args = { ... }, time = GetServerTime() }
+    addon.RefreshGearStatus()
+    if not success then Say(L[message]:format(...)) end
+end
+
+local function CheckSwap(attempt, timedOut)
+    if pendingSwap ~= attempt then return end
+    local mainMatches = (GetInventoryItemID("player", MAIN_HAND) or 0) == attempt.main
+    local offMatches = (GetInventoryItemID("player", OFF_HAND) or 0) == attempt.off
+    if mainMatches and offMatches then
+        FinishSwap(attempt.name, true, "主副手已确认。")
+    elseif attempt.rejected or timedOut then
+        local slot = not mainMatches and not offMatches and L["主手和副手"]
+            or (not mainMatches and L["主手"] or L["副手"])
+        local reason = attempt.rejected and "游戏报告换装失败：%s未达到目标。"
+            or "等待换装超时：%s未达到目标。"
+        FinishSwap(attempt.name, false, reason, slot)
     end
-    if GetTime() < swappingUntil then return end
+end
+
+local function ToggleEquipment()
+    if pendingSwap then return end
     local api = C_EquipmentSet
-    local poleEquipped = addon.IsFishingPole(GetInventoryItemID("player", 16))
-    local targetID
+    local currentMain = GetInventoryItemID("player", MAIN_HAND) or 0
+    local currentOff = GetInventoryItemID("player", OFF_HAND) or 0
+    local poleEquipped = addon.IsFishingPole(currentMain)
+    local setup = db.setupEquipment
+    local target = setup and setup[poleEquipped and "weapon" or "rod"]
+    local name = target and target.name or (poleEquipped and "W" or "F")
+    local function Fail(message, ...)
+        FinishSwap(name, false, message, ...)
+    end
+    if InCombatLockdown() then return Fail("脱离战斗后再切换装备。") end
+    local targetID, main, off, backupID
     if db.setupEquipment then
-        local rodID, weaponID = addon.GetSetupEquipment()
+        local rodID, weaponID, badSet, reason, slot, actual = addon.GetSetupEquipment()
         if not rodID or not weaponID then
-            Say(L["鱼竿或武器方案已变更，请重新运行 /wowfish setup。"])
-            return
+            name = badSet and badSet.name or name
+            local message, a, b = addon.GetGearSetIssue(badSet, reason, slot, actual)
+            return Fail(message, a, b)
         end
         targetID = poleEquipped and weaponID or rodID
-        local _, _, _, _, _, _, _, missing = api.GetEquipmentSetInfo(targetID)
-        if missing and missing > 0 then
-            Say(L["找不到所需装备，请检查背包。"])
-            return
-        end
+        main, off = target.main, target.off
     else
-        local backupID = api.GetEquipmentSetID("W")
+        backupID = api.GetEquipmentSetID("W")
         if not backupID then
-            Say(L["请在配置向导选择武器，或在装备管理器创建 W。"])
-            return
+            name = "W"
+            return Fail("请在配置向导选择武器，或在装备管理器创建 W。")
         end
-        targetID = backupID
-        if not poleEquipped then
-            targetID = api.GetEquipmentSetID("F")
-            local items = targetID and api.GetItemIDs(targetID)
-            if not items or not addon.IsFishingPole(items[16]) then
-                Say(L["请在配置向导选择鱼竿，或把鱼竿保存为装备方案 F 的主手武器。"])
-                return
-            end
-            api.SaveEquipmentSet(backupID)
+        targetID = poleEquipped and backupID or api.GetEquipmentSetID("F")
+        if not targetID then
+            return Fail("请在配置向导选择鱼竿，或把鱼竿保存为装备方案 F 的主手武器。")
         end
+        local items, ignored, locations = api.GetItemIDs(targetID), api.GetIgnoredSlots(targetID), api.GetItemLocations(targetID)
+        if not items or not ignored or not locations then return Fail("装备管理器暂不可用，请稍后再试。") end
+        if not poleEquipped and not addon.IsFishingPole(items[MAIN_HAND]) then
+            return Fail("方案 F 的主手不是鱼竿。")
+        end
+        main = (ignored[MAIN_HAND] or locations[MAIN_HAND] == 1) and currentMain or math.max(0, items[MAIN_HAND] or 0)
+        off = (ignored[OFF_HAND] or locations[OFF_HAND] == 1) and currentOff or math.max(0, items[OFF_HAND] or 0)
     end
-    swappingUntil = GetTime() + 1
-    if not api.UseEquipmentSet(targetID) then
-        swappingUntil = 0
-        Say(L["切换装备失败，请检查背包空间和装备方案。"])
-        return
+    local _, _, _, _, _, _, _, missing = api.GetEquipmentSetInfo(targetID)
+    if missing and missing > 0 then return Fail("找不到所需装备，请检查背包。") end
+    if (api.EquipmentSetContainsLockedItems and api.EquipmentSetContainsLockedItems(targetID))
+        or (IsInventoryItemLocked and (IsInventoryItemLocked(MAIN_HAND) or IsInventoryItemLocked(OFF_HAND))) then
+        return Fail("装备正在切换或已锁定，请稍后重试。")
     end
+    if backupID and not poleEquipped then api.SaveEquipmentSet(backupID) end
+    local attempt = { id = targetID, name = name, main = main, off = off }
+    pendingSwap = attempt
+    addon.RefreshGearStatus()
+    local accepted = api.UseEquipmentSet(targetID)
+    if pendingSwap ~= attempt then return end
+    if not accepted then return Fail("游戏未接受换装请求，请检查背包空间后重试。") end
+    CheckSwap(attempt)
+    if pendingSwap == attempt then C_Timer.After(4, function() CheckSwap(attempt, true) end) end
     UpdateEquipment()
+end
+
+function addon.GetPendingGearSwap()
+    return pendingSwap and pendingSwap.name
 end
 
 gearButton:SetScript("OnClick", ToggleEquipment)
@@ -306,11 +444,11 @@ local function CountLoot(slot)
     if not item then return end
     lootSlots[slot] = false
     if not caughtFromWindow then
-        catches = catches + 1
+        session.catches = session.catches + 1
         caughtFromWindow = true
     end
-    itemCount = itemCount + item.quantity
-    lastCatch = ("%s ×%d"):format(item.name, item.quantity)
+    session.count = session.count + item.quantity
+    session.lastCatch = ("%s ×%d"):format(item.name, item.quantity)
     addon.RecordCatch(item.itemID, item.name, item.quantity)
     RefreshSummary()
 end
@@ -353,6 +491,7 @@ local function SaveGearKey(key)
     db.useM = key == "M"
     db.gearKey = key
     UpdateEquipment()
+    addon.RefreshGearStatus()
     if addon.RefreshFishingSettings then addon.RefreshFishingSettings() end
 end
 
@@ -397,6 +536,10 @@ local function HandleCommand(input)
         addon.ShowSetup("fishing")
         return
     end
+    if command == "gear" then
+        addon.ShowSetup("gear")
+        return
+    end
     if command == "lang" then
         argument = argument:lower()
         if argument == "zh" or argument == "en" or argument == "auto" then
@@ -433,6 +576,7 @@ local function HandleCommand(input)
         return
     else
         Say(L["/wowfish settings 打开设置；/wowfish setup 打开换装向导；/wowfish bind G 设置抛竿键；/wowfish unbind 清除抛竿键。"])
+        Say(L["/wowfish gear 查看换装方案。"])
         Say(L["/wowfish loot 查看本次渔获；/wowfish fish 查看鱼类资料；/wowfish m on/off 管理 M。"])
         Say(L["语言设置命令为 /wowfish lang zh、/wowfish lang en 或 /wowfish lang auto。"])
         return
@@ -442,6 +586,8 @@ end
 local function Initialize()
     WowfFishingDB = WowfFishingDB or {}
     db = WowfFishingDB
+    db.fishingSession = db.fishingSession or { casts = 0, catches = 0, count = 0, seconds = 0, items = {} }
+    session = db.fishingSession
     addon.InitializeLocale(db.language)
     addon.InitializeCatchList(db)
     addon.InitializeFishCatalog(db)
@@ -464,7 +610,7 @@ local function Initialize()
     UpdateChannel(false)
 end
 
-events:SetScript("OnEvent", function(_, event, unitOrSlot)
+events:SetScript("OnEvent", function(_, event, unitOrSlot, setID)
     if event == "PLAYER_LOGIN" then
         Initialize()
     elseif not db then
@@ -474,11 +620,21 @@ events:SetScript("OnEvent", function(_, event, unitOrSlot)
         UpdateChannel(false)
     elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_REGEN_ENABLED" then
         if event == "PLAYER_REGEN_ENABLED" then StopMovingToolbar() end
+        if pendingSwap and event == "PLAYER_EQUIPMENT_CHANGED" then CheckSwap(pendingSwap) end
         UpdateEquipment()
     elseif event == "EQUIPMENT_SWAP_FINISHED" then
-        swappingUntil = 0
+        if pendingSwap and (setID == pendingSwap.id or (setID == nil and unitOrSlot == true)) then
+            pendingSwap.rejected = unitOrSlot == false
+            CheckSwap(pendingSwap)
+        end
         UpdateEquipment()
     elseif event == "PLAYER_LOGOUT" or event == "PLAYER_REGEN_DISABLED" then
+        if event == "PLAYER_LOGOUT" then
+            SaveFishingTime()
+            if pendingSwap then
+                FinishSwap(pendingSwap.name, false, "退出游戏前未确认换装结果。")
+            end
+        end
         RestoreAudio()
     elseif event == "LOOT_READY" or event == "LOOT_OPENED" then
         ReadFishingLoot()

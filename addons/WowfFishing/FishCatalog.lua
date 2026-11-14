@@ -24,7 +24,7 @@ for _, recipe in ipairs(cooking.entries) do
     end
 end
 
-local observations, quotes
+local observations, quotes, settings
 local mode, filtered, selected = "fish", data.entries, data.entries[1]
 local firstRow, visibleRows, rowHeight = 1, 11, 29
 local rows, tabs = {}, {}
@@ -87,6 +87,10 @@ search:SetMaxLetters(60)
 search:SetScript("OnEscapePressed", search.ClearFocus)
 search:SetScript("OnEnterPressed", search.ClearFocus)
 local searchHint = Label(search, "GameFontDisableSmall", 5, -8, 244)
+local currentZone = theme.Button(surface, nil, "当前区域", 102, 26)
+currentZone:SetPoint("TOPLEFT", 209, -19)
+local onlyHere = false
+local regionalResults = {}
 
 local list = Region(surface, 13, -59, 251, 360)
 Fill(list, "BACKGROUND", colors.card)
@@ -109,6 +113,10 @@ local subtitle = Label(detail, "GameFontHighlightSmall", 76, -46, 241)
 subtitle:SetTextColor(unpack(colors.muted))
 local related = theme.Button(detail, nil, "查看烹饪配方", 130, 25, true)
 related:SetPoint("TOPLEFT", 316, -40)
+local setGoal = theme.Button(detail, nil, "设置目标", 94, 25)
+setGoal:SetPoint("RIGHT", related, "LEFT", -6, 0)
+subtitle:SetWidth(134)
+subtitle:SetMaxLines(1)
 
 local details = CreateFrame("ScrollFrame", nil, detail)
 details:SetPoint("TOPLEFT", 15, -88)
@@ -159,10 +167,29 @@ local function ZoneName(areaID)
     return fallback or C_Map.GetAreaInfo(areaID) or tostring(areaID)
 end
 
-local function ZoneNames(ids)
-    local names = {}
-    for _, id in ipairs(ids) do names[#names + 1] = ZoneName(id) end
-    return table.concat(names, L["、"])
+local function RegionMatches(fish, query, mapID)
+    local reference, observed = false, false
+    local function MatchesName(name)
+        name = name and name:lower() or ""
+        return query ~= "" and (onlyHere and name == query or not onlyHere and name:find(query, 1, true))
+    end
+    for _, area in ipairs(fish.zones) do
+        local map = data.zoneMaps[area]
+        if (mapID and map == mapID) or MatchesName(ZoneName(area))
+            or MatchesName(data.zones[area]) or MatchesName(english.zones[area])
+            or MatchesName(C_Map.GetAreaInfo(area)) then
+            reference = true
+            break
+        end
+    end
+    local seen = observations and observations[fish.id]
+    for zone, quantity in pairs(seen and seen.zones or {}) do
+        if quantity > 0 and MatchesName(zone) then
+            observed = true
+            break
+        end
+    end
+    return reference, observed
 end
 
 local function PriceLines(itemID, fallbackVendor)
@@ -302,6 +329,7 @@ end
 local function RenderDetails()
     iconButton:SetShown(selected ~= nil)
     related:SetShown(selected ~= nil and recipesByFish[selected.id] ~= nil)
+    setGoal:SetShown(selected ~= nil and selected.id ~= nil)
     if not selected then
         nameLabel:SetText(L["没有匹配的条目"])
         subtitle:SetText("")
@@ -315,6 +343,8 @@ local function RenderDetails()
     largeIcon:SetTexture(ItemIcon(itemID))
     nameLabel:SetText(EntryName(selected))
     if selected.id then
+        local goal = settings.fishingSession.goal
+        setGoal:SetText(goal and goal.id == itemID and L["编辑目标"] or L["设置目标"])
         subtitle:SetText((L["%s  ·  物品 %d"]):format(L[selected.category], itemID))
         description:SetText(FishDetails(selected))
     else
@@ -333,7 +363,10 @@ local function RenderList()
         row:SetShown(entry ~= nil)
         if entry then
             row.icon:SetTexture(ItemIcon(row.itemID))
+            local region = regionalResults[entry]
             row.label:SetText(EntryName(entry))
+            row.label:SetWidth(region and 122 or 194)
+            row.region:SetText(region and L[region] or "")
             row.active:SetShown(entry == selected)
             row.mark:SetShown(entry == selected)
             row.label:SetTextColor(unpack(entry == selected and colors.gold or colors.text))
@@ -360,6 +393,8 @@ for i = 1, visibleRows do
     row.icon:SetTexCoord(0.06, 0.94, 0.06, 0.94)
     row.label = Label(row, "GameFontHighlightSmall", 37, -7, 194)
     row.label:SetMaxLines(1)
+    row.region = Label(row, "GameFontHighlightSmall", 162, -7, 69, "RIGHT", colors.muted)
+    row.region:SetMaxLines(1)
     AttachItemTooltip(row)
     row:SetScript("OnClick", function(self)
         selected = self.entry
@@ -376,11 +411,23 @@ list:SetScript("OnMouseWheel", function(_, delta)
 end)
 
 local function Matches(entry, query, numeric)
-    if query == "" then return true end
     if entry.id then
+        local reference, observed
+        if onlyHere then
+            local zone = (GetRealZoneText() or ""):lower()
+            local mapID = C_Map.GetBestMapForUnit("player")
+            reference, observed = RegionMatches(entry, zone, mapID)
+            if not reference and not observed then return false end
+        elseif query ~= "" and not numeric then
+            reference, observed = RegionMatches(entry, query)
+        end
+        if reference or observed then regionalResults[entry] = observed and "已实钓" or "参考钓点" end
+        if query == "" then return true end
         if numeric then return entry.id == numeric end
-        return table.concat({ItemName(entry.id), L[entry.category], ZoneNames(entry.zones)}, " "):lower():find(query, 1, true)
+        if not onlyHere and (reference or observed) then return true end
+        return (ItemName(entry.id) .. " " .. L[entry.category]):lower():find(query, 1, true)
     end
+    if query == "" then return true end
     if numeric and (entry.itemID == numeric or entry.spellID == numeric) then return true end
     if not numeric and (EntryName(entry) .. " " .. ItemName(entry.itemID)):lower():find(query, 1, true) then return true end
     for _, material in ipairs(entry.materials) do
@@ -391,7 +438,7 @@ local function Matches(entry, query, numeric)
 end
 
 local function Filter(query, preferred)
-    filtered = {}
+    filtered, regionalResults = {}, {}
     local entries = mode == "fish" and data.entries or cooking.entries
     query = query:match("^%s*(.-)%s*$"):lower()
     local numeric = tonumber(query)
@@ -417,6 +464,9 @@ end)
 
 local function SelectMode(value, query, preferred)
     mode = value
+    onlyHere = false
+    currentZone:SetShown(mode == "fish")
+    currentZone:SetText(L["当前区域"])
     for key, tab in pairs(tabs) do
         local active = key == mode
         tab.active:SetShown(active)
@@ -435,10 +485,53 @@ end
 tabs.fish:SetScript("OnClick", function() SelectMode("fish") end)
 tabs.cooking:SetScript("OnClick", function() SelectMode("cooking") end)
 related:SetScript("OnClick", function() SelectMode("cooking", tostring(selected.id)) end)
+currentZone:SetScript("OnClick", function()
+    onlyHere = not onlyHere
+    currentZone:SetText(onlyHere and L["显示全部地区"] or L["当前区域"])
+    source:SetText(onlyHere and L["当前区域：%s"]:format(GetRealZoneText() or "—")
+        or L["客户端 "] .. data.build .. L["  ·  钓点含经典参考"])
+    Filter(search:GetText(), selected)
+end)
+
+StaticPopupDialogs["WOWFFISHING_FISH_GOAL"] = {
+    text = "", button1 = "", button2 = "", button3 = "", hasEditBox = true,
+    timeout = 0, whileDead = true, hideOnEscape = true,
+    OnShow = function(self, data)
+        self:GetEditBox():SetText(data.target and tostring(data.target) or "")
+        self:GetEditBox():HighlightText()
+    end,
+    OnAccept = function(self, data)
+        local count = tonumber(self:GetEditBox():GetText())
+        if count and count >= 1 and count <= 9999 and count == math.floor(count) then
+            addon.SetFishingGoal(data.id, data.name, count)
+            RenderDetails()
+        else
+            print(L["请输入 1 到 9999 的整数。"])
+            return true
+        end
+    end,
+    OnAlt = function(_, data)
+        local goal = settings.fishingSession.goal
+        if goal and goal.id == data.id then
+            addon.SetFishingGoal(nil)
+            RenderDetails()
+        end
+    end,
+}
+setGoal:SetScript("OnClick", function()
+    if not selected or not selected.id then return end
+    local goal = settings.fishingSession.goal
+    local dialog = StaticPopupDialogs["WOWFFISHING_FISH_GOAL"]
+    dialog.text, dialog.button1, dialog.button2 = L["%s：本次想钓多少件？"], SAVE, CANCEL
+    local editing = goal and goal.id == selected.id
+    dialog.button3 = editing and L["清除目标"] or nil
+    local name = ItemName(selected.id)
+    StaticPopup_Show("WOWFFISHING_FISH_GOAL", name, nil, { id = selected.id, name = name, target = editing and goal.target })
+end)
 
 function addon.InitializeFishCatalog(db)
     db.fishObservations = db.fishObservations or {}
-    observations, quotes = db.fishObservations, db.auctionQuotes
+    observations, quotes, settings = db.fishObservations, db.auctionQuotes, db
     for itemID in pairs(items) do
         if not C_Item.GetItemInfo(itemID) then C_Item.RequestLoadItemDataByID(itemID) end
     end
@@ -472,13 +565,26 @@ function addon.ToggleFishCatalog(itemID)
 end
 
 panel:SetScript("OnShow", function()
-    RenderList()
-    RenderDetails()
+    if onlyHere then
+        source:SetText(L["当前区域：%s"]:format(GetRealZoneText() or "—"))
+        Filter(search:GetText(), selected)
+    else
+        RenderList()
+        RenderDetails()
+    end
 end)
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("ITEM_DATA_LOAD_RESULT")
-events:SetScript("OnEvent", function(_, _, itemID, success)
+events:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+events:SetScript("OnEvent", function(_, event, itemID, success)
+    if event == "ZONE_CHANGED_NEW_AREA" then
+        if onlyHere and panel:IsShown() then
+            source:SetText(L["当前区域：%s"]:format(GetRealZoneText() or "—"))
+            Filter(search:GetText(), selected)
+        end
+        return
+    end
     if not success or not items[itemID] or not panel:IsShown() then return end
     if search:GetText() ~= "" then
         Filter(search:GetText(), selected)

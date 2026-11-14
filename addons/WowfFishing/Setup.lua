@@ -4,7 +4,7 @@ local theme = addon.Theme
 local colors = theme.colors
 local MAIN_HAND, OFF_HAND = 16, 17
 local FIRST_SLOT, LAST_SLOT = 1, 19
-local EMPTY_LOCATION, IGNORED_LOCATION = 0, 1
+local EMPTY_LOCATION, IGNORED_LOCATION, MISSING_LOCATION = 0, 1, -1
 local ROW_COUNT = 5
 local mainHandTypes = { INVTYPE_WEAPON = true, INVTYPE_WEAPONMAINHAND = true, INVTYPE_2HWEAPON = true }
 local db, handlers, step, rod, weapon, page
@@ -64,29 +64,43 @@ local function ItemText(item)
 end
 
 local function HandSetID(set)
-    if not set then return end
+    if not set then return nil, "unconfigured" end
     local api = C_EquipmentSet
-    if api.GetEquipmentSetID(set.name) ~= set.id then return end
-    local items, ignored = api.GetItemIDs(set.id), api.GetIgnoredSlots(set.id)
-    local locations = api.GetItemLocations(set.id)
-    if not items or not ignored or not locations or items[MAIN_HAND] ~= set.main
-        or math.max(items[OFF_HAND] or 0, 0) ~= set.off then return end
+    -- Resolve the current ID by name, then verify the set before using it.
+    local id = api.GetEquipmentSetID(set.name)
+    if not id then
+        if not api.CanUseEquipmentSets() then return nil, "unavailable" end
+        return nil, "missingSet"
+    end
+    local items, ignored = api.GetItemIDs(id), api.GetIgnoredSlots(id)
+    local locations = api.GetItemLocations(id)
+    if not items or not ignored or not locations then return nil, "unavailable" end
+    local off = math.max(items[OFF_HAND] or 0, 0)
+    if items[MAIN_HAND] ~= set.main then return nil, "changed", MAIN_HAND, items[MAIN_HAND] end
+    if off ~= set.off then return nil, "changed", OFF_HAND, off end
     for slot = FIRST_SLOT, LAST_SLOT do
         local location = locations[slot]
         if slot == MAIN_HAND or slot == OFF_HAND then
-            if ignored[slot] or location == IGNORED_LOCATION then return end
-            if slot == OFF_HAND and set.off == 0 and location ~= nil and location ~= EMPTY_LOCATION then return end
-        elseif (not ignored[slot] and location ~= IGNORED_LOCATION)
-            or (location ~= nil and location ~= IGNORED_LOCATION) then
-            return
+            if ignored[slot] or location == IGNORED_LOCATION then return nil, "ignored", slot end
+            -- An unavailable empty off hand is valid only if the set explicitly includes that slot.
+            if slot == OFF_HAND and off == 0 and location ~= nil and location ~= EMPTY_LOCATION
+                and not (location == MISSING_LOCATION and ignored[slot] == false) then return nil, "notEmpty", slot end
+        elseif location ~= IGNORED_LOCATION and not (ignored[slot] and (location == nil
+            or (location == MISSING_LOCATION and (items[slot] or 0) <= 0))) then
+            return nil, "extraSlot", slot
         end
     end
-    return set.id
+    return id
 end
 
 function addon.GetSetupEquipment()
     local setup = db.setupEquipment
-    if setup then return HandSetID(setup.rod), HandSetID(setup.weapon) end
+    if not setup then return end
+    local rodID, reason, slot, actual = HandSetID(setup.rod)
+    if not rodID then return nil, nil, setup.rod, reason, slot, actual end
+    local weaponID
+    weaponID, reason, slot, actual = HandSetID(setup.weapon)
+    return rodID, weaponID, not weaponID and setup.weapon or nil, reason, slot, actual
 end
 
 local function ChooseSetName(api, label, snapshot)
@@ -197,14 +211,14 @@ end
 
 local function RemovePreviousSet(previous, replacement)
     local id = HandSetID(previous)
-    if id and id ~= replacement.id and not C_EquipmentSet.GetEquipmentSetAssignedSpec(id) then
+    if id and id == previous.id and id ~= replacement.id and not C_EquipmentSet.GetEquipmentSetAssignedSpec(id) then
         C_EquipmentSet.DeleteEquipmentSet(id)
     end
 end
 
 local wizard = theme.CreatePanel("WowfFishingSetup")
 wizard:SetSize(456, 430)
-wizard:SetPoint("CENTER", UIParent, "CENTER", 0, 35)
+wizard:SetPoint("CENTER", UIParent, "CENTER", 314, 35)
 wizard:SetMovable(true)
 local titleDrag = CreateFrame("Frame", nil, wizard)
 titleDrag:SetPoint("TOPLEFT", 6, 0)
@@ -222,16 +236,16 @@ local function Page()
     frame:Hide()
     return frame
 end
-local surface, fishingPage = Page(), Page()
-local fishingTab = theme.Button(background, nil, "钓鱼操作", 204, 24)
-fishingTab:SetPoint("TOPLEFT", 20, -32)
-local setupTab = theme.Button(background, nil, "换装向导", 204, 24)
-setupTab:SetPoint("LEFT", fishingTab, "RIGHT", 8, 0)
-local tabMarks = {
-    fishing = theme.Block(fishingTab, "ARTWORK", 0, -22, 204, 2, colors.gold),
-    setup = theme.Block(setupTab, "ARTWORK", 0, -22, 204, 2, colors.gold),
-}
-local currentTab, fishingSettings
+local surface, fishingPage, gearPage = Page(), Page(), Page()
+local tabMarks = {}
+for index, tab in ipairs({ { "fishing", "钓鱼操作" }, { "gear", "换装方案" }, { "setup", "换装向导" } }) do
+    local tabID = tab[1]
+    local button = theme.Button(background, nil, tab[2], 134, 24)
+    button:SetPoint("TOPLEFT", 20 + (index - 1) * 141, -32)
+    button:SetScript("OnClick", function() addon.ShowSetup(tabID) end)
+    tabMarks[tabID] = theme.Block(button, "ARTWORK", 0, -22, 134, 2, colors.gold)
+end
+local currentTab, fishingSettings, gearStatus
 
 local Label = theme.Label
 
@@ -597,7 +611,7 @@ local function Advance(attempt)
     if old then RemovePreviousSet(old.weapon, db.setupEquipment.weapon) end
     handlers.saveKey(key)
     step = nil
-    addon.ShowSetup("fishing", L["换装方案已保存。"])
+    addon.ShowSetup("gear", L["换装方案已保存。"])
     handlers.say(L["配置已保存。点击屏幕按钮或按 "] .. key .. L[" 可切换鱼竿与武器。"])
 end
 
@@ -643,12 +657,15 @@ end
 surface:HookScript("OnHide", CancelPending)
 wizard:HookScript("OnHide", CancelPending)
 wizard:SetScript("OnEvent", function(_, event)
-    if not wizard:IsShown() or currentTab ~= "setup" then return end
+    if not wizard:IsShown() then return end
+    if currentTab == "gear" then gearStatus(); return end
+    if currentTab ~= "setup" then return end
     if event == "PLAYER_REGEN_DISABLED" then CancelPending() end
     if not pending then Render(lastNotice) end
 end)
 for _, event in ipairs({
-    "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "GET_ITEM_INFO_RECEIVED",
+    "BAG_UPDATE_DELAYED", "PLAYER_EQUIPMENT_CHANGED", "GET_ITEM_INFO_RECEIVED", "EQUIPMENT_SETS_CHANGED",
+    "EQUIPMENT_SWAP_FINISHED", "PLAYER_ENTERING_WORLD",
     "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED",
 }) do
     wizard:RegisterEvent(event)
@@ -658,15 +675,16 @@ function addon.ShowSetup(tab, notice)
     tab = tab or "setup"
     if not wizard:IsShown() then step = nil end
     currentTab = tab
-    tabMarks.fishing:SetShown(tab == "fishing")
-    tabMarks.setup:SetShown(tab == "setup")
+    wizard:SetHeight(tab == "gear" and 485 or 430)
+    for id, mark in pairs(tabMarks) do mark:SetShown(tab == id) end
+    gearPage:SetShown(tab == "gear")
+    fishingPage:SetShown(tab == "fishing")
     if tab == "setup" then
-        fishingPage:Hide()
         if not step then
             step, page = 1, nil
             local setup = db.setupEquipment
-            rod = setup and { id = setup.rod.main } or nil
-            weapon = setup and { id = setup.weapon.main } or nil
+            rod = setup and setup.rod and { id = setup.rod.main } or nil
+            weapon = setup and setup.weapon and { id = setup.weapon.main } or nil
             selectedKey, selectedOverride = handlers.key(), nil
         end
         surface:Show()
@@ -675,13 +693,10 @@ function addon.ShowSetup(tab, notice)
         CancelPending()
         keyCapture:StopListening()
         surface:Hide()
-        fishingPage:Show()
-        fishingSettings(notice)
+        if tab == "gear" then gearStatus(notice or "") else fishingSettings(notice) end
     end
     theme.ShowPanel(wizard)
 end
-fishingTab:SetScript("OnClick", function() addon.ShowSetup("fishing") end)
-setupTab:SetScript("OnClick", function() addon.ShowSetup() end)
 
 function addon.InitializeSetup(settings, callbacks)
     db, handlers = settings, callbacks
@@ -694,5 +709,14 @@ function addon.InitializeSetup(settings, callbacks)
         keyCapture:AttachButton(keyButton)
         useKey:SetScript("OnClick", function() keyCapture:UseConflictingKey() end)
         fishingSettings = addon.CreateFishingSettings(fishingPage, settings, handlers)
+        gearStatus = addon.CreateGearStatus(gearPage, settings, handlers.key, HandSetID)
     end
+end
+
+function addon.RefreshGearStatus()
+    if wizard:IsShown() and currentTab == "gear" then gearStatus() end
+end
+
+function addon.ToggleFishingSettings()
+    if wizard:IsShown() then wizard:Hide() else addon.ShowSetup("fishing") end
 end

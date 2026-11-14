@@ -5,7 +5,7 @@
 ## Notes: Fishing toolbar, catch estimates, and a fish and cooking catalog for WoW Forever.
 ## Notes-zhCN: 钓鱼装备、抛竿收竿、渔获估价与鱼类烹饪资料。
 ## Notes-zhTW: 钓鱼装备、抛竿收竿、渔获估价与鱼类烹饪资料。
-## Version: 0.6.0
+## Version: 0.7.0
 ## SavedVariablesPerCharacter: WowfFishingDB
 
 Localization.lua
@@ -17,5 +17,6 @@ FishCatalog.lua
 About.lua
 FishingSettings.lua
 CatchList.lua
+GearStatus.lua
 Setup.lua
 Fishing.lua
