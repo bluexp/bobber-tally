@@ -4,16 +4,16 @@ IMPORTANT: This file was signed by Sparkle. Any modifications to this file requi
     <channel>
         <title>无限库 WFDB</title>
         <item>
-            <title>0.2.0</title>
-            <pubDate>Sun, 15 Nov 2026 12:00:23 +0800</pubDate>
+            <title>0.2.1</title>
+            <pubDate>Sun, 15 Nov 2026 12:07:40 +0800</pubDate>
             <link>https://wfdb.cc/</link>
-            <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>0.2.1</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-            <enclosure url="https://wfdb.cc/downloads/WFDB-macOS-v0.2.0.zip" length="1589012" type="application/octet-stream" sparkle:edSignature="rFHYfwlbkzqFGQ96ZsSh0sNjbFkPF2aKDSMTwAjaOt0dddjwmjIRUYsBnc+ATNsMhnw2rDg6uXBWRrjctFosDg=="></enclosure>
+            <enclosure url="https://wfdb.cc/downloads/WFDB-macOS-v0.2.1.zip" length="1597476" type="application/octet-stream" sparkle:edSignature="H9fL17hBkV1635F8mPER+AAPjPvhm2S/iMJwVyVKfu7Wq8ErbGyFR6OaPdbFQorfGWx4NWwavIKhAj8KHYqGCw=="></enclosure>
         </item>
     </channel>
 </rss><!-- sparkle-signatures:
-edSignature: FHei/iZcp4y/k6AswuN8jxwmGfFQMTUwgurg+WtKJvdtUA28kuZAo5Jh+LXCGu0tfJrExxp2sODbDWEwkKmrAg==
+edSignature: 5WdYtqIUJGM8XWf/i9odc8fd9KDUMeA59/wUS+EE9t6nO40MdawDoQxM5oa2fPcGnr5etsvcatT9+0TKmSVkAA==
 length: 1056
 -->
