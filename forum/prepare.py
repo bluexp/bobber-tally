@@ -56,6 +56,16 @@ shell_guard = "  if (path.startsWith('/wfdb/')) return false;\n"
 shell_text = shell.read_text()
 if shell_anchor + shell_guard not in shell_text:
     shell.write_text(shell_text.replace(shell_anchor, shell_anchor + shell_guard))
+shell_text = shell.read_text()
+shell_text = shell_text.replace("function shellKeyRequest(origin: string): Request {",
+                                "function shellKeyRequest(origin: string, revision: string): Request {")
+shell_text = shell_text.replace("return new Request(`${origin}/__fi/spa-shell`, { method: 'GET' });",
+                                "return new Request(`${origin}/__fi/spa-shell/${encodeURIComponent(revision)}`, { method: 'GET' });")
+shell_text = shell_text.replace("shellKeyRequest(new URL(c.req.url).origin);",
+                                "shellKeyRequest(new URL(c.req.url).origin, c.env.CF_VERSION_METADATA?.id ?? 'dev');")
+shell.write_text(shell_text)
+insert(api / "src" / "types" / "env.ts", "  ASSETS: Fetcher;",
+       "  CF_VERSION_METADATA?: WorkerVersionMetadata;")
 cache = api / "src" / "core" / "cache" / "index.ts"
 for operation in ("get", "put", "delete"):
     is_read = operation == "get"
@@ -70,12 +80,24 @@ config = config.replace('name = "freeidx-api"', 'name = "wfdb-forum"')
 config = config.replace('database_name = "freeidx"', 'database_name = "wfdb-forum"')
 config = config.replace("enabled = true", "enabled = false")
 config = config.replace('"!/fonts/*"]', '"!/fonts/*", "!/wfdb-forum-source.tar.gz"]')
+config += '\n[version_metadata]\nbinding = "CF_VERSION_METADATA"\n'
 (api / "wrangler.wfdb.toml").write_text(config)
 seed = (api / "seed" / "seed.sql").read_text()
 seed = re.sub(r"--> s4_admin.*?(?=--> s5_setting)", "", seed, flags=re.S)
 (api / "seed" / "wfdb.sql").write_text(seed + (root / "seed.sql").read_text())
-footer = tree / "apps" / "web" / "src" / "themes" / "light" / "Layout.tsx"
-insert(footer, "                  © {new Date().getFullYear()} {setting?.sitename || 'FreeIDX'} · Powered by FreeIDX",
-       '                  <a href="https://wfdb.cc/" className="mr-3">WFDB</a>\n'
-       '                  <a href="/wfdb-forum-source.tar.gz" className="mr-3">Source code</a>')
+layout = tree / "apps" / "web" / "src" / "themes" / "light" / "Layout.tsx"
+previous_footer_links = (
+    '                  <a href="https://wfdb.cc/" className="mr-3">WFDB</a>\n'
+    '                  <a href="/wfdb-forum-source.tar.gz" className="mr-3">Source code</a>\n'
+)
+layout_text = layout.read_text()
+if previous_footer_links in layout_text:
+    layout.write_text(layout_text.replace(previous_footer_links, ""))
+
+patch = ["git", "-C", str(tree), "apply"]
+ui = str(root / "wfdb-ui.patch")
+already_applied = subprocess.run([*patch, "--reverse", "--check", ui], capture_output=True)
+if already_applied.returncode != 0:
+    subprocess.run([*patch, "--check", ui], check=True)
+    subprocess.run([*patch, ui], check=True)
 print(tree)

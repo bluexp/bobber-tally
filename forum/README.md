@@ -2,6 +2,8 @@
 
 论坛以 [FreeIDX](https://github.com/cobubu/FreeIDX) 为基础，使用 Cloudflare Workers Static Assets 和 D1。论坛先开放文字主题和回复。论坛主页是 `forum.wfdb.cc`，资料库和下载入口在 `wfdb.cc`。
 
+`prepare.py` 应用 `wfdb-ui.patch`，给论坛加上主站的颜色、品牌和导航。页面继续使用 FreeIDX 的主题列表、搜索和账号表单。
+
 ## 本机试用
 
 在仓库根目录运行下面的命令。需要 Node.js、Corepack 和 Python 3。

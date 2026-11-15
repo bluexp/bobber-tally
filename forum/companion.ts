@@ -19,9 +19,22 @@ const escape = (value: string) => value.replace(/[&<>"']/g, char =>
 function page(message: string, status = 200): Response {
   return new Response(`<!doctype html><html lang="zh-CN"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#090a0f">
 <title>无限库 WFDB · 连接客户端</title>
-<style>body{font:1rem system-ui;max-width:38rem;margin:12vh auto;padding:0 1.25rem;line-height:1.7;color:#17222e;background:#f4f7fb}main{padding:1.5rem;background:#fff;border-radius:1rem;border:1px solid #d5dfeb}a{color:#1c5794}a+a{margin-left:1rem}button{padding:.5rem 1rem;cursor:pointer;font:inherit}h1{font-size:1.35rem;margin-top:0}</style>
-<main><h1>连接无限库 WFDB 客户端</h1>${message}</main></html>`, {
+<style>
+html{color-scheme:dark;min-height:100%;background:#090a0f radial-gradient(ellipse at 20% 13%,#282518,transparent 55%)}
+body{font:1rem/1.65 "DM Sans","PingFang SC",system-ui,sans-serif;max-width:32rem;margin:10vh auto;padding:0 1.1rem;color:#f3f3f2}
+main{padding:clamp(1.25rem,5vw,2rem);background:#12151e;border:1px solid #30364b;border-radius:14px}
+.brand{margin:0;color:#f8b700;font-weight:800;letter-spacing:.05em}
+a{color:#f8b700;text-underline-offset:4px}
+a+a{margin-left:1rem}
+button{border:0;border-radius:8px;padding:.55rem 1rem;cursor:pointer;font:inherit;font-weight:750;background:#f8b700;color:#090a0f}
+button:hover{background:#ffcf47}
+:focus-visible{outline:2px solid #ffcf47;outline-offset:3px}
+h1{font-size:clamp(1.35rem,5vw,1.75rem);margin:.55rem 0;line-height:1.2}
+main p:not(.brand){color:#b8bdcb}
+</style>
+<main><p class="brand">WFDB · 无限库</p><h1>连接客户端</h1>${message}</main></html>`, {
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',

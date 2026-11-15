@@ -1,0 +1,1464 @@
+diff --git a/apps/web/index.html b/apps/web/index.html
+index 0457555..0eddb23 100644
+--- a/apps/web/index.html
++++ b/apps/web/index.html
+@@ -5,7 +5,8 @@
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     <!-- 占位标题：构建期读不到后台设置，运行时由 Worker 的 injectShell 替换为「站点名 - 一句话定位」
+          （见 apps/api/src/index.ts）；爬虫走 prerender() 的预渲染正文，不读这里。 -->
+-    <title>FreeIDX</title>
++    <title>WFDB Forum</title>
++    <meta name="theme-color" content="#090a0f" />
+     <script>
+       /* 后台是独立外壳（侧栏版式），骨架屏按前台版式绘制：命中 /admin 时整块关掉，避免版式跳动 */
+       try {
+@@ -16,8 +17,9 @@
+       /* 首屏骨架（性能项）：React 挂载前 #root 是空的，此前 FCP 要等「入口 JS + 词条包」下载执行完；
+          这里用纯 CSS 画出顶栏 + 内容占位，首个像素只等 HTML 本身。
+          #root 一旦有子节点即整块隐藏（兄弟选择器，无脚本依赖），挂载后不参与任何布局与交互。 */
++      html:not([data-fi-skel='off']) { background: #090a0f; }
+       #fi-boot {
+-        max-width: 1200px;
++        max-width: 1120px;
+         margin: 0 auto;
+         padding: 0 16px 24px;
+       }
+@@ -31,7 +33,7 @@
+         gap: 14px;
+       }
+       #fi-boot .b {
+-        background: #eceef1;
++        background: #161923;
+         border-radius: 6px;
+         animation: fi-pulse 1.2s ease-in-out infinite;
+       }
+diff --git a/apps/web/src/components/AuthModal.tsx b/apps/web/src/components/AuthModal.tsx
+index 4d11186..be9d7d7 100644
+--- a/apps/web/src/components/AuthModal.tsx
++++ b/apps/web/src/components/AuthModal.tsx
+@@ -20,6 +20,7 @@ export function AuthModal() {
+   const t = useT();
+   const navigate = useNavigate();
+   const load = useAuth((s) => s.load);
++  const resetEnabled = useAuth((s) => s.setting?.userResetpwOn);
+ 
+   /**
+    * 每次打开弹窗刷新一次 bootstrap：`setting.userCreateEmailOn` 与 `mailOn`（邮件账号池是否可用）都是服务端算出来的，
+@@ -99,10 +100,14 @@ export function AuthModal() {
+                 </button>
+               </>
+             )}
+-            <span className="mx-2 opacity-40">·</span>
+-            <button type="button" className="text-brand hover:underline" onClick={goResetPw}>
+-              {t('forgot_pw')}
+-            </button>
++            {resetEnabled && (
++              <>
++                <span className="mx-2 opacity-40">·</span>
++                <button type="button" className="text-brand hover:underline" onClick={goResetPw}>
++                  {t('forgot_pw')}
++                </button>
++              </>
++            )}
+           </div>
+         </section>
+       </div>
+diff --git a/apps/web/src/components/ContentLangBar.tsx b/apps/web/src/components/ContentLangBar.tsx
+index a60a9f6..98556a5 100644
+--- a/apps/web/src/components/ContentLangBar.tsx
++++ b/apps/web/src/components/ContentLangBar.tsx
+@@ -18,7 +18,7 @@ const chipOn = 'border-brand bg-brand text-white';
+ const chipOff = 'border-zh-line bg-lt-soft text-ink-soft hover:bg-zh-row-hover';
+ 
+ /** wrap：bar = 卡片内分隔行（首页）；card = 独立卡片（版块页）；none = 裸条（搜索页） */
+-export function ContentLangBar({ wrap = 'none' }: { wrap?: 'none' | 'bar' | 'card' }) {
++export function ContentLangBar({ wrap = 'none', compact = false }: { wrap?: 'none' | 'bar' | 'card'; compact?: boolean }) {
+   const t = useT();
+   const mode = useContentLangMode();
+   const effective = useContentLangFilter();
+@@ -26,6 +26,21 @@ export function ContentLangBar({ wrap = 'none' }: { wrap?: 'none' | 'bar' | 'car
+   const setPref = useContentLang((s) => s.setPref);
+   if (mode <= 0) return null;
+ 
++  if (compact) {
++    return (
++      <label className="wfdb-language-filter">
++        <span>{t('content_lang_label')}</span>
++        <select value={effective || 'all'} onChange={(e) => {
++          const selected = e.currentTarget.value;
++          setPref(CONTENT_LANGS.find((lang) => lang === selected) ?? 'all');
++        }}>
++          <option value="all">{t('content_lang_all')}</option>
++          {CONTENT_LANGS.map((lang) => <option key={lang} value={lang}>{CONTENT_LANG_NATIVE_NAMES[lang]}</option>)}
++        </select>
++      </label>
++    );
++  }
++
+   /* 选中态按「实际生效值」渲染：mode=2 且未手动选择时，界面语言对应的 chip 高亮 */
+   const active = (v: string) => (v ? effective === v : effective === '');
+   const isManual = (v: string) => (v ? pref === v : pref === 'all');
+diff --git a/apps/web/src/components/SiteLogo.tsx b/apps/web/src/components/SiteLogo.tsx
+index 0443b4b..dcdd7bd 100644
+--- a/apps/web/src/components/SiteLogo.tsx
++++ b/apps/web/src/components/SiteLogo.tsx
+@@ -1,26 +1,18 @@
+-/**
+- * 站点 Logo（顶栏 / 页脚 / 登录注册找回页共用）：
+- *  - 后台「基础设置」上传过 logo（bootstrap.setting.logo_url，落 R2 /files/site/logo.*）→ 直接渲染上传图；
+- *  - 未上传（含上传后被「恢复默认」清空）→ 渲染打包内置的品牌字标 assets/brand-wordmark.svg，
+- *    随构建带 hash 文件名，不依赖后台、不占 R2，也不受站点名称改名影响；
+- *    暗色下用 filter 提亮成白色剪影，避免深蓝字压在深色顶栏上糊成一片。
+- */
+-import defaultLogo from '../assets/brand-wordmark.svg';
+ import { cx } from '../lib/cx';
++import { useLang } from '../lib/i18n';
+ 
+-export function SiteLogo({
+-  setting,
+-  className,
+-}: {
++export function SiteLogo({ setting, className }: {
+   setting?: { logo_url?: string | null; sitename?: string | null } | null;
+   className?: string;
+ }) {
+-  const uploaded = String(setting?.logo_url ?? '').trim();
++  const chinese = useLang().startsWith('zh');
++  if (setting?.logo_url) {
++    return <img src={setting.logo_url} alt={setting.sitename || 'WFDB'} className={className} />;
++  }
+   return (
+-    <img
+-      src={uploaded || defaultLogo}
+-      alt={setting?.sitename || 'FreeIDX'}
+-      className={cx(className, !uploaded && 'dark:brightness-0 dark:invert')}
+-    />
++    <span className={cx('wfdb-brand', className)}>
++      <strong>WFDB</strong>
++      {chinese && <span>无限库</span>}
++    </span>
+   );
+ }
+diff --git a/apps/web/src/components/ui.tsx b/apps/web/src/components/ui.tsx
+index 4c57425..84e3b66 100644
+--- a/apps/web/src/components/ui.tsx
++++ b/apps/web/src/components/ui.tsx
+@@ -265,7 +265,7 @@ export function CardTabs({ items }: { items: { k: string; text: string; icon?: I
+ export function IconInput({ icon, className, ...rest }: { icon: IconName } & InputHTMLAttributes<HTMLInputElement>) {
+   return (
+     <div className="flex items-stretch">
+-      <span className="flex items-center rounded-l-[4px] border border-r-0 border-[#ced4da] bg-[#e9ecef] px-3 text-[#6c757d] dark:border-[#28262d] dark:bg-[#28262d] dark:text-[#a8abb2]">
++      <span className="flex items-center rounded-l-[4px] border border-r-0 border-input bg-secondary px-3 text-ink-soft">
+         <Icon name={icon} />
+       </span>
+       <input
+diff --git a/apps/web/src/themes/light/Layout.tsx b/apps/web/src/themes/light/Layout.tsx
+index ae67b7f..e88943e 100644
+--- a/apps/web/src/themes/light/Layout.tsx
++++ b/apps/web/src/themes/light/Layout.tsx
+@@ -27,9 +27,10 @@ import { Avatar } from '../../components/Avatar';
+ import { Icon, isIconName, type IconName } from '../../components/icons';
+ import { InsertCode, useInsertCodes } from '../../components/InsertCode';
+ import { Button, cx } from '../../components/ui';
+-import { useApplyTheme, useLight, useThemeMode } from '../../store/theme';
++import { useApplyTheme, useLight } from '../../store/theme';
+ import { ThemeSlot } from '../../lib/theme/slots';
+ import { SiteLogo } from '../../components/SiteLogo';
++import './wfdb.css';
+ 
+ /**
+  * 顶栏固定入口的图标配色：图标常驻彩色（不随激活/悬停变灰），与灰色文字形成层次。
+@@ -66,7 +67,7 @@ function NavItem({
+   const cls = cx(
+     'flex items-center gap-1.5 whitespace-nowrap transition-colors',
+     compact ? 'rounded-[3px] px-3 py-1.5 text-sm' : 'h-full px-4 text-[16px]',
+-    active ? 'font-medium text-brand' : 'text-[#6c757d] hover:text-brand',
++    active ? 'font-medium text-brand' : 'text-ink-soft hover:text-brand',
+   );
+   const inner = (
+     <>
+@@ -130,7 +131,7 @@ function SearchForm({
+   return (
+     <form
+       className={cx(
+-        'flex h-9 w-full items-center rounded-[20px] bg-lt-aid px-3.5 transition-shadow focus-within:ring-2 focus-within:ring-[rgba(64,158,255,0.25)]',
++        'flex h-9 w-full items-center rounded-[20px] bg-lt-aid px-3.5 transition-shadow focus-within:ring-2 focus-within:ring-brand/30',
+         !pill && 'lg:max-w-[260px]',
+       )}
+       onSubmit={onSearch}
+@@ -181,31 +182,6 @@ function GoTop() {
+   );
+ }
+ 
+-/** 暗色三态切换：自动→日间→夜间 */
+-function ThemeSwitch() {
+-  const t = useT();
+-  const mode = useThemeMode((s) => s.mode);
+-  const cycle = useThemeMode((s) => s.cycle);
+-  const label =
+-    mode === 'auto'
+-      ? t('theme_mode_auto')
+-      : mode === 'day'
+-        ? t('theme_mode_day')
+-        : t('theme_mode_night');
+-  const icon: IconName = mode === 'auto' ? 'refresh_cw' : mode === 'day' ? 'sun' : 'moon';
+-  return (
+-    <button
+-      type="button"
+-      className="flex size-10 items-center justify-center text-[#6c757d] transition-colors hover:text-brand"
+-      aria-label={`${t('theme_switch')}：${label}`}
+-      title={`${t('theme_switch')}：${label}`}
+-      onClick={cycle}
+-    >
+-      <Icon name={icon} className="size-[18px]" />
+-    </button>
+-  );
+-}
+-
+ function LangSwitch({ compact }: { compact?: boolean }) {
+   const t = useT();
+   const lang = useLang();
+@@ -231,7 +207,7 @@ function LangSwitch({ compact }: { compact?: boolean }) {
+       <button
+         type="button"
+         className={cx(
+-          'flex items-center justify-center text-[#6c757d] transition-colors hover:text-brand',
++          'flex items-center justify-center text-ink-soft transition-colors hover:text-brand',
+           compact ? 'h-9 gap-1 rounded-[3px] px-3 text-sm' : 'size-10',
+         )}
+         aria-label={t('select_language')}
+@@ -429,6 +405,19 @@ function UserMenu() {
+   );
+ }
+ 
++function SiteNav({ className }: { className?: string }) {
++  const chinese = useLang().startsWith('zh');
++  const site = chinese ? 'https://wfdb.cc/' : 'https://wfdb.cc/en/';
++  return (
++    <nav className={cx('wfdb-site-nav', className)} aria-label={chinese ? '主导航' : 'Main navigation'}>
++      <a href={site}>{chinese ? '资料库' : 'WFDB home'}</a>
++      <a href={site + 'fishing/'}>{chinese ? '钓鱼' : 'Fishing'}</a>
++      <a href={site + 'addons/'}>{chinese ? '插件' : 'Add-ons'}</a>
++      <Link to="/" aria-current="page">{chinese ? '论坛' : 'Forum'}</Link>
++    </nav>
++  );
++}
++
+ export function Layout({ children }: { children?: ReactNode }) {
+   /* 站点名称/介绍/描述按当前界面语言取词（标题、页脚、meta） */
+   const setting = useLocalizedSetting();
+@@ -492,16 +481,25 @@ export function Layout({ children }: { children?: ReactNode }) {
+     setDrawer(false);
+   }, [pathname]);
+ 
++  useEffect(() => {
++    if (!drawer) return;
++    const closeOnEscape = (event: KeyboardEvent) => {
++      if (event.key === 'Escape') setDrawer(false);
++    };
++    window.addEventListener('keydown', closeOnEscape);
++    return () => window.removeEventListener('keydown', closeOnEscape);
++  }, [drawer]);
++
+   /**
+    * 标签页标题 = 「站点名 - 一句话定位」，定位短语取 **desc**（SEO 字段）而非 brief（富文本，会带标签、超长被截断）。
+    * 与 Worker 壳页注入（injectShell）、爬虫预渲染（newPageMeta）共用 shared/site-text.siteTitleOf，
+    * 三方逐字一致，不会出现「首帧是一个标题、JS 就绪后变另一个」。
+    */
+   /* setting 由 useLocalizedSetting 按 [setting, lang] 记忆化，引用稳定 → 语言切换或配置变更才重算 */
+-  const siteTitle = useMemo(() => (setting ? siteTitleOf(setting) : 'FreeIDX'), [setting]);
++  const siteTitle = useMemo(() => (setting ? siteTitleOf(setting) : 'WFDB'), [setting]);
+ 
+   useEffect(() => {
+-    document.title = siteTitle || 'FreeIDX';
++    document.title = siteTitle || 'WFDB';
+   }, [pathname, siteTitle]);
+ 
+   /* 顶栏导航与一级版块均为派生数据：Layout 在每个页面常驻、路由与 store 变化都会重渲染，
+@@ -530,6 +528,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+   const homeActive = pathname === '/' || pathname.startsWith('/page');
+   const discActive = pathname.startsWith('/discovery');
+   const rankActive = pathname.startsWith('/rank');
++  const chinese = useLang().startsWith('zh');
+   /* 自定义导航项：label 是默认名称，命中当前语言的 labels 则覆盖（后台「导航栏设置」可配）；
+      icon 同样来自后台配置，渲染前按图标集白名单校验（历史数据/改名后的无效名 = 只显示名称） */
+   const forumItems = navConfigured
+@@ -552,7 +551,6 @@ export function Layout({ children }: { children?: ReactNode }) {
+         icon: undefined as IconName | undefined,
+         iconUrl: undefined as string | undefined,
+       }));
+-  const contact: IconName[] = ['message', 'comment', 'envelope'];
+   /** 发现页显示名（可后台自定义；缺省回落 i18n「发现」） */
+   const discLabel = light.discPageTitle || t('discovery');
+ 
+@@ -571,7 +569,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+   return (
+     <div
+       className={cx(
+-        'theme-zh flex min-h-dvh flex-col bg-background text-foreground',
++        'theme-zh wfdb-forum flex min-h-dvh flex-col text-foreground',
+         light.bodyFontStyle === 2 && 'font-smiley',
+       )}
+     >
+@@ -579,64 +577,31 @@ export function Layout({ children }: { children?: ReactNode }) {
+           主题插槽：启用主题覆写 header 时整块（含移动端抽屉）由主题渲染，否则用下方简蓝实现。 */}
+       <ThemeSlot name="header">
+         <>
+-          <header className="fixed inset-x-0 top-0 z-[999] w-full bg-card/96 backdrop-blur-[10.5px] max-lg:border-b max-lg:border-zh-line">
++          <header className="wfdb-header fixed inset-x-0 top-0 z-[999] w-full">
+             {/* PC 行（lg+） */}
+-            <div className="mx-auto hidden h-[75px] w-full max-w-[1280px] items-center gap-2 px-4 lg:flex">
++            <div className="wfdb-wrap hidden h-[68px] items-center gap-5 lg:flex">
+               <Link
+                 to="/"
+                 className="flex shrink-0 items-center"
+-                aria-label={setting?.sitename || 'FreeIDX'}
++                aria-label={setting?.sitename || 'WFDB'}
+               >
+-                {/* 后台未上传 logo 时用内置默认 logo 图兜底，不再回退文字站名 */}
+                 <SiteLogo setting={setting} className="h-[42px] w-auto max-w-none" />
+               </Link>
+-              <nav
+-                className="ml-4 flex h-full min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+-                aria-label={t('forum_nav')}
+-              >
+-                <NavItem to="/" label={t('home')} active={homeActive} icon="home" />
+-                {light.enabled && light.discPage && (
+-                  <NavItem to="/discovery" label={discLabel} active={discActive} icon="trending_up" />
+-                )}
+-                {forumItems.slice(0, 8).map((f) => (
+-                  <NavItem
+-                    key={f.url}
+-                    to={f.url}
+-                    label={f.label}
+-                    icon={f.icon}
+-                    iconUrl={f.iconUrl}
+-                    active={
+-                      pathname === f.url ||
+-                      pathname.startsWith(`${f.url}/`) ||
+-                      pathname.startsWith(`${f.url}?`)
+-                    }
+-                    external={/^https?:\/\//i.test(f.url)}
+-                  />
+-                ))}
+-                <NavItem to="/rank" label={t('ranking_short')} active={rankActive} icon="trophy" />
+-                {light.links.map((l) => (
+-                  <NavItem
+-                    key={`${l.name}-${l.url}`}
+-                    to={l.url}
+-                    label={l.name}
+-                    active={false}
+-                    external
+-                  />
+-                ))}
+-              </nav>
++              <SiteNav />
+               {light.navSearchForm && (
+-                <div className="hidden min-w-0 flex-1 md:block md:max-w-[260px]">
++                <div className="ml-auto hidden min-w-0 flex-1 md:block md:max-w-[240px]">
+                   <SearchForm kw={kw} setKw={setKw} onSearch={doSearch} />
+                 </div>
+               )}
+               <div className="ml-auto flex shrink-0 items-center gap-0.5">
+-                <Link
+-                  to={createTo}
+-                  className="mr-1 hidden h-9 items-center justify-center gap-1 rounded-[6px] bg-brand px-3.5 text-sm font-medium text-white transition-colors hover:bg-brand-hover sm:flex"
+-                >
+-                  <Icon name="edit" className="size-4" /> {t('create_new_thread')}
+-                </Link>
+-                {light.darkMode && <ThemeSwitch />}
++                {!homeActive && (
++                  <Link
++                    to={createTo}
++                    className="mr-1 hidden h-9 items-center justify-center gap-1 rounded-[6px] bg-brand px-3.5 text-sm font-medium text-white transition-colors hover:bg-brand-hover sm:flex"
++                  >
++                    <Icon name="edit" className="size-4" /> {t('create_new_thread')}
++                  </Link>
++                )}
+                 <LangSwitch />
+                 {me ? (
+                   <>
+@@ -682,6 +647,9 @@ export function Layout({ children }: { children?: ReactNode }) {
+ 
+             {/* 移动行（<lg）：头像 + 搜索胶囊 + 消息 + 发帖 */}
+             <div className="flex h-[55px] items-center gap-2.5 px-3 lg:hidden">
++              <Link to="/" className="shrink-0" aria-label={setting?.sitename || 'WFDB'}>
++                <SiteLogo className="wfdb-brand-mobile" />
++              </Link>
+               <button
+                 type="button"
+                 className="flex shrink-0 items-center"
+@@ -712,40 +680,21 @@ export function Layout({ children }: { children?: ReactNode }) {
+                   </span>
+                 )}
+               </Link>
+-              <Link
+-                to={createTo}
+-                className="flex size-9 shrink-0 items-center justify-center text-brand"
+-                aria-label={t('create_new_thread')}
+-                title={t('create_new_thread')}
+-              >
+-                <Icon name="plus_circle" className="size-[22px]" />
+-              </Link>
++              {!homeActive && (
++                <Link
++                  to={createTo}
++                  className="flex size-9 shrink-0 items-center justify-center text-brand"
++                  aria-label={t('create_new_thread')}
++                  title={t('create_new_thread')}
++                >
++                  <Icon name="plus_circle" className="size-[22px]" />
++                </Link>
++              )}
+             </div>
+             {/* 移动二级行：导航 tabs + 汉堡（.header_nav_2_mobile_menu） */}
+-            <div className="flex h-[37px] items-center gap-1.5 border-t border-zh-line px-3 lg:hidden">
+-              <nav
+-                className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+-                aria-label={t('forum_nav')}
+-              >
+-                <NavItem to="/" label={t('home')} active={homeActive} compact icon="home" />
+-                {light.enabled && light.discPage && (
+-                  <NavItem to="/discovery" label={discLabel} active={discActive} compact icon="trending_up" />
+-                )}
+-                {forumItems.slice(0, 6).map((f) => (
+-                  <NavItem
+-                    key={f.url}
+-                    to={f.url}
+-                    label={f.label}
+-                    icon={f.icon}
+-                    iconUrl={f.iconUrl}
+-                    active={pathname.startsWith(f.url)}
+-                    compact
+-                    external={/^https?:\/\//i.test(f.url)}
+-                  />
+-                ))}
+-                <NavItem to="/rank" label={t('ranking_short')} active={rankActive} compact icon="trophy" />
+-              </nav>
+-              {light.darkMode && <ThemeSwitch />}
++            <div className="flex h-[44px] items-center gap-1 border-t border-zh-line px-3 lg:hidden">
++              <SiteNav className="min-w-0 flex-1" />
++              <LangSwitch />
+               <button
+                 type="button"
+                 className="flex size-8 shrink-0 items-center justify-center text-ink-soft"
+@@ -768,7 +717,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+               <div className="drawer-in absolute left-0 top-0 h-full w-[80%] max-w-[300px] overflow-y-auto bg-background p-4 shadow-[2px_0_20px_rgba(0,0,0,0.2)]">
+                 <div className="mb-3 flex items-center justify-between">
+                   <span className="text-base font-bold tracking-tight text-brand">
+-                    {setting?.sitename || 'FreeIDX'}
++                    {setting?.sitename || 'WFDB'}
+                   </span>
+                   <button
+                     type="button"
+@@ -845,7 +794,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+                         className={cx(
+                           'flex items-center gap-2.5 rounded-[5px] px-3 py-1.5 text-[16px] transition-colors',
+                           pathname === to
+-                            ? 'bg-[rgba(41,151,247,0.1)] font-medium text-[#2997f7]'
++                            ? 'bg-brand/10 font-medium text-brand'
+                             : 'text-foreground hover:bg-lt-hover',
+                         )}
+                         onClick={() => setDrawer(false)}
+@@ -905,7 +854,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+ 
+       {/* bootstrap 失败横幅：附「重试」入口——提示语让用户稍后再试，就必须给得出这个动作 */}
+       {error && (
+-        <div className="mx-auto w-full max-w-[1280px] px-4 pt-[100px] lg:pt-[83px]">
++        <div className="wfdb-wrap pt-[110px] lg:pt-[83px]">
+           <div className="flex flex-wrap items-center gap-3 rounded-[4px] border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+             <span className="min-w-0 flex-1">{error}</span>
+             <Button
+@@ -924,99 +873,24 @@ export function Layout({ children }: { children?: ReactNode }) {
+       {/* 内容区：#body（padding-top:75px / 移动 3.93rem+二级行） */}
+       <main
+         id="body"
+-        className="mx-auto w-full max-w-[1280px] flex-1 px-4 pb-8 pt-[100px] lg:pt-[83px] max-lg:pb-20"
++        className="wfdb-wrap flex-1 pb-10 pt-[114px] lg:pt-[92px] max-lg:pb-20"
+       >
+         {children}
+       </main>
+ 
+       {/* ============ footer（主题插槽：覆写时整块替换） ============ */}
+       <ThemeSlot name="footer">
+-        <footer className="w-full bg-card py-4 text-[14px] text-lt-grey max-lg:pb-20">
+-          <div className="mx-auto w-full max-w-[1280px] px-4">
+-            <InsertCode html={insertCodes.footer_start_htm} />
+-            <div className="flex flex-wrap items-start justify-between gap-4 max-sm:flex-col max-sm:items-center max-sm:text-center">
+-              <div className="min-w-0">
+-                {light.footerIconShow && (
+-                  <SiteLogo setting={setting} className="mb-2 block h-9 w-auto" />
+-                )}
+-                <p className="text-sm leading-[26px] text-foreground">
+-                  {setting?.brief || t('no_brief_yet')}
+-                </p>
+-                {light.footerOneContent && (
+-                  <p className="mt-1 whitespace-pre-line text-sm leading-[26px] text-foreground">
+-                    {light.footerOneContent}
+-                  </p>
+-                )}
+-                {light.footerTwoContent && (
+-                  <p className="whitespace-pre-line text-xs leading-[24px] text-lt-grey">
+-                    {light.footerTwoContent}
+-                  </p>
+-                )}
+-              </div>
+-              <div className="flex shrink-0 items-center gap-3">
+-                {contact.map((icon) => (
+-                  <span
+-                    key={icon}
+-                    className="flex size-[50px] items-center justify-center rounded-full bg-lt-soft text-lt-grey"
+-                    title={
+-                      (icon === 'message'
+-                        ? light.footerContactQq
+-                        : icon === 'comment'
+-                          ? light.footerContactWx
+-                          : light.footerContactEmail) ||
+-                      setting?.sitename ||
+-                      'FreeIDX'
+-                    }
+-                  >
+-                    <Icon name={icon} className="size-5" />
+-                  </span>
+-                ))}
+-              </div>
++        <footer className="wfdb-footer">
++          <div className="wfdb-wrap wfdb-footer-inner">
++            <div>
++              <Link to="/" aria-label={setting?.sitename || 'WFDB'}><SiteLogo /></Link>
++              <p>Forever &amp; Fish</p>
++            </div>
++            <div className="wfdb-footer-links">
++              <a href={chinese ? 'https://wfdb.cc/' : 'https://wfdb.cc/en/'}>{chinese ? 'WFDB 主站' : 'WFDB home'}</a>
++              <a href="/wfdb-forum-source.tar.gz">{chinese ? '论坛源码' : 'Source code'}</a>
++              <span>Powered by FreeIDX</span>
+             </div>
+-            <hr className="my-3 border-zh-line" />
+-            <InsertCode html={insertCodes.footer_footer_left_end_htm} />
+-            <ul className="flex flex-wrap items-center gap-x-5 gap-y-1 max-sm:justify-center">
+-              <li>
+-                <Link to="/" className="block py-1 transition-colors hover:text-brand">
+-                  {t('home')}
+-                </Link>
+-              </li>
+-              {light.discPage && (
+-                <li>
+-                  <Link to="/discovery" className="block py-1 transition-colors hover:text-brand">
+-                    {discLabel}
+-                  </Link>
+-                </li>
+-              )}
+-              <li>
+-                <Link to="/rank" className="block py-1 transition-colors hover:text-brand">
+-                  {t('ranking_short')}
+-                </Link>
+-              </li>
+-              <li>
+-                <Link to={createTo} className="block py-1 transition-colors hover:text-brand">
+-                  {t('want_contribute')}
+-                </Link>
+-              </li>
+-              {light.links.map((l) => (
+-                <li key={`${l.name}-${l.url}`}>
+-                  <a
+-                    href={l.url}
+-                    target="_blank"
+-                    rel="noreferrer"
+-                    className="block py-1 transition-colors hover:text-brand"
+-                  >
+-                    {l.name}
+-                  </a>
+-                </li>
+-              ))}
+-              {light.themeCopyrightSwitch && (
+-                <li className="text-xs text-lt-grey">
+-                  © {new Date().getFullYear()} {setting?.sitename || 'FreeIDX'} · Powered by FreeIDX
+-                </li>
+-              )}
+-            </ul>
+-            <InsertCode html={insertCodes.footer_footer_right_end_htm} />
+           </div>
+         </footer>
+       </ThemeSlot>
+@@ -1033,7 +907,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+               to="/"
+               className={cx(
+                 'flex flex-1 flex-col items-center justify-center gap-0.5',
+-                homeActive ? 'text-brand' : 'text-[#9e9e9e]',
++                homeActive ? 'text-brand' : 'text-ink-soft',
+               )}
+             >
+               <Icon name="home" className="size-[20px]" />
+@@ -1043,7 +917,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+               to={dockSecond.to}
+               className={cx(
+                 'flex flex-1 flex-col items-center justify-center gap-0.5',
+-                dockSecond.active ? 'text-brand' : 'text-[#9e9e9e]',
++                dockSecond.active ? 'text-brand' : 'text-ink-soft',
+               )}
+             >
+               <Icon name={dockSecond.icon} className="size-[20px]" />
+@@ -1055,7 +929,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+               aria-label={t('create_new_thread')}
+               title={t('create_new_thread')}
+             >
+-              <span className="jb-blue absolute -top-[18px] flex size-[46px] items-center justify-center rounded-full text-white shadow-[0_2px_8px_rgba(64,158,255,0.45)]">
++              <span className="absolute -top-[18px] flex size-[46px] items-center justify-center rounded-full bg-brand text-primary-foreground shadow-md">
+                 <Icon name="plus" className="size-6" />
+               </span>
+             </Link>
+@@ -1063,7 +937,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+               to="/me?s=notices"
+               className={cx(
+                 'relative flex flex-1 flex-col items-center justify-center gap-0.5',
+-                pathname.includes('notices') ? 'text-brand' : 'text-[#9e9e9e]',
++                pathname.includes('notices') ? 'text-brand' : 'text-ink-soft',
+               )}
+             >
+               <Icon name="message" className="size-[20px]" />
+@@ -1078,7 +952,7 @@ export function Layout({ children }: { children?: ReactNode }) {
+               to="/me"
+               className={cx(
+                 'flex flex-1 flex-col items-center justify-center gap-0.5',
+-                pathname.startsWith('/me') ? 'text-brand' : 'text-[#9e9e9e]',
++                pathname.startsWith('/me') ? 'text-brand' : 'text-ink-soft',
+               )}
+             >
+               <Icon name="user" className="size-[20px]" />
+diff --git a/apps/web/src/themes/light/pages/HomePage.tsx b/apps/web/src/themes/light/pages/HomePage.tsx
+index 84df412..089e303 100644
+--- a/apps/web/src/themes/light/pages/HomePage.tsx
++++ b/apps/web/src/themes/light/pages/HomePage.tsx
+@@ -1,6 +1,6 @@
+ import { keepPreviousData, useQuery } from '@tanstack/react-query';
+ import { BanScope, effectiveBanScope } from '@freeidx/shared';
+-import { useParams, useSearchParams } from 'react-router';
++import { Link, useParams, useSearchParams } from 'react-router';
+ import { useAuth } from '../../../store/auth';
+ import { fmtDate } from '../../../lib/api';
+ import { posInt } from '../../../lib/params';
+@@ -9,33 +9,17 @@ import { InsertCode, useInsertCodes } from '../../../components/InsertCode';
+ import { Pagination } from '../../../components/Pagination';
+ import { ThreadList } from '../../../components/ThreadList';
+ import { ThreadListSkeleton } from '../../../components/ThreadListSkeleton';
+-import { Skeleton } from '../../../components/Skeleton';
+ import { AnnouncementBar } from '../../../components/AnnouncementBar';
+ import { ContentLangBar } from '../../../components/ContentLangBar';
+ import { useContentLangFilter } from '../../../store/contentLang';
+-import { CheckinCard } from '../../../components/CheckinCard';
+-import {
+-  Alert,
+-  Card,
+-  CardStats,
+-  CardTabs,
+-  GuestCard,
+-  HomeSideNav,
+-  QuickHelpCard,
+-  SidePanel,
+-  UserSideCard,
+-  UserSideCardSkeleton,
+-} from '../../../components/ui';
+-import { HotFavoritesCard, RankThreadCard, RankUserCard } from '../../../components/rank';
+-import { useT, useGroupName } from '../../../lib/i18n';
+-import { useLight } from '../../../store/theme';
++import { Alert, Card, CardTabs } from '../../../components/ui';
++import { Icon } from '../../../components/icons';
++import { useForumName, useLang, useT } from '../../../lib/i18n';
+ 
+-/** 首页：左侧版块导航（主页入口 + 版块直链）+
+- *  最新主题卡（卡头 tabs + 分页）+ 右栏（用户/游客卡 → 签到 → 帖子排行 → 站点数据 → 排行榜 → 注入位） */
+ export function HomePage() {
+   const t = useT();
+-  const gn = useGroupName();
+-  const light = useLight();
++  const chinese = useLang().startsWith('zh');
++  const forumName = useForumName();
+   const params = useParams();
+   const page = posInt(params.n);
+   /* digest/orderby 走 URL 参数（筛选入口 = 左侧导航，切筛选回第 1 页） */
+@@ -43,13 +27,9 @@ export function HomePage() {
+   const digest: 0 | 1 = search.get('digest') === '1' ? 1 : 0;
+   const orderby = search.get('orderby') === 'lastpid' ? 'lastpid' : 'tid';
+   const forumlist = useAuth((s) => s.forumlist);
+-  const grouplist = useAuth((s) => s.grouplist);
+   const me = useAuth((s) => s.me);
+-  /* bootstrap 是否已落库：右栏据此区分「游客」与「还不知道是不是游客」，避免先渲染游客卡再翻成用户卡 */
+-  const authLoaded = useAuth((s) => s.loaded);
+   /** 小黑屋（0025）：生效范围按 banUntil 惰性判定（bootstrap 可能命中缓存，不带实时性承诺） */
+   const banScope = me ? effectiveBanScope(me.banScope, me.banUntil, Math.floor(Date.now() / 1000)) : 0;
+-  const runtime = useAuth((s) => s.runtime);
+   /* 插入代码扩展注入位原始 HTML（全站共享缓存） */
+   const insertCodes = useInsertCodes();
+ 
+@@ -75,138 +55,91 @@ export function HomePage() {
+   const contentLang = useContentLangFilter();
+   const q = useQuery({ ...siteThreadsQuery(page, digest, orderby, contentLang), placeholderData: keepPreviousData });
+ 
+-  /** 在线数：随 bootstrap 下发（原先是一次独立的 GET /api/online?summary=1） */
+-  const onlineCount = useAuth((s) => s.online);
+-
+-  const totalThreads = forumlist.reduce((s, f) => s + f.threads, 0);
+-
+-  const group = me ? grouplist.find((g) => g.gid === me.gid) : undefined;
+-  const credits = me?.credits ?? 0;
+-  const progress = group && group.creditsto > 0 ? Math.round((credits / group.creditsto) * 100) : 100;
+-
+-  /** 站点统计（.wzxx 四项：zt 主题数 / tz 贴子数 / user 用户数 / zx 在线数） */
+-  const stats: [number, string, 'zt' | 'tz' | 'user' | 'zx'][] = [
+-    [totalThreads, t('threads'), 'zt'],
+-    [runtime?.posts ?? 0, t('posts_count'), 'tz'],
+-    [runtime?.users ?? 0, t('users'), 'user'],
+-    [onlineCount, t('online_count'), 'zx'],
+-  ];
++  const createTo = forumlist[0] ? `/forum/${forumlist[0].fid}/new` : '/new';
+ 
+   return (
+-    <div className="flex items-start gap-4">
+-      {/* 左侧版块导航列（2/12 栅格，190px，可折叠） */}
+-      <HomeSideNav />
+-      <div className="min-w-0 flex-1">
+-        {/* 首页系统公告条（0011）：中间栏最顶部，多条轮播 */}
+-        <AnnouncementBar />
+-        {/* 账号审核提示（alert 三态，仅登录且 OK!=1 时） */}
+-        {me && me.ok !== 1 && (
+-          <Alert tone={me.ok === 0 ? 'primary' : 'warning'} icon={me.ok === 0 ? 'coffee' : 'warning_circle'} className="mb-2">
+-            {me.ok === 0 ? t('account_under_review') : t('account_not_approved')}
+-          </Alert>
+-        )}
+-        {/* 小黑屋提示（0025）：禁登 > 禁访 > 禁言 取最重维度，附到期与理由 */}
+-        {me && banScope > 0 && (
+-          <Alert tone="warning" icon="warning_circle" className="mb-2">
+-            {banScope & BanScope.LOGIN
+-              ? t('account_banned')
+-              : banScope & BanScope.READ
+-                ? t('account_suspended')
+-                : t('account_muted')}
+-            {' '}
+-            {me.banUntil && me.banUntil > 0
+-              ? t('ban_until_label', { date: fmtDate(me.banUntil) })
+-              : t('ban_permanent')}
+-            {me.banReason ? ` · ${t('ban_reason_label', { reason: me.banReason })}` : ''}
+-          </Alert>
+-        )}
+-        {/* 插入代码 index_main_start_htm：主列最新主题卡之前 */}
+-        <InsertCode html={insertCodes.index_main_start_htm} />
+-        {/* 主题列表卡（.card.card-threadlist：卡头 tabs + 列表 + 卡脚分页） */}
+-        <Card
+-          header={
+-            <CardTabs
+-              items={[
+-                { k: 'new', text: t('new_thread'), icon: 'clock', active: digest === 0 && orderby === 'tid', to: nav({ digest: null, orderby: null }) },
+-                { k: 'digest', text: t('digest_label'), icon: 'star', active: digest === 1, to: nav({ digest: '1', orderby: null }) },
+-                { k: 'recent', text: t('recent_thread'), icon: 'chat_bubbles', active: orderby === 'lastpid', to: nav({ digest: null, orderby: 'lastpid' }) },
+-              ]}
+-            />
+-          }
+-          bodyClass="p-0"
+-        >
+-          {/* 内容语言筛选条（后台开启后显示；关闭时组件返回 null，连分隔线都不出现） */}
+-          <ContentLangBar wrap="bar" />
+-          {q.isError && <p className="px-5 py-6 text-center text-sm text-destructive">{(q.error as Error).message}</p>}
+-          {/* 首次进入（无缓存页）：列表骨架 + 加载中提示，替代此前的空白卡片正文 */}
+-          {!q.data && q.isPending && <ThreadListSkeleton />}
+-          {q.data && <ThreadList data={q.data} baseHref={pageHref} />}
+-          {q.data && (
+-            <div className="border-t border-zh-line px-4 py-3">
+-              <Pagination page={q.data.page} totalPage={q.data.totalPage} href={pageHref} className="my-0" />
+-            </div>
++    <>
++      <section className="wfdb-intro">
++        <div>
++          <p className="wfdb-kicker">Forever &amp; Fish</p>
++          <h1>{chinese ? '无限库论坛' : 'WFDB Forum'}</h1>
++          <p>{chinese ? '分享实钓记录，交流攻略，反馈插件与客户端问题。' : 'Share fishing observations, guides, and feedback on the add-on or desktop app.'}</p>
++        </div>
++        <Link to={createTo} className="wfdb-button">
++          <Icon name="edit" className="size-4" /> {t('create_new_thread')}
++        </Link>
++      </section>
++      <div className="wfdb-discussions">
++        <nav className="wfdb-boards" aria-label={chinese ? '论坛板块' : 'Forum boards'}>
++          <h2>{chinese ? '板块' : 'Boards'}</h2>
++          {forumlist.filter((forum) => !forum.parentFid).map((forum) => (
++            <Link key={forum.fid} to={`/forum/${forum.fid}`}>
++              <Icon name="folder" className="size-4 shrink-0" />
++              <span>{forumName(forum)}</span>
++              <span className="wfdb-board-count" aria-label={`${forum.threads} ${t('threads')}`}>{forum.threads}</span>
++            </Link>
++          ))}
++        </nav>
++        <section className="min-w-0" aria-label={chinese ? '论坛主题' : 'Discussion topics'}>
++          {/* 首页系统公告条（0011）：中间栏最顶部，多条轮播 */}
++          <AnnouncementBar />
++          {/* 账号审核提示（alert 三态，仅登录且 OK!=1 时） */}
++          {me && me.ok !== 1 && (
++            <Alert tone={me.ok === 0 ? 'primary' : 'warning'} icon={me.ok === 0 ? 'coffee' : 'warning_circle'} className="mb-2">
++              {me.ok === 0 ? t('account_under_review') : t('account_not_approved')}
++            </Alert>
+           )}
+-        </Card>
+-      </div>
+-      {/* 右栏（3/12 栅格：用户卡/签到/热门收藏/排行/站点数据/用户榜） */}
+-      <aside className="hidden w-[285px] shrink-0 self-start lg:sticky lg:top-[83px] lg:z-10 lg:block">
+-        {light.indexUserinfo &&
+-          (me ? (
+-            <>
+-              <UserSideCard
+-                me={{
+-                  uid: me.uid,
+-                  username: me.username,
+-                  avatar: me.avatar,
+-                  gid: me.gid,
+-                  threads: me.threads ?? 0,
+-                  posts: me.posts ?? 0,
+-                  credits,
+-                  following: me.following ?? 0,
+-                  followers: me.followers ?? 0,
+-                }}
+-                groupName={group ? gn(group.gid, group.name) : ''}
+-                progress={progress}
++          {/* 小黑屋提示（0025）：禁登 > 禁访 > 禁言 取最重维度，附到期与理由 */}
++          {me && banScope > 0 && (
++            <Alert tone="warning" icon="warning_circle" className="mb-2">
++              {banScope & BanScope.LOGIN
++                ? t('account_banned')
++                : banScope & BanScope.READ
++                  ? t('account_suspended')
++                  : t('account_muted')}
++              {' '}
++              {me.banUntil && me.banUntil > 0
++                ? t('ban_until_label', { date: fmtDate(me.banUntil) })
++                : t('ban_permanent')}
++              {me.banReason ? ` · ${t('ban_reason_label', { reason: me.banReason })}` : ''}
++            </Alert>
++          )}
++          {/* 插入代码 index_main_start_htm：主列最新主题卡之前 */}
++          <InsertCode html={insertCodes.index_main_start_htm} />
++          {/* 主题列表卡（.card.card-threadlist：卡头 tabs + 列表 + 卡脚分页） */}
++          <Card
++            header={
++              <CardTabs
++                items={[
++                  { k: 'new', text: t('new_thread'), icon: 'clock', active: digest === 0 && orderby === 'tid', to: nav({ digest: null, orderby: null }) },
++                  { k: 'digest', text: t('digest_label'), icon: 'star', active: digest === 1, to: nav({ digest: '1', orderby: null }) },
++                  { k: 'recent', text: t('recent_thread'), icon: 'chat_bubbles', active: orderby === 'lastpid', to: nav({ digest: null, orderby: 'lastpid' }) },
++                ]}
+               />
+-              <QuickHelpCard uid={me.uid} />
+-            </>
+-          ) : authLoaded ? (
+-            <GuestCard />
+-          ) : (
+-            /* bootstrap 未回：同构骨架。此前这里是整块不渲染，返回时所有卡片一起下移 */
+-            <UserSideCardSkeleton />
+-          ))}
+-        {/* 每日签到卡片（checkin 插件启用时渲染，停用零残留） */}
+-        <CheckinCard />
+-        {/* 热门收藏卡（light.hotFavoriteCard 开关，出厂关） */}
+-        {light.hotFavoriteCard && <HotFavoritesCard />}
+-        {/* 帖子排行卡（总排行/周排行，light.threadRankCard 开关） */}
+-        {light.threadRankCard && <RankThreadCard />}
+-        {/* 站点数据（site_info_total） */}
+-        {light.siteInfoTotal && (
+-          <SidePanel pad="p-4">
+-            <p className="mb-2 text-sm font-medium text-card-header-ink">{t('site_stats')}</p>
+-            {/* 站点数据全来自 bootstrap：未落库时先给同构骨架，避免 4 个 0 一闪再变真实值 */}
+-            {authLoaded ? (
+-              <CardStats items={stats} />
++            }
++            bodyClass="p-0"
++          >
++            {/* 内容语言筛选条（后台开启后显示；关闭时组件返回 null，连分隔线都不出现） */}
++            <ContentLangBar compact />
++            {q.isError && <p className="px-5 py-6 text-center text-sm text-destructive">{(q.error as Error).message}</p>}
++            {/* 首次进入（无缓存页）：列表骨架 + 加载中提示，替代此前的空白卡片正文 */}
++            {!q.data && q.isPending && <ThreadListSkeleton />}
++            {q.data && (q.data.list.length > 0 ? (
++              <ThreadList data={q.data} baseHref={pageHref} />
+             ) : (
+-              <div className="grid grid-cols-2 gap-x-4 gap-y-4 p-4" aria-hidden="true">
+-                {[0, 1, 2, 3].map((i) => (
+-                  <div key={i} className="flex items-center gap-2.5">
+-                    <Skeleton className="size-6 shrink-0" radius="rounded-full" />
+-                    <Skeleton className="h-3 w-14" />
+-                    <Skeleton className="ml-auto h-3.5 w-6" />
+-                  </div>
+-                ))}
++              <div className="wfdb-empty">
++                <p>{t('no_threads')}</p>
++                {digest === 0 && <p>{chinese ? '可以从分享一个钓点或提出一个问题开始。' : 'Share a fishing spot or start with a question.'}</p>}
++              </div>
++            ))}
++            {q.data && q.data.totalPage > 1 && (
++              <div className="border-t border-zh-line px-4 py-3">
++                <Pagination page={q.data.page} totalPage={q.data.totalPage} href={pageHref} className="my-0" />
+               </div>
+             )}
+-          </SidePanel>
+-        )}
+-        {/* 用户榜（新会员/活跃） */}
+-        <RankUserCard />
+-        {/* 插入代码 index_site_brief_after_htm：侧栏排行榜卡之后 */}
+-        <InsertCode html={insertCodes.index_site_brief_after_htm} />
+-      </aside>
+-    </div>
++          </Card>
++        </section>
++      </div>
++    </>
+   );
+-}
+\ No newline at end of file
++}
+diff --git a/apps/web/src/themes/light/pages/LoginPage.tsx b/apps/web/src/themes/light/pages/LoginPage.tsx
+index 1af8945..ae2cfac 100644
+--- a/apps/web/src/themes/light/pages/LoginPage.tsx
++++ b/apps/web/src/themes/light/pages/LoginPage.tsx
+@@ -1,81 +1,5 @@
+-import { Link, useNavigate } from 'react-router';
+-import { LoginForm, AuthAnnouncement } from '../../../components/AuthForms';
+-import { useGuestOnly } from '../../../hooks/useGuestOnly';
+-import { useLocalizedSetting, useT } from '../../../lib/i18n';
+-import { useLight } from '../../../store/theme';
+-import { SiteLogo } from '../../../components/SiteLogo';
++import { WfdbAuthPage } from './WfdbAuthPage';
+ 
+-/**
+- * §4.5 登录页：认证版式——
+- * 900px 白卡两栏（左栏 login_bg 背景图 <lg 隐藏 / 右栏表单 + 右上角 login_top_bg 装饰图）。
+- * 表单本体在 AuthForms（登录/注册弹窗共用）。
+- */
+ export function LoginPage() {
+-  const navigate = useNavigate();
+-  /* 站点名称等基础设置按当前界面语言取词 */
+-  const setting = useLocalizedSetting();
+-  const t = useT();
+-  const light = useLight();
+-  /* 已登录就不停在登录页：含「在本页用顶栏弹窗登录成功」这种情况 */
+-  useGuestOnly();
+-
+-  return (
+-    <div className="flex min-h-[calc(100vh_-_10rem)] items-center justify-center py-10">
+-      <section className="zh-card mx-auto w-full max-w-[900px] overflow-hidden">
+-        <div className="flex">
+-          {/* 左栏：登录背景图（<lg 隐藏） */}
+-          <div
+-            className={
+-              light.loginPageBanner
+-                ? 'hidden w-1/2 bg-cover bg-center lg:block'
+-                : 'hidden w-1/2 bg-[url(/theme-light/login_bg.webp)] bg-cover bg-center lg:block'
+-            }
+-            style={
+-              light.loginPageBanner
+-                ? { backgroundImage: `url(${light.loginPageBanner})` }
+-                : undefined
+-            }
+-            aria-hidden="true"
+-          />
+-          {/* 右栏：表单 */}
+-          <div className="relative flex-1 p-8 lg:p-12">
+-            {/* 右上角装饰图 */}
+-            <div
+-              className="pointer-events-none absolute right-0 top-0 size-[400px] bg-[url(/theme-light/login_top_bg.webp)] bg-contain bg-no-repeat opacity-70"
+-              aria-hidden="true"
+-            />
+-            <div className="relative">
+-              {/* 站点 logo/站名，点击回首页 */}
+-              <Link
+-                to="/"
+-                className="mb-6 flex items-center gap-2"
+-                aria-label={setting?.sitename || 'FreeIDX'}
+-              >
+-                <SiteLogo setting={setting} className="h-9 w-auto max-w-none" />
+-              </Link>
+-              <p className="text-sm text-lt-grey">{t('user_login')}</p>
+-              <h2 className="mt-2 text-xl font-bold text-foreground">{t('welcome_login')}</h2>
+-              <AuthAnnouncement />
+-              <div className="mb-6">
+-                <LoginForm onSuccess={() => navigate('/')} />
+-              </div>
+-              {/* 底部链接行：注册 / 找回密码（右对齐） */}
+-              <div className="text-right text-sm">
+-                <Link to="/register" className="text-brand hover:underline">
+-                  {t('register_new_account')}
+-                </Link>
+-                <Link to="/resetpw" className="ml-3 text-brand hover:underline">
+-                  {t('forgot_pw')}
+-                </Link>
+-              </div>
+-              {/* 随便逛逛（回首页） */}
+-              <Link to="/" className="mt-4 block text-center text-sm text-brand hover:underline">
+-                {t('go_home')}
+-              </Link>
+-            </div>
+-          </div>
+-        </div>
+-      </section>
+-    </div>
+-  );
++  return <WfdbAuthPage />;
+ }
+diff --git a/apps/web/src/themes/light/pages/RegisterPage.tsx b/apps/web/src/themes/light/pages/RegisterPage.tsx
+index 51bfb4f..192a7bb 100644
+--- a/apps/web/src/themes/light/pages/RegisterPage.tsx
++++ b/apps/web/src/themes/light/pages/RegisterPage.tsx
+@@ -1,80 +1,5 @@
+-import { Link, useNavigate } from 'react-router';
+-import { RegisterForm, AuthAnnouncement } from '../../../components/AuthForms';
+-import { useGuestOnly } from '../../../hooks/useGuestOnly';
+-import { useLocalizedSetting, useT } from '../../../lib/i18n';
+-import { useLight } from '../../../store/theme';
+-import { SiteLogo } from '../../../components/SiteLogo';
++import { WfdbAuthPage } from './WfdbAuthPage';
+ 
+-/**
+- * §4.6 注册页：认证版式——
+- * 900px 白卡两栏（左栏 login_bg 背景图 <lg 隐藏 / 右栏表单 + 右上角 login_top_bg 装饰图）。
+- * 表单本体在 AuthForms（注册/登录弹窗共用）。
+- */
+ export function RegisterPage() {
+-  const navigate = useNavigate();
+-  /* 站点名称等基础设置按当前界面语言取词 */
+-  const setting = useLocalizedSetting();
+-  const t = useT();
+-  const light = useLight();
+-  /* 已登录就不停在注册页（本页用顶栏弹窗登录/注册成功同样要跳走） */
+-  useGuestOnly();
+-
+-  return (
+-    <div className="flex min-h-[calc(100vh_-_10rem)] items-center justify-center py-10">
+-      <section className="zh-card mx-auto w-full max-w-[900px] overflow-hidden">
+-        <div className="flex">
+-          {/* 左栏：登录背景图（<lg 隐藏） */}
+-          <div
+-            className={
+-              light.loginPageBanner
+-                ? 'hidden w-1/2 bg-cover bg-center lg:block'
+-                : 'hidden w-1/2 bg-[url(/theme-light/login_bg.webp)] bg-cover bg-center lg:block'
+-            }
+-            style={
+-              light.loginPageBanner
+-                ? { backgroundImage: `url(${light.loginPageBanner})` }
+-                : undefined
+-            }
+-            aria-hidden="true"
+-          />
+-          {/* 右栏：表单 */}
+-          <div className="relative flex-1 p-8 lg:p-12">
+-            {/* 右上角装饰图 */}
+-            <div
+-              className="pointer-events-none absolute right-0 top-0 size-[400px] bg-[url(/theme-light/login_top_bg.webp)] bg-contain bg-no-repeat opacity-70"
+-              aria-hidden="true"
+-            />
+-            <div className="relative">
+-              {/* 站点 logo/站名，点击回首页 */}
+-              <Link
+-                to="/"
+-                className="mb-6 flex items-center gap-2"
+-                aria-label={setting?.sitename || 'FreeIDX'}
+-              >
+-                <SiteLogo setting={setting} className="h-9 w-auto max-w-none" />
+-              </Link>
+-              <p className="text-sm text-lt-grey">{t('user_create')}</p>
+-              <h2 className="mt-2 text-xl font-bold text-foreground">
+-                {t('create_new_account_join')}
+-              </h2>
+-              <AuthAnnouncement />
+-              <div className="mb-6">
+-                {/* 闭站（userCreateOn=false）时 RegisterForm 仅渲染 registration_closed 提示 */}
+-                <RegisterForm onSuccess={() => navigate('/')} />
+-              </div>
+-              {/* 底部链接行：登录 / 找回密码（右对齐） */}
+-              <div className="text-right text-sm">
+-                <Link to="/login" className="text-brand hover:underline">
+-                  {t('direct_login')}
+-                </Link>
+-                <Link to="/resetpw" className="ml-3 text-brand hover:underline">
+-                  {t('forgot_pw')}
+-                </Link>
+-              </div>
+-            </div>
+-          </div>
+-        </div>
+-      </section>
+-    </div>
+-  );
++  return <WfdbAuthPage register />;
+ }
+diff --git a/apps/web/src/themes/light/pages/WfdbAuthPage.tsx b/apps/web/src/themes/light/pages/WfdbAuthPage.tsx
+new file mode 100644
+index 0000000..9561214
+--- /dev/null
++++ b/apps/web/src/themes/light/pages/WfdbAuthPage.tsx
+@@ -0,0 +1,28 @@
++import { Link, useNavigate } from 'react-router';
++import { AuthAnnouncement, LoginForm, RegisterForm } from '../../../components/AuthForms';
++import { SiteLogo } from '../../../components/SiteLogo';
++import { useGuestOnly } from '../../../hooks/useGuestOnly';
++import { useLang, useLocalizedSetting, useT } from '../../../lib/i18n';
++
++export function WfdbAuthPage({ register = false }: { register?: boolean }) {
++  const t = useT();
++  const chinese = useLang().startsWith('zh');
++  const navigate = useNavigate();
++  const setting = useLocalizedSetting();
++  useGuestOnly();
++
++  const Form = register ? RegisterForm : LoginForm;
++  return (
++    <section className="wfdb-auth zh-card" aria-labelledby="wfdb-auth-title">
++      <Link to="/" className="inline-flex" aria-label={chinese ? '返回论坛' : 'Back to forum'}><SiteLogo /></Link>
++      <h1 id="wfdb-auth-title">{register ? t('register_new_account') : t('user_login')}</h1>
++      <p>{chinese ? '论坛与 WFDB 客户端共用这个账号。' : 'Use the same account on the forum and in the WFDB desktop app.'}</p>
++      <AuthAnnouncement />
++      <Form onSuccess={() => navigate('/')} />
++      <div className="wfdb-auth-links">
++        <Link to={register ? '/login' : '/register'}>{register ? t('direct_login') : t('register_new_account')}</Link>
++        {setting?.userResetpwOn && <Link to="/resetpw">{t('forgot_pw')}</Link>}
++      </div>
++    </section>
++  );
++}
+diff --git a/apps/web/src/themes/light/wfdb.css b/apps/web/src/themes/light/wfdb.css
+new file mode 100644
+index 0000000..fa75de6
+--- /dev/null
++++ b/apps/web/src/themes/light/wfdb.css
+@@ -0,0 +1,337 @@
++/* WFDB directory palette and typography. Scope these tokens to the public forum. */
++.theme-zh.wfdb-forum,
++.dark .theme-zh.wfdb-forum {
++  --wfdb-base: #090a0f;
++  --wfdb-card: #12151e;
++  --wfdb-field: #191d28;
++  --wfdb-raised: #222738;
++  --wfdb-line: #30364b;
++  --wfdb-text: #f3f3f2;
++  --wfdb-muted: #b8bdcb;
++  --wfdb-gold: #f8b700;
++  --wfdb-gold-hover: #ffcf47;
++  --color-brand: var(--wfdb-gold);
++  --color-brand-hover: var(--wfdb-gold-hover);
++  --color-background: var(--wfdb-base);
++  --color-foreground: var(--wfdb-text);
++  --color-card: var(--wfdb-card);
++  --color-card-foreground: var(--wfdb-text);
++  --color-popover: var(--wfdb-field);
++  --color-popover-foreground: var(--wfdb-text);
++  --color-primary: var(--wfdb-gold);
++  --color-primary-foreground: var(--wfdb-base);
++  --color-secondary: var(--wfdb-field);
++  --color-secondary-foreground: var(--wfdb-text);
++  --color-muted: var(--wfdb-muted);
++  --color-muted-foreground: var(--wfdb-muted);
++  --color-accent: var(--wfdb-raised);
++  --color-accent-foreground: var(--wfdb-text);
++  --color-border: var(--wfdb-line);
++  --color-input: var(--wfdb-line);
++  --color-ring: var(--wfdb-gold);
++  --color-destructive: #ff9494;
++  --color-destructive-foreground: #400e15;
++  --color-canvas: var(--wfdb-base);
++  --color-surface: var(--wfdb-card);
++  --color-surface-dark: var(--wfdb-field);
++  --color-nav-sub: var(--wfdb-muted);
++  --color-ink: var(--wfdb-text);
++  --color-ink-soft: var(--wfdb-muted);
++  --color-muted-2: var(--wfdb-muted);
++  --color-line: var(--wfdb-line);
++  --color-line-soft: var(--wfdb-raised);
++  --color-input-line: var(--wfdb-line);
++  --color-card-header-ink: var(--wfdb-text);
++  --color-lt-blue: var(--wfdb-gold);
++  --color-lt-blue-hover: var(--wfdb-gold-hover);
++  --color-lt-nav: var(--wfdb-gold);
++  --color-lt-grey: var(--wfdb-muted);
++  --color-lt-soft: var(--wfdb-field);
++  --color-lt-aid: var(--wfdb-field);
++  --color-lt-line: var(--wfdb-line);
++  --color-lt-line-2: var(--wfdb-line);
++  --color-lt-dashed: var(--wfdb-line);
++  --color-lt-hover: var(--wfdb-field);
++  --color-zh-blue: var(--wfdb-gold);
++  --color-zh-blue-hover: var(--wfdb-gold-hover);
++  --color-zh-grey: var(--wfdb-muted);
++  --color-zh-accent-soft: #f8b70019;
++  --color-zh-nav-active: #f8b70020;
++  --color-zh-nav-hover: #f8b70015;
++  --color-zh-quote: var(--wfdb-field);
++  --color-zh-pill: var(--wfdb-line);
++  --color-zh-notice: var(--wfdb-field);
++  --color-zh-notice-ink: var(--wfdb-text);
++  --color-zh-hot-bg: #3b2429;
++  --color-zh-hot-ink: #ff9494;
++  --color-zh-top1-bg: #7e5a16;
++  --color-zh-badge-yellow: var(--wfdb-gold);
++  --color-zh-cta: var(--wfdb-gold);
++  --color-zh-cta-hover: var(--wfdb-gold-hover);
++  --color-zh-stat-bg: var(--wfdb-field);
++  --color-zh-num-ink: var(--wfdb-gold);
++  --color-zh-row-hover: var(--wfdb-field);
++  --color-zh-brand-2: var(--wfdb-gold);
++  --color-zh-hero-btn: var(--wfdb-gold);
++  --color-zh-footer-ink: var(--wfdb-muted);
++  --color-zh-brand-desc: var(--wfdb-muted);
++  --color-zh-line: var(--wfdb-line);
++  --color-zh-deep-link: var(--wfdb-gold);
++  --color-zh-card-line: var(--wfdb-line);
++  --wfdb-wrap: min(1120px, calc(100% - 44px));
++  color-scheme: dark;
++  font-family: "DM Sans", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
++  background: var(--wfdb-base) radial-gradient(ellipse at 20% 10%, #282518 0%, transparent 51%) no-repeat;
++}
++
++.wfdb-forum .wfdb-wrap {
++  width: var(--wfdb-wrap);
++  margin-inline: auto;
++}
++
++.wfdb-forum .wfdb-header {
++  border-bottom: 1px solid var(--wfdb-raised);
++  background: var(--wfdb-base);
++}
++
++.wfdb-forum .wfdb-brand {
++  display: inline-flex;
++  align-items: center;
++  gap: 10px;
++  white-space: nowrap;
++  color: var(--wfdb-text);
++  font-size: 0.9rem;
++  font-weight: 750;
++}
++
++.wfdb-forum .wfdb-brand strong {
++  color: var(--wfdb-gold);
++  font-size: 1.2rem;
++  font-weight: 800;
++  letter-spacing: 0.05em;
++}
++
++.wfdb-forum .wfdb-site-nav {
++  display: flex;
++  align-items: center;
++  gap: clamp(12px, 1.5vw, 24px);
++  font-size: 0.95rem;
++  white-space: nowrap;
++  color: var(--wfdb-muted);
++}
++
++.wfdb-forum .wfdb-site-nav a:hover,
++.wfdb-forum .wfdb-site-nav [aria-current="page"] {
++  color: var(--wfdb-gold);
++}
++
++.wfdb-forum [role="search"] {
++  border: 1px solid var(--wfdb-line);
++  border-radius: 8px;
++}
++
++.theme-zh.wfdb-forum :is(.zh-card, .auth-panel) {
++  border: 1px solid var(--wfdb-line);
++  border-radius: 14px;
++}
++
++.wfdb-forum :is(.bg-brand, .bg-primary, .bg-zh-cta, .bg-zh-hero-btn, .bg-lt-blue).text-white {
++  color: var(--wfdb-base);
++}
++
++.wfdb-forum :is(a, button, input, select, textarea):focus-visible {
++  outline: 2px solid var(--wfdb-gold);
++  outline-offset: 3px;
++}
++
++.wfdb-forum [role="search"] input:focus-visible {
++  outline: none;
++}
++
++.wfdb-forum .wfdb-intro {
++  display: flex;
++  justify-content: space-between;
++  align-items: flex-end;
++  gap: 16px;
++  padding-block: clamp(35px, 6vw, 74px) 34px;
++}
++
++.wfdb-forum .wfdb-kicker {
++  color: var(--wfdb-gold);
++  font-size: 0.86rem;
++  font-weight: 750;
++  letter-spacing: 0.08em;
++}
++
++.wfdb-forum :is(.wfdb-intro, .wfdb-auth) h1 {
++  margin-block: 8px 12px;
++  color: var(--wfdb-text);
++  font-family: "Bricolage Grotesque", "PingFang SC", system-ui, sans-serif;
++  font-size: clamp(2.2rem, 6vw, 4rem);
++  font-weight: 800;
++  letter-spacing: -0.04em;
++  line-height: 1.1;
++}
++
++.wfdb-forum .wfdb-intro p:last-child,
++.wfdb-forum .wfdb-auth p {
++  color: var(--wfdb-muted);
++  line-height: 1.6;
++}
++
++.wfdb-forum .wfdb-button {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  gap: 8px;
++  min-height: 42px;
++  padding: 8px 16px;
++  border-radius: 8px;
++  background: var(--wfdb-gold);
++  color: var(--wfdb-base);
++  font-size: 0.96rem;
++  font-weight: 750;
++  white-space: nowrap;
++}
++
++.wfdb-forum .wfdb-button:hover {
++  background: var(--wfdb-gold-hover);
++}
++
++.wfdb-forum .wfdb-discussions {
++  display: grid;
++  grid-template-columns: minmax(190px, 230px) minmax(0, 1fr);
++  gap: 20px;
++  align-items: start;
++}
++
++.wfdb-forum .wfdb-boards {
++  border: 1px solid var(--wfdb-line);
++  border-radius: 14px;
++  background: var(--wfdb-card);
++  padding: 9px;
++}
++
++.wfdb-forum .wfdb-boards h2 {
++  padding: 8px 10px 10px;
++  color: var(--wfdb-text);
++  font-size: 1rem;
++  font-weight: 700;
++}
++
++.wfdb-forum .wfdb-boards a {
++  display: flex;
++  align-items: center;
++  gap: 9px;
++  min-height: 43px;
++  padding: 8px 10px;
++  border-radius: 8px;
++  color: var(--wfdb-muted);
++  font-size: 0.93rem;
++}
++
++.wfdb-forum .wfdb-boards a:hover {
++  background: var(--wfdb-field);
++  color: var(--wfdb-gold);
++}
++
++.wfdb-forum .wfdb-board-count {
++  margin-left: auto;
++  color: var(--wfdb-muted);
++  font-size: 0.79rem;
++  font-variant-numeric: tabular-nums;
++}
++
++.wfdb-forum .wfdb-language-filter {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: 8px 12px;
++  border-bottom: 1px solid var(--wfdb-line);
++  padding: 8px 18px;
++  color: var(--wfdb-muted);
++  font-size: 0.88rem;
++}
++
++.wfdb-forum .wfdb-language-filter select {
++  min-height: 34px;
++  border: 1px solid var(--wfdb-line);
++  border-radius: 8px;
++  padding-inline: 10px;
++  background: var(--wfdb-field);
++  color: var(--wfdb-text);
++}
++
++.wfdb-forum .wfdb-empty {
++  padding: 44px 16px 48px;
++  text-align: center;
++  color: var(--wfdb-muted);
++}
++
++.wfdb-forum .wfdb-empty p:first-child {
++  margin-bottom: 5px;
++  color: var(--wfdb-text);
++  font-weight: 650;
++}
++
++.wfdb-forum .wfdb-auth {
++  width: min(100%, 460px);
++  margin: clamp(18px, 7vw, 76px) auto;
++  padding: clamp(20px, 5vw, 34px);
++}
++
++.wfdb-forum .wfdb-auth h1 {
++  margin-top: 22px;
++  font-size: clamp(1.65rem, 5vw, 2.3rem);
++}
++
++.wfdb-forum .wfdb-auth-links {
++  display: flex;
++  flex-wrap: wrap;
++  justify-content: space-between;
++  gap: 10px;
++  margin-top: 18px;
++  color: var(--wfdb-gold);
++}
++
++.wfdb-forum .wfdb-footer {
++  border-top: 1px solid var(--wfdb-raised);
++  background: var(--wfdb-base);
++  color: var(--wfdb-muted);
++  font-size: 0.9rem;
++}
++
++.wfdb-forum .wfdb-footer-inner {
++  display: flex;
++  flex-wrap: wrap;
++  justify-content: space-between;
++  align-items: flex-end;
++  gap: 16px;
++  padding-block: 20px;
++}
++
++.wfdb-forum .wfdb-footer-links {
++  display: flex;
++  gap: 8px 16px;
++  flex-wrap: wrap;
++}
++
++.wfdb-forum :is(.wfdb-footer-links, .wfdb-auth-links) a:hover {
++  color: var(--wfdb-gold-hover);
++  text-decoration: underline;
++}
++
++@media (max-width: 991px) {
++  .wfdb-forum .wfdb-brand-mobile > span { display: none; }
++  .wfdb-forum .wfdb-site-nav { gap: 14px; }
++  .wfdb-forum .wfdb-footer { padding-bottom: 56px; }
++}
++
++@media (max-width: 680px) {
++  .theme-zh.wfdb-forum,
++  .dark .theme-zh.wfdb-forum { --wfdb-wrap: calc(100% - 34px); }
++  .wfdb-forum .wfdb-intro { flex-direction: column; align-items: flex-start; }
++  .wfdb-forum .wfdb-discussions { grid-template-columns: minmax(0, 1fr); gap: 14px; }
++  .wfdb-forum .wfdb-boards a { min-height: 40px; }
++  .wfdb-forum .wfdb-site-nav { gap: 12px; font-size: 0.87rem; }
++}
