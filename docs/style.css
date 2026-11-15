@@ -241,9 +241,6 @@ button.button { cursor: pointer; }
 .page-intro { padding-block: 10px 23px; }
 .page-intro h1, .detail h1 { font-size: clamp(2.3rem, 5vw, 4rem); font-weight: 800; letter-spacing: -.055em; }
 .page-intro p { margin-top: 8px; color: var(--muted); }
-.addon-card-wide { grid-template-columns: minmax(220px, .8fr) minmax(0, 1fr); max-width: 820px; }
-.addon-card-wide .addon-copy { padding: 21px; }
-.addon-card-wide .addon-copy p { margin-top: 9px; }
 .section-nav { display: flex; flex-wrap: wrap; gap: 4px 17px; border-bottom: 1px solid var(--line); }
 .section-nav a { padding: 8px 2px; color: var(--muted); font-size: .85rem; text-decoration: none; }
 .section-nav a:hover { color: var(--gold); }
@@ -321,7 +318,6 @@ code { border-radius: 3px; padding: .13em .3em; color: var(--gold-hover); backgr
   .tool-card { grid-template-columns: auto minmax(0, 1fr) auto; gap: 11px; }
   .tool-icon { display: block; }
   .hero-grid, .setup-grid, .boundary { grid-template-columns: 1fr; }
-  .addon-card-wide { grid-template-columns: minmax(0, .7fr) minmax(0, 1fr); }
   .footer-row p { order: 1; flex-basis: 100%; }
 }
 @media (max-width: 500px) {
