@@ -4,41 +4,97 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="无限库 WFDB 查《魔兽世界：无限》的钓点和食材，分享实钓记录。">
-  <meta name="theme-color" content="#090a0f">
+  <meta name="theme-color" content="#0c0f15">
   <title>无限库 WFDB · 魔兽世界：无限</title>
   <link rel="canonical" href="https://wfdb.cc/">
   <link rel="alternate" hreflang="zh-CN" href="https://wfdb.cc/">
   <link rel="alternate" hreflang="en" href="https://wfdb.cc/en/">
   <link rel="stylesheet" href="style.css">
+  <script type="module" src="./home.js"></script>
 </head>
-<body class="directory">
+<body class="home">
   <a class="skip" href="#content">跳到正文</a>
   <header class="masthead">
-    <div class="wrap nav directory-nav">
-      <a class="brand" href="./" aria-current="page">WFDB<span>无限库</span></a>
-      <nav aria-label="主导航"><a href="fishing/">钓鱼</a><a href="addons/">插件</a><a href="https://forum.wfdb.cc/">论坛</a></nav>
-      <a class="language" href="en/" lang="en" hreflang="en">English</a>
+    <div class="wrap nav">
+      <a class="brand" href="./" aria-label="WFDB 无限库首页"><span class="brand-mark" aria-hidden="true">&gt;_</span>WFDB</a>
+      <nav aria-label="主导航">
+        <a href="./" aria-current="page">首页</a>
+        <a href="./fishing/">钓鱼</a>
+        <a href="./addons/">插件</a>
+        <a href="https://forum.wfdb.cc/">论坛 <span aria-hidden="true">↗</span></a>
+      </nav>
+      <a class="language" href="./en/" lang="en" hreflang="en">English</a>
     </div>
   </header>
-  <main class="wrap directory-main" id="content">
-    <section class="directory-intro">
-      <p class="directory-kicker">魔兽世界：无限 · Forever &amp; Fish</p>
-      <h1>无限库 <span>WFDB</span></h1>
-      <p>查《魔兽世界：无限》的钓点和食材，分享实钓记录。</p>
-      <a class="button directory-button" href="fishing/">查钓点与食材 <span aria-hidden="true">→</span></a>
+  <main class="wrap page-main" id="content">
+    <section class="home-hero" aria-labelledby="home-title">
+      <div class="hero-art" aria-hidden="true">
+        <img src="./media/river-atlas.webp" alt="" width="1440" height="720" fetchpriority="high">
+      </div>
+      <div class="home-intro">
+        <p class="eyebrow">魔兽世界：无限</p>
+        <h1 id="home-title">无限库</h1>
+        <p class="intro-copy">查钓点、算食材，分享你的实钓记录。</p>
+        <form class="home-search" action="fishing/#lookup" role="search">
+          <label class="sr-only" for="home-query">搜索鱼名或物品编号</label>
+          <div class="search-field"><input id="home-query" type="search" name="q" placeholder="鱼名或物品编号" maxlength="100"></div>
+          <button class="button primary" type="submit">搜索<span aria-hidden="true"> ↵</span></button>
+        </form>
+        <div class="quick-links"><span>试试</span><a href="fishing/?q=251524#lookup">奇想鳍鱼</a><a href="fishing/?q=6358#lookup">黑口鱼</a></div>
+      </div>
+      <div class="catalog-stats" id="catalog-stats" hidden>
+        <a href="fishing/#lookup"><strong id="fish-total"></strong> <span>种鱼类</span></a>
+        <a href="fishing/#cooking"><strong id="recipe-total"></strong> <span>项配方</span></a>
+      </div>
     </section>
-    <section class="directory-list" aria-labelledby="addons-heading">
-      <h2 id="addons-heading">插件</h2>
-      <article class="addon-card">
-        <div class="addon-image"><img src="media/gameplay-v0.6.0.webp" alt="" width="2250" height="1382"></div>
-        <div class="addon-copy">
-          <h3>BobberTally</h3>
-          <p>无限钓鱼助手。切换鱼竿和武器，统计渔获，在拍卖行查询报价。</p>
-          <a class="directory-link" href="addons/bobber-tally/">查看详情与下载 <span aria-hidden="true">→</span></a>
-        </div>
-      </article>
+    <section class="home-tools" aria-labelledby="tools-heading">
+      <div class="section-heading"><h2 id="tools-heading">资料与工具</h2></div>
+      <div class="tool-grid">
+        <a class="tool-card" href="fishing/#lookup">
+          <span class="tool-icon icon-lookup" aria-hidden="true"></span>
+          <div><h3>钓点资料</h3><p>按鱼名、物品编号或游戏区域查询。</p></div>
+          <span class="tool-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool-card" href="fishing/#cooking">
+          <span class="tool-icon icon-cooking" aria-hidden="true"></span>
+          <div><h3>食材清单</h3><p>按配方和份数计算缺少的材料。</p></div>
+          <span class="tool-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool-card" href="fishing/#submit">
+          <span class="tool-icon icon-submit" aria-hidden="true"></span>
+          <div><h3>实钓投稿</h3><p>预览 BobberTally 导出的钓获记录。</p></div>
+          <span class="tool-arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
     </section>
+    <div class="home-updates">
+      <section aria-labelledby="addons-heading">
+        <div class="section-heading"><h2 id="addons-heading">插件</h2><a href="addons/">插件目录 <span aria-hidden="true">→</span></a></div>
+        <a class="addon-card" href="addons/bobber-tally/">
+          <img src="./media/gameplay-v0.6.0.webp" alt="" width="2250" height="1382" loading="lazy">
+          <div class="addon-copy">
+            <div class="addon-title"><h3>BobberTally</h3><span class="version-tag">v0.7.0</span></div>
+            <p>鱼竿与武器换装、渔获统计、拍卖行估价。</p>
+            <span class="text-action">详情与下载 <span aria-hidden="true">→</span></span>
+          </div>
+        </a>
+      </section>
+      <section aria-labelledby="forum-heading">
+        <div class="section-heading"><h2 id="forum-heading">社区</h2><a href="https://forum.wfdb.cc/">进入论坛 <span aria-hidden="true">↗</span></a></div>
+        <ul class="forum-links">
+          <li><a href="https://forum.wfdb.cc/thread/5">论坛导览<span aria-hidden="true">↗</span></a></li>
+          <li><a href="https://forum.wfdb.cc/thread/3">钓点实测投稿指引<span aria-hidden="true">↗</span></a></li>
+          <li><a href="https://forum.wfdb.cc/thread/1">Mac 客户端试用指引<span aria-hidden="true">↗</span></a></li>
+        </ul>
+      </section>
+    </div>
   </main>
-  <footer><div class="wrap"><strong>无限库 WFDB</strong><p>《魔兽世界：无限》玩家资料站。</p></div></footer>
+  <footer class="site-footer">
+    <div class="wrap footer-row">
+      <a class="footer-brand" href="./">WFDB <span>Forever &amp; Fish</span></a>
+      <p>《魔兽世界：无限》玩家资料站</p>
+      <a href="https://github.com/bluexp/bobber-tally">GitHub <span aria-hidden="true">↗</span></a>
+    </div>
+  </footer>
 </body>
 </html>

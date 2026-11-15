@@ -3,42 +3,98 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="WFDB lists community add-ons and tools for World of Warcraft: Forever.">
-  <meta name="theme-color" content="#090a0f">
+  <meta name="description" content="Search fishing waters, plan cooking ingredients, and download BobberTally for World of Warcraft: Forever.">
+  <meta name="theme-color" content="#0c0f15">
   <title>WFDB · World of Warcraft: Forever</title>
   <link rel="canonical" href="https://wfdb.cc/en/">
   <link rel="alternate" hreflang="zh-CN" href="https://wfdb.cc/">
   <link rel="alternate" hreflang="en" href="https://wfdb.cc/en/">
   <link rel="stylesheet" href="../style.css">
+  <script type="module" src="./../home.js"></script>
 </head>
-<body class="directory">
+<body class="home">
   <a class="skip" href="#content">Skip to content</a>
   <header class="masthead">
-    <div class="wrap nav directory-nav">
-      <a class="brand" href="./" aria-current="page">WFDB</a>
-      <nav aria-label="Main navigation"><a href="fishing/">Fishing</a><a href="addons/">Add-ons</a><a href="https://forum.wfdb.cc/">Forum</a></nav>
-      <a class="language" href="../" lang="zh-CN" hreflang="zh-CN">简体中文</a>
+    <div class="wrap nav">
+      <a class="brand" href="./" aria-label="WFDB home"><span class="brand-mark" aria-hidden="true">&gt;_</span>WFDB</a>
+      <nav aria-label="Main navigation">
+        <a href="./" aria-current="page">Home</a>
+        <a href="./fishing/">Fishing</a>
+        <a href="./addons/">Add-ons</a>
+        <a href="https://forum.wfdb.cc/">Forum <span aria-hidden="true">↗</span></a>
+      </nav>
+      <a class="language" href="./../" lang="zh-CN" hreflang="zh-CN">简体中文</a>
     </div>
   </header>
-  <main class="wrap directory-main" id="content">
-    <section class="directory-intro">
-      <p class="directory-kicker">Forever &amp; Fish</p>
-      <h1>WFDB</h1>
-      <p>Find fishing waters, plan ingredients, and share catches from World of Warcraft: Forever.</p>
-      <a class="button directory-button" href="fishing/">Find waters and ingredients <span aria-hidden="true">→</span></a>
+  <main class="wrap page-main" id="content">
+    <section class="home-hero" aria-labelledby="home-title">
+      <div class="hero-art" aria-hidden="true">
+        <img src="./../media/river-atlas.webp" alt="" width="1440" height="720" fetchpriority="high">
+      </div>
+      <div class="home-intro">
+        <p class="eyebrow">World of Warcraft: Forever</p>
+        <h1 id="home-title">WFDB</h1>
+        <p class="intro-copy">Find fishing waters, plan ingredients, and share your catches.</p>
+        <form class="home-search" action="fishing/#lookup" role="search">
+          <label class="sr-only" for="home-query">Search by fish name or item ID</label>
+          <div class="search-field"><input id="home-query" type="search" name="q" placeholder="Fish name or ID" maxlength="100"></div>
+          <button class="button primary" type="submit">Search<span aria-hidden="true"> ↵</span></button>
+        </form>
+        <div class="quick-links"><span>Try</span><a href="fishing/?q=251524#lookup">Whimsyfin</a><a href="fishing/?q=6358#lookup">Oily Blackmouth</a></div>
+      </div>
+      <div class="catalog-stats" id="catalog-stats" hidden>
+        <a href="fishing/#lookup"><strong id="fish-total"></strong> <span>Fish entries</span></a>
+        <a href="fishing/#cooking"><strong id="recipe-total"></strong> <span>Recipes</span></a>
+      </div>
     </section>
-    <section class="directory-list" aria-labelledby="addons-heading">
-      <h2 id="addons-heading">Add-ons</h2>
-      <article class="addon-card">
-        <div class="addon-image"><img src="../media/gameplay-v0.6.0.webp" alt="" width="2250" height="1382"></div>
-        <div class="addon-copy">
-          <h3>BobberTally</h3>
-          <p>Swap between your fishing pole and weapons, track catches, and look up auction prices.</p>
-          <a class="directory-link" href="addons/bobber-tally/">Details and download <span aria-hidden="true">→</span></a>
-        </div>
-      </article>
+    <section class="home-tools" aria-labelledby="tools-heading">
+      <div class="section-heading"><h2 id="tools-heading">Database & tools</h2></div>
+      <div class="tool-grid">
+        <a class="tool-card" href="fishing/#lookup">
+          <span class="tool-icon icon-lookup" aria-hidden="true"></span>
+          <div><h3>Find waters</h3><p>Look up a fish, item ID, or game zone.</p></div>
+          <span class="tool-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool-card" href="fishing/#cooking">
+          <span class="tool-icon icon-cooking" aria-hidden="true"></span>
+          <div><h3>Ingredients</h3><p>Calculate the materials you still need.</p></div>
+          <span class="tool-arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="tool-card" href="fishing/#submit">
+          <span class="tool-icon icon-submit" aria-hidden="true"></span>
+          <div><h3>Contribute</h3><p>Preview catch records exported from BobberTally.</p></div>
+          <span class="tool-arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
     </section>
+    <div class="home-updates">
+      <section aria-labelledby="addons-heading">
+        <div class="section-heading"><h2 id="addons-heading">Add-ons</h2><a href="addons/">All add-ons <span aria-hidden="true">→</span></a></div>
+        <a class="addon-card" href="addons/bobber-tally/">
+          <img src="./../media/gameplay-v0.6.0.webp" alt="" width="2250" height="1382" loading="lazy">
+          <div class="addon-copy">
+            <div class="addon-title"><h3>BobberTally</h3><span class="version-tag">v0.7.0</span></div>
+            <p>Gear swaps, catch stats, and auction estimates.</p>
+            <span class="text-action">Details & download <span aria-hidden="true">→</span></span>
+          </div>
+        </a>
+      </section>
+      <section aria-labelledby="forum-heading">
+        <div class="section-heading"><h2 id="forum-heading">Community</h2><a href="https://forum.wfdb.cc/">Open forum <span aria-hidden="true">↗</span></a></div>
+        <ul class="forum-links">
+          <li><a href="https://forum.wfdb.cc/thread/6">Forum guide<span aria-hidden="true">↗</span></a></li>
+          <li><a href="https://forum.wfdb.cc/thread/4">Fishing contribution guide<span aria-hidden="true">↗</span></a></li>
+          <li><a href="https://forum.wfdb.cc/thread/2">Mac client preview guide<span aria-hidden="true">↗</span></a></li>
+        </ul>
+      </section>
+    </div>
   </main>
-  <footer><div class="wrap"><strong>WFDB</strong><p>A World of Warcraft: Forever fan site.</p></div></footer>
+  <footer class="site-footer">
+    <div class="wrap footer-row">
+      <a class="footer-brand" href="./">WFDB <span>Forever &amp; Fish</span></a>
+      <p>A World of Warcraft: Forever fan site</p>
+      <a href="https://github.com/bluexp/bobber-tally">GitHub <span aria-hidden="true">↗</span></a>
+    </div>
+  </footer>
 </body>
 </html>

@@ -51,6 +51,10 @@ async function start() {
   const fmtDate = (day) => new Date(day * 86400000).toISOString().slice(0, 10);
   const option = (value, label) => new Option(label, value);
   const reviewed = Array.isArray(reviews);
+  const pageSize = 6;
+  const featured = new Set(featuredFish);
+  const orderedFish = [...featuredFish.map((id) => byID.get(id)), ...fish.filter(({ id }) => !featured.has(id))];
+  let page = 0;
 
   for (const id of [...featuredZones, ...Object.keys(zones).map(Number).filter((id) => !featuredZones.includes(id))
     .sort((a, b) => name(zones[a]).localeCompare(name(zones[b]), zh ? "zh-CN" : "en"))]) {
@@ -112,7 +116,17 @@ async function start() {
   function filterByFish(id) {
     el("query").value = String(id);
     el("zone").value = "";
+    resetCatalogPage();
+    focusResults();
+  }
+
+  function resetCatalogPage() {
+    page = 0;
     renderCatalog();
+  }
+
+  function focusResults() {
+    el("result-count").focus({ preventScroll: true });
     el("lookup").scrollIntoView({ block: "start" });
   }
 
@@ -125,14 +139,22 @@ async function start() {
       row.item === id && (!zoneID || (!subzones.has(zoneID) && row.map !== 0 && row.map === zones[zoneID]?.map)));
     const output = el("fish-list");
     output.replaceChildren();
-    const ordered = !query && !zoneID && !region ? featuredFish.map((id) => byID.get(id)) : fish;
-    const shown = ordered.filter((row) => {
+    const shown = orderedFish.filter((row) => {
       if (zoneID && !row.zones?.includes(zoneID) && matchingRecords(row.id).length === 0) return false;
       return !query || (/^\d+$/.test(query) ? String(row.id) === query :
         [items[row.id].zh, items[row.id].en].some((value) => value.toLocaleLowerCase().includes(query)));
     });
-    el("result-count").textContent = t(`${shown.length} 种鱼`, `${shown.length} fish`);
-    for (const row of shown) {
+    const offset = page * pageSize;
+    const end = Math.min(offset + pageSize, shown.length);
+    const total = number.format(shown.length);
+    const range = `${number.format(offset + 1)}–${number.format(end)}`;
+    el("result-count").textContent = shown.length > pageSize
+      ? t(`第 ${range} 条 · 共 ${total} 种鱼`, `${range} of ${total} fish`)
+      : t(`${total} 种鱼`, `${total} fish`);
+    el("result-pages").hidden = shown.length <= pageSize;
+    el("prev-page").disabled = page === 0;
+    el("next-page").disabled = end >= shown.length;
+    for (const row of shown.slice(offset, end)) {
       const card = make("article");
       card.className = "fish-entry";
       const header = make("div");
@@ -178,7 +200,14 @@ async function start() {
     if (!shown.length) output.append(make("p", t("没有匹配的鱼。可改用鱼名或物品编号搜索。", "No matches. Try a fish name or item ID.")));
   }
 
-  for (const id of ["query", "zone", "region"]) el(id).addEventListener("input", renderCatalog);
+  for (const id of ["query", "zone", "region"]) el(id).addEventListener("input", resetCatalogPage);
+  for (const [id, step] of [["prev-page", -1], ["next-page", 1]]) {
+    el(id).addEventListener("click", () => {
+      page += step;
+      renderCatalog();
+      focusResults();
+    });
+  }
   for (const id of ["recipe", "servings"]) el(id).addEventListener("input", () => {
     el("recipe-result").textContent = "";
     renderRecipes();
@@ -186,6 +215,8 @@ async function start() {
   el("recipe").value = 6290;
   el("lookup-controls").disabled = false;
   el("recipe-controls").disabled = false;
+  const initialQuery = new URLSearchParams(location.search).get("q");
+  if (initialQuery !== null) el("query").value = initialQuery.slice(0, 100);
   renderCatalog();
   renderRecipes();
 
@@ -228,17 +259,23 @@ async function start() {
   });
   el("post-area").hidden = true;
   for (const id of ["record-code", "credit"]) el(id).addEventListener("input", () => { el("post-area").hidden = true; });
-  if (location.hash.startsWith("#preview=")) {
+  function previewFromLink() {
+    if (!location.hash.startsWith("#preview=")) return;
     const raw = location.hash.slice(9);
     history.replaceState(null, "", "#submit");
+    el("record-code").value = "";
     try {
       if (raw.length <= 4200) el("record-code").value = "WFDB1:" + decodeURIComponent(raw);
     } catch {
       el("record-code").value = "";
     }
+    el("post-area").hidden = true;
     previewRecords();
     el("submit").scrollIntoView();
   }
+
+  window.addEventListener("hashchange", previewFromLink);
+  previewFromLink();
 }
 if (typeof document !== "undefined" && el("lookup")) {
   start().catch(() => {
