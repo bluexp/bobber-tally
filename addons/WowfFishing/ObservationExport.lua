@@ -36,8 +36,19 @@ end
 local panel = theme.CreatePanel("WowfFishingObservationExport")
 panel:SetSize(540, 200)
 panel:SetPoint("CENTER")
+panel:SetMovable(true)
 local surface = theme.Surface(panel)
 addon.SetLocalizedText(theme.Label(panel, "GameFontNormal", 16, -4, 470), "导出 WFDB 钓鱼记录")
+
+local titleBar = CreateFrame("Frame", nil, panel)
+titleBar:SetPoint("TOPLEFT", 8, -2)
+titleBar:SetPoint("TOPRIGHT", -32, -2)
+titleBar:SetHeight(20)
+titleBar:EnableMouse(true)
+titleBar:RegisterForDrag("LeftButton")
+titleBar:SetScript("OnDragStart", function() panel:StartMoving() end)
+titleBar:SetScript("OnDragStop", function() panel:StopMovingOrSizing() end)
+
 local help = theme.Label(surface, "GameFontHighlight", 20, -44, 500, nil, theme.colors.text)
 addon.SetLocalizedText(help, "复制下方记录，再打开 wfdb.cc/fishing/ 预览。")
 
@@ -51,7 +62,10 @@ edit:SetScript("OnEditFocusGained", function(self) self:HighlightText() end)
 
 local status = theme.Label(surface, "GameFontHighlightSmall", 20, -134, 500, nil, theme.colors.muted)
 status:SetMaxLines(2)
-panel:SetScript("OnHide", function() edit:ClearFocus() end)
+panel:SetScript("OnHide", function()
+    panel:StopMovingOrSizing()
+    edit:ClearFocus()
+end)
 
 function addon.ShowObservationExport()
     local rows = {}

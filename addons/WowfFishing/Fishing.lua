@@ -469,16 +469,17 @@ local function NewLootItem(window, itemID, name)
     return item
 end
 
-local function ReadFishingLoot()
+local function ReadFishingLoot(autoLoot)
     local slotCount = GetNumLootItems()
     if not lootWindow then
         -- Late events for consumed auto-loot must keep the closed snapshot for deduplication.
         if slotCount == 0 and closedLootWindow and closedLootWindow.cast == currentCast
             and GetTime() <= closedLootWindow.expires then return end
         currentCast = currentCast or {}
-        lootWindow = { slots = {}, items = {}, cast = currentCast }
+        lootWindow = { slots = {}, items = {}, receiptLines = {}, cast = currentCast }
         closedLootWindow = nil
     end
+    if autoLoot then lootWindow.autoLoot = true end
     for slot = 1, slotCount do
         local knownSlot = lootWindow.slots[slot]
         if not (knownSlot and knownSlot.cleared) and GetLootSlotType(slot) == LOOT_ITEM then
@@ -546,9 +547,11 @@ for _, key in ipairs({ "LOOT_ITEM_SELF_MULTIPLE", "LOOT_ITEM_SELF" }) do
     end
 end
 
-local function CountLootReceipt(message)
+local function CountLootReceipt(message, lineID)
     local window = GetRecentLootWindow()
     if not window or IsSecret(message) or type(message) ~= "string" then return end
+    if type(lineID) ~= "number" or lineID <= 0 then lineID = nil end
+    if lineID and window.receiptLines[lineID] then return end
     local liveFishingLoot = window == lootWindow and IsFishingLoot()
     for _, pattern in ipairs(receiptPatterns) do
         local link, count = message:match(pattern.text)
@@ -558,11 +561,12 @@ local function CountLootReceipt(message)
         if id then
             local itemID = tonumber(id)
             if liveFishingLoot then ReadFishingLoot() end
-            -- Direct attribution requires the live fishing flag if no slots were readable.
-            local noSlots = liveFishingLoot and not next(window.slots)
+            -- Auto-loot can consume the slots and close the fishing window before chat arrives.
+            local noSlots = (liveFishingLoot or window.autoLoot) and not next(window.slots)
             local item = FindLootItem(window, itemID, name)
             if not item and noSlots then item = NewLootItem(window, itemID, name) end
             if item then
+                if lineID then window.receiptLines[lineID] = true end
                 item.itemID = itemID
                 item.received = item.received + (tonumber(count) or 1)
                 if noSlots then item.receivedWithoutSlots = item.received end
@@ -593,11 +597,13 @@ local function NormalizeKey(input)
     if remaining == "BUTTON4" or remaining == "BUTTON5" then return key end
     local number = tonumber(remaining:match("^F(%d+)$"))
     if number and number >= 1 and number <= 12 and remaining == "F" .. number then return key end
+    if key == "" then return nil, L["支持键盘、小键盘、鼠标侧键和组合键。"] end
+    return nil, L["不支持快捷键 %s，请换一个键。"]:format(key)
 end
 
 local function ValidateGearKey(input, override)
-    local key = NormalizeKey(input)
-    if not key then return nil, L["支持键盘、小键盘、鼠标侧键和组合键。"] end
+    local key, errorMessage = NormalizeKey(input)
+    if not key then return nil, errorMessage end
     if key == db.fishKey then return nil, key .. L[" 已用于抛竿和收竿。"] end
     local action = GetBindingAction(key, true)
     if not override and key ~= GearKey() and action and action ~= "" then
@@ -616,8 +622,8 @@ local function SaveGearKey(key)
 end
 
 local function ValidateFishKey(input, override)
-    local key = NormalizeKey(input)
-    if not key then return nil, L["支持键盘、小键盘、鼠标侧键和组合键。"] end
+    local key, errorMessage = NormalizeKey(input)
+    if not key then return nil, errorMessage end
     if key == GearKey() then return nil, L["这个按键已用于换装，请换一个。"] end
     local action = GetBindingAction(key, true)
     if not override and key ~= db.fishKey and action and action ~= "" then
@@ -642,6 +648,10 @@ local function HandleCommand(input)
     end
     if command == "fish" then
         addon.ToggleFishCatalog(tonumber(argument))
+        return
+    end
+    if command == "auctions" then
+        addon.ToggleAuctionWatch()
         return
     end
     if command == "export" then
@@ -716,6 +726,7 @@ local function Initialize()
     addon.InitializeCatchList(db)
     addon.InitializeFishCatalog(db)
     addon.InitializeObservationExport(db)
+    addon.InitializeAuctionWatch(db)
     if db.useM == nil then db.useM = false end
     if db.enhanceSound == nil then db.enhanceSound = true end
     addon.InitializeSetup(db, {
@@ -735,7 +746,8 @@ local function Initialize()
     UpdateChannel(false)
 end
 
-events:SetScript("OnEvent", function(_, event, unitOrSlot, setID, spellID)
+events:SetScript("OnEvent", function(_, event, ...)
+    local unitOrSlot, setID, spellID = ...
     if event == "PLAYER_LOGIN" then
         Initialize()
     elseif not db then
@@ -764,7 +776,7 @@ events:SetScript("OnEvent", function(_, event, unitOrSlot, setID, spellID)
         RestoreAudio()
     elseif event == "LOOT_READY" or event == "LOOT_OPENED" then
         if IsFishingLoot and IsFishingLoot() then
-            ReadFishingLoot()
+            ReadFishingLoot(unitOrSlot)
         elseif event == "LOOT_READY" or setID == true then
             -- LOOT_OPENED can follow an already consumed auto-loot snapshot.
             lootWindow, closedLootWindow = nil, nil
@@ -774,7 +786,7 @@ events:SetScript("OnEvent", function(_, event, unitOrSlot, setID, spellID)
     elseif event == "LOOT_SLOT_CLEARED" then
         CountClearedSlot(unitOrSlot)
     elseif event == "CHAT_MSG_LOOT" then
-        CountLootReceipt(unitOrSlot)
+        CountLootReceipt(unitOrSlot, select(11, ...)) -- CHAT_MSG_LOOT line ID
     elseif event == "LOOT_CLOSED" then
         if lootWindow then
             lootWindow.expires = GetTime() + LOOT_RECEIPT_GRACE

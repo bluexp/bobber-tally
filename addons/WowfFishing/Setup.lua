@@ -316,9 +316,18 @@ local activeCapture
 local modifierKeys = { ALT = true, CTRL = true, SHIFT = true, META = true, CMD = true }
 
 function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
-    local frame = CreateFrame("Frame", name, parent)
+    -- Keep keyboard focus in the recorder so Enter cannot open chat.
+    local frame = CreateFrame("EditBox", name, parent)
+    frame:SetPoint("TOPLEFT", parent)
+    frame:SetSize(1, 1)
+    frame:SetAlpha(0)
+    frame:SetFontObject(GameFontHighlightSmall)
+    frame:SetAutoFocus(false)
+    frame:SetMaxLetters(1)
+    frame:EnableMouse(false)
     frame:SetPropagateKeyboardInput(false)
     frame:EnableKeyboard(false)
+    frame:Hide()
     local releaseKey, chord, conflict
 
     function frame:IsListening()
@@ -328,19 +337,27 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
     function frame:StopListening(acceptedKey, override)
         if not self:IsListening() then return end
         activeCapture, releaseKey, chord, conflict = nil, nil, nil, nil
+        self:SetScript("OnUpdate", nil)
         self:EnableKeyboard(false)
+        self:ClearFocus()
+        self:SetText("")
+        self:Hide()
         if acceptedKey then accept(acceptedKey, override) end
         refresh()
     end
 
-    local function Accept(input, override)
+    local function ValidateInput(input, override)
         local acceptedKey, errorMessage, canOverride = validate(input, override)
-        if acceptedKey then
-            frame:StopListening(acceptedKey, override)
-        else
-            conflict = canOverride and input or nil
+        conflict = canOverride and input or nil
+        if not acceptedKey then
             refresh(conflict and L["%s 已被游戏占用。使用此键会暂时覆盖原操作。"]:format(input) or errorMessage)
         end
+        return acceptedKey
+    end
+
+    local function Accept(input, override)
+        local acceptedKey = ValidateInput(input, override)
+        if acceptedKey then frame:StopListening(acceptedKey, override) end
     end
 
     function frame:HasConflict()
@@ -374,27 +391,55 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
         else
             if activeCapture then activeCapture:StopListening() end
             activeCapture = self
+            self:Show()
             self:EnableKeyboard(true)
+            self:SetFocus()
             refresh()
         end
     end
 
-    frame:SetScript("OnKeyDown", function(self, key)
-        if not self:IsListening() or releaseKey or modifierKeys[key:gsub("^[LR]", "")] then return end
-        releaseKey = key
-        if key ~= "ESCAPE" then chord = KeyChord(key) end
-    end)
-    frame:SetScript("OnKeyUp", function(self, key)
+    local function FinishKey(self, key)
         if not self:IsListening() or key ~= releaseKey then return end
-        if not chord then
+        local input = chord
+        releaseKey, chord = nil, nil
+        self:SetScript("OnUpdate", nil)
+        if input then Accept(input) end
+    end
+
+    local function CheckKeyRelease(self)
+        -- The client can miss OnKeyUp when focus changes while the key is held.
+        if IsKeyDown(releaseKey, true) == false then FinishKey(self, releaseKey) end
+    end
+
+    local function RejectEnter(self)
+        if not self:IsListening() then return end
+        releaseKey, chord, conflict = nil, nil, nil
+        self:SetScript("OnUpdate", nil)
+        refresh(L["回车不能用作快捷键，请按其他键。"])
+    end
+
+    frame:SetScript("OnKeyDown", function(self, key)
+        if not self:IsListening() then return end
+        if key == "ENTER" or key == "NUMPADENTER" then
+            RejectEnter(self)
+            return
+        end
+        if key == "ESCAPE" then
             self:StopListening()
             return
         end
-        local input = chord
-        releaseKey, chord = nil, nil
-        Accept(input)
+        if key == releaseKey or modifierKeys[key:gsub("^[LR]", "")] then return end
+        releaseKey = key
+        if IsKeyDown then self:SetScript("OnUpdate", CheckKeyRelease) end
+        chord = ValidateInput(KeyChord(key))
+        if chord then refresh(L["已识别 %s，请松开按键。"]:format(chord)) end
     end)
-    frame:SetScript("OnEvent", function(self) self:StopListening() end)
+    frame:SetScript("OnKeyUp", FinishKey)
+    frame:SetScript("OnEnterPressed", RejectEnter)
+    local function Cancel(self) self:StopListening() end
+    frame:SetScript("OnEscapePressed", Cancel)
+    frame:SetScript("OnEditFocusLost", Cancel)
+    frame:SetScript("OnEvent", Cancel)
     frame:RegisterEvent("PLAYER_REGEN_DISABLED")
     parent:HookScript("OnHide", function() frame:StopListening() end)
     return frame

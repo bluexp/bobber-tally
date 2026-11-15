@@ -9,7 +9,7 @@ local firstRow = 1
 local auction = C_AuctionHouse
 local auctionOpen = false
 local settings, quotes, scan, auctionMessage
-local auctionRefresh, auctionStatus
+local auctionRefresh, auctionStatus, autoRefreshTimer
 
 function addon.CreateDragHandle(parent, name, tooltip)
     local handle = CreateFrame("Button", name, parent)
@@ -46,8 +46,9 @@ end
 local panel = theme.CreatePanel("WowfFishingCatchList")
 local panelWidth, panelHeight, margin = 624, 568, 16
 local contentWidth = panelWidth - margin * 2
-local tableTop, headerHeight = 282, 28
-local footerTop = tableTop + headerHeight + visibleRows * rowHeight + 12
+local tableTop, headerHeight, infoHeight = 259, 28, 23
+local infoTop = headerHeight + visibleRows * rowHeight
+local footerTop = tableTop + infoTop + infoHeight + 12
 panel:SetSize(panelWidth, panelHeight)
 panel:SetPoint("CENTER", UIParent, "CENTER", -238, 35)
 panel:SetMovable(true)
@@ -86,10 +87,13 @@ end
 
 addon.SetLocalizedText(Label(panel, "GameFontNormal", 16, -4, 390), "无限钓鱼助手 · 渔获统计")
 
-local status = Label(surface, "GameFontHighlight", 16, -37, 278, nil, colors.gold)
-local hint = Label(surface, "GameFontHighlightSmall", 303, -38, 209, "RIGHT", colors.muted)
+local status = Label(surface, "GameFontHighlight", 16, -37, 216, nil, colors.gold)
+local hint = Label(surface, "GameFontHighlightSmall", 241, -38, 200, "RIGHT", colors.muted)
 local endButton = theme.Button(surface, nil, "结束本次", 86, 24)
 endButton:SetPoint("TOPRIGHT", -margin, -30)
+local exportButton = theme.Button(surface, nil, "导出", 65, 24)
+exportButton:SetPoint("RIGHT", endButton, "LEFT", -8, 0)
+exportButton:SetScript("OnClick", function() addon.ShowObservationExport() end)
 theme.Block(surface, "ARTWORK", 16, -58, contentWidth, 1, colors.divider)
 
 local summary = theme.Inset(surface, margin, -70, contentWidth, 136)
@@ -122,13 +126,11 @@ end
 local auctionTotal, auctionCoverage, auctionRate = SummaryValue(12, "拍卖行估值")
 local vendorTotal, vendorCoverage, vendorRate = SummaryValue(contentWidth / 2 + 12, "NPC 出售总价")
 
-theme.Inset(surface, margin, -216, contentWidth, 55)
-local recent = Label(surface, "GameFontHighlightSmall", 28, -224, 355, nil, colors.text)
-local lure = Label(surface, "GameFontHighlightSmall", 383, -224, 213, "RIGHT", colors.muted)
+theme.Inset(surface, margin, -216, contentWidth, 32)
 local goalButton = theme.Button(surface, nil, "鱼类目标", 88, 22)
-goalButton:SetPoint("TOPLEFT", 28, -242)
-local goalProgress = Label(surface, "GameFontHighlightSmall", 126, -247, 318, nil, colors.text)
-local goalTrack = theme.Block(surface, "ARTWORK", 457, -250, 139, 6, colors.control)
+goalButton:SetPoint("TOPLEFT", 28, -221)
+local goalProgress = Label(surface, "GameFontHighlightSmall", 126, -226, 318, nil, colors.text)
+local goalTrack = theme.Block(surface, "ARTWORK", 457, -229, 139, 6, colors.control)
 local goalFill = surface:CreateTexture(nil, "OVERLAY")
 goalFill:SetPoint("TOPLEFT", goalTrack, "TOPLEFT")
 goalFill:SetHeight(6)
@@ -136,6 +138,28 @@ goalFill:SetTexture("Interface\\TargetingFrame\\UI-StatusBar")
 goalFill:SetVertexColor(unpack(colors.gold))
 goalFill:Hide()
 goalTrack:Hide()
+
+local columns = {
+    { title = "物品", x = 14, width = 231 },
+    { title = "本次", x = 245, width = 49, align = "RIGHT" },
+    { title = "背包", x = 309, width = 46, align = "RIGHT" },
+    { title = "拍卖行最低单价", x = 371, width = 128 },
+    { title = "卖给 NPC", x = 505, width = 73 },
+}
+local function TableLabel(parent, column, y, font, color)
+    return Label(parent, font, column.x, y, column.width, column.align, color)
+end
+
+local tableFrame = theme.Inset(surface, margin, -tableTop, contentWidth, infoTop + infoHeight)
+theme.Block(tableFrame, "BORDER", 3, -3, contentWidth - 6, headerHeight - 3, colors.control)
+for _, column in ipairs(columns) do
+    addon.SetLocalizedText(TableLabel(tableFrame, column, -8, "GameFontHighlightSmall", colors.gold), column.title)
+end
+
+theme.Block(tableFrame, "ARTWORK", 3, -infoTop, contentWidth - 6, infoHeight - 3, colors.control)
+theme.Block(tableFrame, "OVERLAY", 3, -infoTop, contentWidth - 6, 1, colors.divider)
+local recent = Label(tableFrame, "GameFontHighlightSmall", 14, -infoTop - 5, 355, nil, colors.text)
+local lure = Label(tableFrame, "GameFontHighlightSmall", 375, -infoTop - 5, 203, "RIGHT", colors.muted)
 
 function addon.UpdateLureStatus(seconds)
     lure:SetText(not seconds and "" or seconds == 0 and L["鱼饵已到期。"]
@@ -150,22 +174,6 @@ function addon.UpdateCatchSummary(state, session)
     itemCount:SetText(session.count)
     recent:SetText(L["最近渔获 "] .. (session.lastCatch or "—"))
     hint:SetText(settings.fishKey and (L["抛竿 / 收竿  "] .. settings.fishKey) or L["抛竿 / 收竿键未设置"])
-end
-
-local columns = {
-    { title = "物品", x = 14, width = 231 },
-    { title = "数量", x = 250, width = 55, align = "RIGHT" },
-    { title = "拍卖行最低单价", x = 324, width = 133 },
-    { title = "卖给 NPC", x = 470, width = 108 },
-}
-local function TableLabel(parent, column, y, font, color)
-    return Label(parent, font, column.x, y, column.width, column.align, color)
-end
-
-local tableFrame = theme.Inset(surface, margin, -tableTop, contentWidth, headerHeight + visibleRows * rowHeight)
-theme.Block(tableFrame, "BORDER", 3, -3, contentWidth - 6, headerHeight - 3, colors.control)
-for _, column in ipairs(columns) do
-    addon.SetLocalizedText(TableLabel(tableFrame, column, -8, "GameFontHighlightSmall", colors.gold), column.title)
 end
 
 local list = CreateFrame("Frame", nil, tableFrame)
@@ -188,9 +196,10 @@ for i = 1, visibleRows do
     row.icon:SetTexCoord(0.06, 0.94, 0.06, 0.94)
     row.name = Label(row, "GameFontHighlight", 44, -9, 201, nil, colors.text)
     row.quantity = TableLabel(row, columns[2], -9, "GameFontHighlight", colors.text)
-    row.auction = TableLabel(row, columns[3], -3, "GameFontHighlight", colors.text)
-    row.quoteTime = TableLabel(row, columns[3], -17, "GameFontHighlightSmall", colors.muted)
-    row.vendor = TableLabel(row, columns[4], -9, "GameFontHighlight", colors.text)
+    row.bagQuantity = TableLabel(row, columns[3], -9, "GameFontHighlight", colors.text)
+    row.auction = TableLabel(row, columns[4], -3, "GameFontHighlight", colors.text)
+    row.quoteTime = TableLabel(row, columns[4], -17, "GameFontHighlightSmall", colors.muted)
+    row.vendor = TableLabel(row, columns[5], -9, "GameFontHighlight", colors.text)
     row:EnableMouse(true)
     row:SetScript("OnEnter", function(self)
         if not self.item then return end
@@ -211,7 +220,7 @@ for i = 1, visibleRows do
 end
 
 local empty = Label(list, "GameFontHighlight", 0, -88, contentWidth, "CENTER", colors.muted)
-addon.SetLocalizedText(empty, "本次还没有钓到物品")
+addon.SetLocalizedText(empty, "暂无渔获或背包鱼类")
 
 local function FooterButton(text, width, x, primary)
     local button = theme.Button(surface, nil, text, width, 24, primary)
@@ -222,8 +231,8 @@ end
 local refresh = FooterButton("更新拍卖价", 110, 16, true)
 local catalogButton = FooterButton("鱼类资料", 99, 134)
 catalogButton:SetScript("OnClick", function() addon.ToggleFishCatalog() end)
-local exportButton = FooterButton("导出", 65, 241)
-exportButton:SetScript("OnClick", function() addon.ShowObservationExport() end)
+local watchButton = FooterButton("我的挂单", 86, 241)
+watchButton:SetScript("OnClick", function() addon.ToggleAuctionWatch() end)
 local previous = FooterButton("上页", 44, 342)
 local following = FooterButton("下页", 44, 482)
 local page = Label(surface, "GameFontHighlightSmall", 387, -footerTop - 7, 94, "CENTER", colors.muted)
@@ -292,7 +301,7 @@ local function RefreshAuctionControls()
     elseif auctionMessage then
         text = auctionMessage
     elseif auctionOpen then
-        text = next(catchesByID) and L["查询本次渔获的挂单"] or L["查询资料库鱼类和成品"]
+        text = L["可手动更新拍卖价"]
     else
         text = L["打开拍卖行后可更新"]
     end
@@ -304,13 +313,48 @@ local function RefreshAuctionControls()
     end
 end
 
-local function Refresh()
-    local total = #catches
+local function ListItems()
+    local items, legacyRows, bagOnly = {}, {}, {}
+    for index, item in ipairs(catches) do
+        items[index] = item
+        if not item.itemID then legacyRows[item.name] = index end
+    end
+    for _, fish in ipairs(addon.FishData.entries) do
+        local count = not catchesByID[fish.id] and C_Item.GetItemCount(fish.id) or 0
+        if count > 0 then
+            local name, _, _, _, _, _, _, _, _, _, vendorPrice = C_Item.GetItemInfo(fish.id)
+            local englishName = addon.EnglishCatalog.items[fish.id]
+            local legacyIndex = legacyRows[name] or legacyRows[fish.name] or legacyRows[englishName]
+            local item = {
+                itemID = fish.id,
+                name = name or (addon.IsEnglish() and englishName) or fish.name,
+                quantity = 0,
+                bagQuantity = count,
+                vendorPrice = vendorPrice or fish.vendorPrice,
+            }
+            if legacyIndex then
+                local legacy = items[legacyIndex]
+                legacyRows[legacy.name] = nil
+                item.quantity = legacy.quantity
+                items[legacyIndex] = item
+            else
+                bagOnly[#bagOnly + 1] = item
+            end
+        end
+    end
+    table.sort(bagOnly, function(a, b) return a.name < b.name end)
+    for _, item in ipairs(bagOnly) do items[#items + 1] = item end
+    return items
+end
+
+local function RefreshList()
+    local items = ListItems()
+    local total = #items
     firstRow = math.max(1, math.min(firstRow, math.max(1, total - visibleRows + 1)))
     local lastRow = math.min(firstRow + visibleRows - 1, total)
     empty:SetShown(total == 0)
     for i, row in ipairs(rows) do
-        local item = catches[firstRow + i - 1]
+        local item = items[firstRow + i - 1]
         row.item = item
         row:SetShown(item ~= nil)
         if item then
@@ -319,24 +363,29 @@ local function Refresh()
             row.icon:SetTexture(theme.ItemIcon(item.itemID))
             row.name:SetText(item.name)
             row.quantity:SetText(item.quantity)
+            row.bagQuantity:SetText(item.bagQuantity or C_Item.GetItemCount(item.itemID or item.name))
             row.auction:SetText(quote and Money(quote.copper) or L["未报价"])
             row.quoteTime:SetText(quote and date("%m-%d %H:%M", quote.time) or "")
             row.vendor:SetText(vendor and (vendor > 0 and Money(vendor) or L["不可出售"]) or "—")
         end
     end
-    RefreshTotals()
     previous:SetShown(total > visibleRows)
     following:SetShown(total > visibleRows)
     previous:SetEnabled(firstRow > 1)
     following:SetEnabled(lastRow < total)
     page:SetText(total > visibleRows and ("%d–%d / %d"):format(firstRow, lastRow, total) or "")
+end
+
+local function Refresh()
+    RefreshList()
+    RefreshTotals()
     RefreshAuctionControls()
     addon.RefreshFishCatalog()
 end
 
 local function Scroll(delta)
     firstRow = firstRow + delta
-    Refresh()
+    RefreshList()
 end
 
 list:SetScript("OnMouseWheel", function(_, delta) Scroll(-delta * 3) end)
@@ -473,8 +522,16 @@ local function SendQuery()
     auction.SearchForItemKeys(keys, { { sortOrder = Enum.AuctionHouseSortOrder.Price, reverseSort = false } })
 end
 
+local function CancelAutoRefresh()
+    if autoRefreshTimer then
+        autoRefreshTimer:Cancel()
+        autoRefreshTimer = nil
+    end
+end
+
 local function StartScan()
     if not auctionOpen or scan then return end
+    CancelAutoRefresh()
     local ids, seen = {}, {}
     local function AddItem(itemID)
         if itemID and not seen[itemID] then
@@ -482,7 +539,7 @@ local function StartScan()
             seen[itemID] = true
         end
     end
-    for _, item in ipairs(catches) do
+    for _, item in ipairs(ListItems()) do
         AddItem(item.itemID)
     end
     if #ids == 0 then
@@ -500,6 +557,16 @@ local function StartScan()
 end
 
 refresh:SetScript("OnClick", StartScan)
+
+local function ScheduleAutoRefresh()
+    if autoRefreshTimer or scan then return end
+    -- Let the default Browse page open and issue its initial favorites query first.
+    autoRefreshTimer = C_Timer.NewTimer(0.3, function()
+        autoRefreshTimer = nil
+        local browse = AuctionHouseFrame and AuctionHouseFrame.BrowseResultsFrame
+        if browse and browse:IsVisible() then StartScan() end
+    end)
+end
 
 local function AttachAuctionControls()
     local house = AuctionHouseFrame
@@ -522,9 +589,11 @@ local function AttachAuctionControls()
     auctionStatus:SetTextColor(unpack(colors.muted))
 
     local function CancelForBrowseChange()
+        CancelAutoRefresh()
         if scan then FinishScan(L["拍卖行搜索已切换，请重新更新"]) end
     end
     house:RegisterCallback(AuctionHouseFrameMixin.Event.BrowseSearchStarted, CancelForBrowseChange, footer)
+    house:HookScript("OnShow", ScheduleAutoRefresh)
     browse:HookScript("OnHide", function()
         if house:IsVisible() then CancelForBrowseChange() end
     end)
@@ -572,9 +641,11 @@ events:SetScript("OnEvent", function(_, event, itemID, success)
     elseif event == "AUCTION_HOUSE_SHOW" then
         auctionOpen, auctionMessage = true, nil
         AttachAuctionControls()
+        if AuctionHouseFrame and AuctionHouseFrame:IsVisible() then ScheduleAutoRefresh() end
         Refresh()
     elseif event == "AUCTION_HOUSE_CLOSED" then
         auctionOpen, auctionMessage = false, nil
+        CancelAutoRefresh()
         if scan then FinishScan(L["已关闭拍卖行，查询停止"]) else Refresh() end
     elseif event == "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED" then
         ReceiveQuotes()
@@ -582,6 +653,8 @@ events:SetScript("OnEvent", function(_, event, itemID, success)
         if scan then FinishScan(L["查询失败，可重新更新"]) end
     elseif event == "AUCTION_HOUSE_THROTTLED_SYSTEM_READY" then
         SendQuery()
+    elseif event == "BAG_UPDATE_DELAYED" then
+        if panel:IsShown() then RefreshList() end
     elseif success then
         local updated = false
         for _, item in ipairs(catches) do
@@ -596,7 +669,7 @@ end)
 
 for _, event in ipairs({
     "ADDON_LOADED", "AUCTION_HOUSE_SHOW", "AUCTION_HOUSE_CLOSED", "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED",
-    "AUCTION_HOUSE_BROWSE_FAILURE", "AUCTION_HOUSE_THROTTLED_SYSTEM_READY", "ITEM_DATA_LOAD_RESULT",
+    "AUCTION_HOUSE_BROWSE_FAILURE", "AUCTION_HOUSE_THROTTLED_SYSTEM_READY", "ITEM_DATA_LOAD_RESULT", "BAG_UPDATE_DELAYED",
 }) do
     events:RegisterEvent(event)
 end
