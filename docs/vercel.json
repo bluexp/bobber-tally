@@ -8,12 +8,12 @@
   "trailingSlash": true,
   "redirects": [
     {
-      "source": "/addons",
+      "source": "/addons/",
       "destination": "/downloads/",
       "permanent": true
     },
     {
-      "source": "/en/addons",
+      "source": "/en/addons/",
       "destination": "/en/downloads/",
       "permanent": true
     }
