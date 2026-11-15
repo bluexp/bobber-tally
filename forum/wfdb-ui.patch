@@ -1121,10 +1121,10 @@ index 0000000..9561214
 +}
 diff --git a/apps/web/src/themes/light/wfdb.css b/apps/web/src/themes/light/wfdb.css
 new file mode 100644
-index 0000000..fa75de6
+index 0000000000000000000000000000000000000000..8f3e154a87d1d68438a6bafb3391b052474e3aee
 --- /dev/null
 +++ b/apps/web/src/themes/light/wfdb.css
-@@ -0,0 +1,337 @@
+@@ -0,0 +1,343 @@
 +/* WFDB directory palette and typography. Scope these tokens to the public forum. */
 +.theme-zh.wfdb-forum,
 +.dark .theme-zh.wfdb-forum {
@@ -1209,6 +1209,12 @@ index 0000000..fa75de6
 +  color-scheme: dark;
 +  font-family: "DM Sans", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 +  background: var(--wfdb-base) radial-gradient(ellipse at 20% 10%, #282518 0%, transparent 51%) no-repeat;
++}
++
++.wfdb-forum .post-body code:not(pre code) {
++  background-color: var(--wfdb-raised);
++  color: var(--wfdb-gold-hover);
++  overflow-wrap: anywhere;
 +}
 +
 +.wfdb-forum .wfdb-wrap {
