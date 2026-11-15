@@ -262,6 +262,13 @@ button.button { cursor: pointer; }
 .preview { border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; background: var(--panel); }
 .preview a { display: block; border-radius: 4px; overflow: hidden; }
 .preview figcaption { padding: 6px 3px 2px; color: var(--muted); font-size: .75rem; }
+.screenshots {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+  margin-top: 14px;
+}
 .section { padding-block: 28px; }
 .section h2 { font-size: clamp(1.35rem, 2.5vw, 1.8rem); letter-spacing: -.023em; }
 .features { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; margin-top: 14px; }
@@ -317,7 +324,7 @@ code { border-radius: 3px; padding: .13em .3em; color: var(--gold-hover); backgr
   .home-updates { gap: 18px; }
   .tool-card { grid-template-columns: auto minmax(0, 1fr) auto; gap: 11px; }
   .tool-icon { display: block; }
-  .hero-grid, .setup-grid, .boundary { grid-template-columns: 1fr; }
+  .hero-grid, .screenshots, .setup-grid, .boundary { grid-template-columns: 1fr; }
   .footer-row p { order: 1; flex-basis: 100%; }
 }
 @media (max-width: 500px) {
