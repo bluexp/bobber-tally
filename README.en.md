@@ -4,9 +4,11 @@
 
 BobberTally is a fishing add-on for **World of Warcraft: Forever**. Swap between your fishing pole and weapons, track what you catch, compare Auction House listings with vendor prices, and look up fishing spots and cooking recipes.
 
-**[Download v0.7.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.7.0/BobberTally-v0.7.0.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
+**[Download v0.8.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.8.0/BobberTally-v0.8.0.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
 
 Requires the WoW Forever client (add-on interface `16001`). The add-on supports English and Simplified Chinese.
+
+BobberTally is the in-game add-on for [WFDB](https://wfdb.cc/en/). The [fishing database](https://wfdb.cc/en/fishing/) provides fishing spots, recipes, and contribution previews. The [Mac client](https://wfdb.cc/en/downloads/#macos) installs and updates the add-on and prepares catch records for submission.
 
 ## Features
 
@@ -36,8 +38,9 @@ If a key is already bound in the game, choose **Use Anyway** to override it temp
 | `/wowfish gear` | View gear sets and the latest swap result. |
 | `/wowfish settings` | Open Fishing Settings. |
 | `/wowfish fish` | Open the fish and cooking catalog. |
+| `/wowfish export` | Export recent fishing records for preview in the WFDB fishing database. |
 | `/wowfish bind G` | Bind the cast/reel action. Replace `G` with an available key. |
-| `/wowfish about` | Open the in-game help and credits. |
+| `/wowfish about` | Find WFDB website addresses, in-game help, and credits. |
 
 ## Interface language
 

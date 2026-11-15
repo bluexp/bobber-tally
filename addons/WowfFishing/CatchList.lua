@@ -44,10 +44,10 @@ function addon.CreateDragHandle(parent, name, tooltip)
 end
 
 local panel = theme.CreatePanel("WowfFishingCatchList")
-local panelWidth, panelHeight, margin = 624, 570, 16
+local panelWidth, panelHeight, margin = 624, 568, 16
 local contentWidth = panelWidth - margin * 2
-local tableTop, headerHeight = 214, 28
-local totalsTop = tableTop + headerHeight + visibleRows * rowHeight
+local tableTop, headerHeight = 282, 28
+local footerTop = tableTop + headerHeight + visibleRows * rowHeight + 12
 panel:SetSize(panelWidth, panelHeight)
 panel:SetPoint("CENTER", UIParent, "CENTER", -238, 35)
 panel:SetMovable(true)
@@ -84,37 +84,56 @@ local function Label(parent, font, x, y, width, alignment, color)
     return label
 end
 
-addon.SetLocalizedText(Label(panel, "GameFontHighlight", 16, -4, 390), "无限钓鱼助手 · 渔获统计")
+addon.SetLocalizedText(Label(panel, "GameFontNormal", 16, -4, 390), "无限钓鱼助手 · 渔获统计")
 
-local status = Label(surface, "GameFontHighlight", 16, -37, 343, nil, colors.gold)
-local hint = Label(surface, "GameFontHighlightSmall", 355, -38, 253, "RIGHT", colors.muted)
+local status = Label(surface, "GameFontHighlight", 16, -37, 278, nil, colors.gold)
+local hint = Label(surface, "GameFontHighlightSmall", 303, -38, 209, "RIGHT", colors.muted)
+local endButton = theme.Button(surface, nil, "结束本次", 86, 24)
+endButton:SetPoint("TOPRIGHT", -margin, -30)
 theme.Block(surface, "ARTWORK", 16, -58, contentWidth, 1, colors.divider)
 
-local function SummaryCard(index, title)
-    local gap = 8
-    local width = (contentWidth - 3 * gap) / 4
-    local x = margin + (index - 1) * (width + gap)
-    theme.Block(surface, "BORDER", x, -70, width, 59, colors.card)
-    addon.SetLocalizedText(Label(surface, "GameFontHighlightSmall", x + 12, -80, width - 24, nil, colors.muted), title)
-    return Label(surface, "GameFontNormalLarge", x + 12, -100, width - 24, nil, colors.text)
+local summary = theme.Inset(surface, margin, -70, contentWidth, 136)
+local summaryColumn = contentWidth / 4
+local function SummaryMetric(index, title, color)
+    local x = (index - 1) * summaryColumn
+    if index > 1 then theme.Block(summary, "ARTWORK", x, -12, 1, 46, colors.divider) end
+    local width = summaryColumn - 24
+    addon.SetLocalizedText(Label(summary, "GameFontHighlightSmall", x + 12, -10, width, nil, colors.muted), title)
+    return Label(summary, "GameFontNormalLarge", x + 12, -29, width, nil, color or colors.text)
 end
 
-local castCount = SummaryCard(1, "抛竿次数")
-local successfulCasts = SummaryCard(2, "有收获的竿数")
-local itemCount = SummaryCard(3, "渔获件数")
-local activity = SummaryCard(4, "钓鱼用时")
+local castCount = SummaryMetric(1, "抛竿次数")
+local successfulCasts = SummaryMetric(2, "有收获的竿数", colors.gold)
+local itemCount = SummaryMetric(3, "渔获件数")
+local activity = SummaryMetric(4, "钓鱼用时")
+local catchRate = Label(summary, "GameFontHighlightSmall", summaryColumn + 12, -51, summaryColumn - 24, nil, colors.muted)
 
-theme.Block(surface, "BORDER", 16, -139, contentWidth, 60, colors.card)
-local recent = Label(surface, "GameFontHighlightSmall", 28, -150, 355, nil, colors.text)
-local lure = Label(surface, "GameFontHighlightSmall", 383, -150, 213, "RIGHT", colors.muted)
-local goalButton = theme.Button(surface, nil, "鱼类目标", 88, 23)
-goalButton:SetPoint("TOPLEFT", 28, -169)
-local goalProgress = Label(surface, "GameFontHighlightSmall", 126, -176, 318, nil, colors.text)
-local goalTrack = theme.Block(surface, "ARTWORK", 457, -179, 139, 6, colors.control)
+theme.Block(summary, "BORDER", 4, -70, contentWidth - 8, 1, colors.divider)
+theme.Block(summary, "ARTWORK", contentWidth / 2, -80, 1, 46, colors.divider)
+local function SummaryValue(x, title)
+    local width = contentWidth / 2 - 24
+    addon.SetLocalizedText(Label(summary, "GameFontHighlightSmall", x, -79, width - 94, nil, colors.gold), title)
+    local value = Label(summary, "GameFontHighlight", x, -98, width, nil, colors.text)
+    local coverage = Label(summary, "GameFontHighlightSmall", x + width - 94, -79, 94, "RIGHT", colors.muted)
+    local rate = Label(summary, "GameFontHighlightSmall", x, -117, width, nil, colors.muted)
+    return value, coverage, rate
+end
+
+local auctionTotal, auctionCoverage, auctionRate = SummaryValue(12, "拍卖行估值")
+local vendorTotal, vendorCoverage, vendorRate = SummaryValue(contentWidth / 2 + 12, "NPC 出售总价")
+
+theme.Inset(surface, margin, -216, contentWidth, 55)
+local recent = Label(surface, "GameFontHighlightSmall", 28, -224, 355, nil, colors.text)
+local lure = Label(surface, "GameFontHighlightSmall", 383, -224, 213, "RIGHT", colors.muted)
+local goalButton = theme.Button(surface, nil, "鱼类目标", 88, 22)
+goalButton:SetPoint("TOPLEFT", 28, -242)
+local goalProgress = Label(surface, "GameFontHighlightSmall", 126, -247, 318, nil, colors.text)
+local goalTrack = theme.Block(surface, "ARTWORK", 457, -250, 139, 6, colors.control)
 local goalFill = surface:CreateTexture(nil, "OVERLAY")
 goalFill:SetPoint("TOPLEFT", goalTrack, "TOPLEFT")
 goalFill:SetHeight(6)
-goalFill:SetColorTexture(unpack(colors.gold))
+goalFill:SetTexture("Interface\\TargetingFrame\\UI-StatusBar")
+goalFill:SetVertexColor(unpack(colors.gold))
 goalFill:Hide()
 goalTrack:Hide()
 
@@ -143,11 +162,8 @@ local function TableLabel(parent, column, y, font, color)
     return Label(parent, font, column.x, y, column.width, column.align, color)
 end
 
-local tableFrame = CreateFrame("Frame", nil, surface)
-tableFrame:SetPoint("TOPLEFT", margin, -tableTop)
-tableFrame:SetSize(contentWidth, totalsTop - tableTop + 64)
-theme.Fill(tableFrame, "BACKGROUND", colors.card)
-theme.Block(tableFrame, "BORDER", 0, 0, contentWidth, headerHeight, colors.control)
+local tableFrame = theme.Inset(surface, margin, -tableTop, contentWidth, headerHeight + visibleRows * rowHeight)
+theme.Block(tableFrame, "BORDER", 3, -3, contentWidth - 6, headerHeight - 3, colors.control)
 for _, column in ipairs(columns) do
     addon.SetLocalizedText(TableLabel(tableFrame, column, -8, "GameFontHighlightSmall", colors.gold), column.title)
 end
@@ -197,37 +213,23 @@ end
 local empty = Label(list, "GameFontHighlight", 0, -88, contentWidth, "CENTER", colors.muted)
 addon.SetLocalizedText(empty, "本次还没有钓到物品")
 
-local totals = CreateFrame("Frame", nil, tableFrame)
-totals:SetPoint("TOPLEFT", 0, -(totalsTop - tableTop))
-totals:SetSize(contentWidth, 64)
-theme.Fill(totals, "BACKGROUND", colors.control)
-theme.Block(totals, "ARTWORK", 0, 0, contentWidth, 1, colors.divider)
-addon.SetLocalizedText(TableLabel(totals, columns[1], -10, "GameFontHighlight", colors.gold), "本次合计")
-local catchRate = TableLabel(totals, columns[1], -31, "GameFontHighlightSmall", colors.muted)
-local totalQuantity = TableLabel(totals, columns[2], -10, "GameFontHighlight", colors.text)
-local auctionTotal = TableLabel(totals, columns[3], -10, "GameFontHighlight", colors.text)
-local auctionCoverage = TableLabel(totals, columns[3], -28, "GameFontHighlightSmall", colors.muted)
-local auctionRate = TableLabel(totals, columns[3], -44, "GameFontHighlightSmall", colors.muted)
-local vendorTotal = TableLabel(totals, columns[4], -10, "GameFontHighlight", colors.text)
-local vendorCoverage = TableLabel(totals, columns[4], -28, "GameFontHighlightSmall", colors.muted)
-local vendorRate = TableLabel(totals, columns[4], -44, "GameFontHighlightSmall", colors.muted)
-
 local function FooterButton(text, width, x, primary)
     local button = theme.Button(surface, nil, text, width, 24, primary)
-    button:SetPoint("TOPLEFT", x, -510)
+    button:SetPoint("TOPLEFT", x, -footerTop)
     return button
 end
 
 local refresh = FooterButton("更新拍卖价", 110, 16, true)
 local catalogButton = FooterButton("鱼类资料", 99, 134)
 catalogButton:SetScript("OnClick", function() addon.ToggleFishCatalog() end)
-local aboutButton = FooterButton("关于", 52, 241)
+local exportButton = FooterButton("导出", 65, 241)
+exportButton:SetScript("OnClick", function() addon.ShowObservationExport() end)
+local previous = FooterButton("上页", 44, 342)
+local following = FooterButton("下页", 44, 482)
+local page = Label(surface, "GameFontHighlightSmall", 387, -footerTop - 7, 94, "CENTER", colors.muted)
+local aboutButton = FooterButton("关于", 52, 556)
 aboutButton:SetScript("OnClick", function() addon.ToggleAbout() end)
-local endButton = FooterButton("结束本次", 86, 301)
-local previous = FooterButton("上页", 44, 435)
-local following = FooterButton("下页", 44, 564)
-local page = Label(surface, "GameFontHighlightSmall", 480, -517, 83, "CENTER", colors.muted)
-local message = Label(surface, "GameFontHighlightSmall", 16, -542, contentWidth, nil, colors.muted)
+local message = Label(surface, "GameFontHighlightSmall", margin, -footerTop - 32, contentWidth, nil, colors.muted)
 
 local function Money(copper)
     if copper == 0 then return "0" .. L["铜"] end
@@ -257,7 +259,6 @@ local function RefreshTotals()
             vendorCopper = vendorCopper + item.vendorPrice * item.quantity
         end
     end
-    totalQuantity:SetText(quantity)
     auctionTotal:SetText(auctionCount > 0 and Money(auctionCopper) or "—")
     auctionCoverage:SetText(auctionCount < quantity and (L["%d 件未报价"]):format(quantity - auctionCount) or "")
     vendorTotal:SetText(vendorCount > 0 and Money(vendorCopper) or "—")
@@ -268,7 +269,7 @@ local function RefreshTotals()
     activity:SetText(elapsed)
     catchRate:SetText(seconds >= 60
         and L["%d 竿/小时"]:format(math.floor(settings.fishingSession.catches * 3600 / seconds + 0.5))
-        or L["满 1 分钟后显示每小时统计"])
+        or "")
     auctionRate:SetText(seconds >= 60 and auctionCount > 0 and L["%s/小时"]:format(Money(math.floor(auctionCopper * 3600 / seconds))) or "")
     vendorRate:SetText(seconds >= 60 and vendorCount > 0 and L["%s/小时"]:format(Money(math.floor(vendorCopper * 3600 / seconds))) or "")
     local goal = settings.fishingSession.goal
@@ -328,7 +329,7 @@ local function Refresh()
     following:SetShown(total > visibleRows)
     previous:SetEnabled(firstRow > 1)
     following:SetEnabled(lastRow < total)
-    page:SetText(total > 0 and ("%d–%d / %d"):format(firstRow, lastRow, total) or "")
+    page:SetText(total > visibleRows and ("%d–%d / %d"):format(firstRow, lastRow, total) or "")
     RefreshAuctionControls()
     addon.RefreshFishCatalog()
 end

@@ -12,8 +12,8 @@ panel:SetScript("OnDragStart", panel.StartMoving)
 panel:SetScript("OnDragStop", panel.StopMovingOrSizing)
 
 local surface = theme.Surface(panel)
-addon.SetLocalizedText(theme.Label(panel, "GameFontHighlight", 16, -4, 500), "无限钓鱼助手 · 关于")
-theme.Block(surface, "BORDER", 14, -35, 532, 392, colors.card)
+addon.SetLocalizedText(theme.Label(panel, "GameFontNormal", 16, -4, 500), "无限钓鱼助手 · 关于")
+theme.Inset(surface, 14, -35, 532, 392)
 
 local scroll = CreateFrame("ScrollFrame", nil, surface)
 scroll:SetPoint("TOPLEFT", 27, -48)
@@ -25,9 +25,16 @@ scroll:SetScrollChild(content)
 local text = theme.Label(content, "GameFontHighlight", 0, 0, 498, nil, colors.text)
 text:SetSpacing(4)
 panel:SetScript("OnShow", function()
+    local website = addon.IsEnglish() and "https://wfdb.cc/en/" or "https://wfdb.cc/"
     text:SetText(table.concat({
-        theme.goldText .. L["无限钓鱼助手"] .. " 0.7.0|r",
+        theme.goldText .. L["无限钓鱼助手"] .. " 0.8.0|r",
         L["为《魔兽世界：无限》制作的钓鱼辅助插件。"],
+        "",
+        theme.goldText .. L["无限库 WFDB 网站"] .. "|r",
+        L["网站首页"] .. "  " .. website,
+        L["插件下载与安装"] .. "  " .. website .. "addons/bobber-tally/",
+        L["钓鱼数据库"] .. "  " .. website .. "fishing/",
+        L["社区论坛"] .. "  https://forum.wfdb.cc/",
         "",
         theme.goldText .. L["使用方法|r"],
         L["/wowfish setup 打开换装向导。选择鱼竿和武器后，设置换装键并保存。"],

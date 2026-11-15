@@ -6,9 +6,11 @@
 
 *A fishing add-on for World of Warcraft: Forever with gear swaps, catch tracking, and a fish and cooking catalog.*
 
-**[下载 v0.7.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.7.0/BobberTally-v0.7.0.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
+**[下载 v0.8.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.8.0/BobberTally-v0.8.0.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
 
 适用客户端接口 `16001`。插件界面支持简体中文和英文。
+
+BobberTally 是「[无限库 WFDB](https://wfdb.cc/)」的游戏内组件。WFDB 的[钓鱼数据库](https://wfdb.cc/fishing/)提供钓点、配方与投稿预览，[Mac 客户端](https://wfdb.cc/downloads/#macos)提供插件安装、更新与记录整理。
 
 ## 功能
 
@@ -52,8 +54,9 @@ The add-on uses the client language by default. Choose a language for the curren
 | `/wowfish gear` | 查看换装方案和最近一次结果 |
 | `/wowfish settings` | 打开统一钓鱼设置 |
 | `/wowfish fish` | 打开鱼类与烹饪资料库 |
+| `/wowfish export` | 导出近期实钓记录，可在 WFDB 钓鱼数据库预览 |
 | `/wowfish bind G` | 绑定抛竿和收竿，`G` 可换为空闲键 |
-| `/wowfish about` | 查看插件内说明与致谢 |
+| `/wowfish about` | 查看 WFDB 网站地址、插件说明与致谢 |
 
 ## 实机预览
 

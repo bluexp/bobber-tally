@@ -44,7 +44,6 @@ local function Region(parent, x, y, width, height)
 end
 
 local surface = Region(panel, 5, -22, 750, 462)
-Fill(surface, "BACKGROUND", colors.surface)
 
 local titleBar = CreateFrame("Frame", nil, panel)
 titleBar:SetPoint("TOPLEFT", 7, 0)
@@ -55,7 +54,7 @@ titleBar:RegisterForDrag("LeftButton")
 titleBar:SetScript("OnDragStart", function() panel:StartMoving() end)
 titleBar:SetScript("OnDragStop", function() panel:StopMovingOrSizing() end)
 panel:SetScript("OnHide", function() panel:StopMovingOrSizing() end)
-addon.SetLocalizedText(Label(panel, "GameFontHighlight", 16, -4, 400), "无限钓鱼助手 · 资料库")
+addon.SetLocalizedText(Label(panel, "GameFontNormal", 16, -4, 400), "无限钓鱼助手 · 资料库")
 
 local function Button(parent, x, y, width, height, text)
     local button = CreateFrame("Button", nil, parent)
@@ -92,13 +91,11 @@ currentZone:SetPoint("TOPLEFT", 209, -19)
 local onlyHere = false
 local regionalResults = {}
 
-local list = Region(surface, 13, -59, 251, 360)
-Fill(list, "BACKGROUND", colors.card)
+local list = theme.Inset(surface, 13, -59, 251, 360)
 list:EnableMouseWheel(true)
 local count = Label(list, "GameFontDisableSmall", 11, -338, 229)
 
-local detail = Region(surface, 276, -59, 461, 360)
-Fill(detail, "BACKGROUND", colors.card)
+local detail = theme.Inset(surface, 276, -59, 461, 360)
 theme.Block(detail, "ARTWORK", 15, -76, 431, 1, colors.divider)
 
 local iconButton = CreateFrame("Button", nil, detail)
@@ -471,7 +468,7 @@ local function SelectMode(value, query, preferred)
         local active = key == mode
         tab.active:SetShown(active)
         tab.line:SetShown(active)
-        tab.label:SetTextColor(active and 0.94 or 0.66, active and 0.75 or 0.74, active and 0.44 or 0.8)
+        tab.label:SetTextColor(unpack(active and colors.gold or colors.muted))
     end
     searchHint:SetText(mode == "fish" and L["搜索鱼名、地点、类别或物品编号"] or L["搜索配方、材料、成品或编号"])
     source:SetText(L["客户端 "] .. data.build .. (mode == "fish" and L["  ·  钓点含经典参考"] or L["  ·  悬停成品图标查看游戏说明"]))

@@ -249,7 +249,7 @@ local currentTab, fishingSettings, gearStatus
 
 local Label = theme.Label
 
-addon.SetLocalizedText(Label(wizard, "GameFontHighlight", 16, -4, 360), "无限钓鱼助手 · 钓鱼设置")
+addon.SetLocalizedText(Label(wizard, "GameFontNormal", 16, -4, 360), "无限钓鱼助手 · 钓鱼设置")
 local progress = {}
 for i, title in ipairs({ "1  鱼竿", "2  武器", "3  完成" }) do
     local x = 20 + (i - 1) * 140

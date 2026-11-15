@@ -8,15 +8,22 @@ local CAST_BUTTON = "WowfFishingCastButton"
 local ICON_SIZE, CAST_OFFSET = 42, 7
 local TOOLBAR_WIDTH = 232
 local LOOT_ITEM = Enum and Enum.LootSlotType and Enum.LootSlotType.Item or LOOT_SLOT_ITEM or 1
+local LOOT_RECEIPT_GRACE = 1
+local IsSecret = issecretvalue or function() return false end
 
 local events = CreateFrame("Frame")
 local bindings = CreateFrame("Frame")
-local toolbar = CreateFrame("Frame", "WowfFishingToolbar", UIParent)
+local toolbar = CreateFrame("Frame", "WowfFishingToolbar", UIParent, "BackdropTemplate")
 toolbar:SetSize(TOOLBAR_WIDTH, 54)
 toolbar:SetClampedToScreen(true)
 toolbar:SetMovable(true)
-theme.Fill(toolbar, "BACKGROUND", colors.control)
-theme.Block(toolbar, "BORDER", 1, -1, TOOLBAR_WIDTH - 2, 52, colors.surface)
+toolbar:SetBackdrop({
+    bgFile = "Interface\\FrameGeneral\\UI-Background-Rock",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true, tileSize = 64, edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 },
+})
+toolbar:SetBackdropBorderColor(0.75, 0.59, 0.32)
 toolbar:Hide()
 
 local function ToolbarIcon(button)
@@ -28,6 +35,9 @@ local function ToolbarIcon(button)
     icon:SetPoint("TOPLEFT", 2, -2)
     icon:SetPoint("BOTTOMRIGHT", -2, 2)
     icon:SetTexCoord(0.06, 0.94, 0.06, 0.94)
+    local border = button:CreateTexture(nil, "OVERLAY")
+    border:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+    border:SetAllPoints()
     return icon
 end
 
@@ -100,11 +110,11 @@ end
 ToolbarTooltip(panelButton, "渔获统计")
 ToolbarTooltip(settingsButton, "钓鱼设置")
 
-local db, spellName, audioTimer, lootSlots
-local pendingSwap, session, castStarted
+local db, spellName, audioTimer, lootWindow, closedLootWindow
+local pendingSwap, session, castStarted, currentCast
 local MAIN_HAND, OFF_HAND = 16, 17
 local lureTicker, lureWasActive, lureWarned
-local fishing, hasPole, caughtFromWindow = false, false, false
+local fishing, hasPole = false, false
 
 local function PositionToolbar()
     local position = db.castButtonPosition
@@ -183,23 +193,26 @@ local function RefreshSummary()
     addon.UpdateCatchSummary(state, session)
 end
 
-local function RefreshLure()
+local function LureRemaining()
     local weaponSlot = Enum and Enum.WeaponSlot and Enum.WeaponSlot.MainHand
-    if not hasPole or not C_Item.GetWeaponEnchantInfo or weaponSlot == nil then
-        addon.UpdateLureStatus()
-        return
-    end
+    if not hasPole or not C_Item.GetWeaponEnchantInfo or weaponSlot == nil then return end
     local enchants = C_Item.GetWeaponEnchantInfo(weaponSlot)
-    if type(enchants) ~= "table" then addon.UpdateLureStatus(); return end
-    local remaining
     local temporary = Enum.ItemEnchantType and Enum.ItemEnchantType.Temporary
+    if type(enchants) ~= "table" then return end
+    local remaining = 0
     for _, enchant in pairs(enchants) do
         if enchant.hasEnchant and (not temporary or enchant.enchantType == temporary)
             and type(enchant.timeLeft) == "number" and enchant.timeLeft > 0 then
-            remaining = math.max(remaining or 0, math.ceil(enchant.timeLeft / 1000))
+            remaining = math.max(remaining, math.ceil(enchant.timeLeft / 1000))
         end
     end
-    if remaining then
+    return (temporary or remaining > 0) and remaining or nil
+end
+
+local function RefreshLure()
+    local remaining = LureRemaining()
+    if remaining == nil then addon.UpdateLureStatus(); return end
+    if remaining > 0 then
         if not lureWasActive or remaining > 30 then lureWarned = false end
         if remaining <= 30 and not lureWarned then
             lureWarned = true
@@ -224,7 +237,8 @@ local function SaveFishingTime()
 end
 
 function addon.EndFishingSession()
-    if fishing or lootSlots then return false end
+    if fishing or lootWindow then return false end
+    closedLootWindow, currentCast = nil, nil
     session.casts, session.catches, session.count, session.seconds, session.lastCatch = 0, 0, 0, 0, nil
     addon.ClearSessionCatches()
     RefreshSummary()
@@ -287,12 +301,30 @@ local function EnhanceAudio()
     end
 end
 
-local function UpdateChannel(countCast)
-    local isFishing = spellName ~= nil and UnitChannelInfo("player") == spellName
-    if isFishing == fishing then return end
+local function UpdateChannel(channelStarted, castGUID, eventSpellID)
+    local channel = UnitChannelInfo("player")
+    local isFishing = spellName ~= nil and not IsSecret(channel) and channel == spellName
+    local newCast = false
+    if channelStarted then
+        -- The start event can arrive before the channel is visible to UnitChannelInfo.
+        local startedFishing = isFishing
+        if not IsSecret(eventSpellID) and type(eventSpellID) == "number" then
+            startedFishing = eventSpellID == FISHING_SPELL_ID
+                or (spellName ~= nil and C_Spell.GetSpellName(eventSpellID) == spellName)
+        end
+        if startedFishing then
+            if IsSecret(castGUID) then castGUID = nil end
+            if castGUID and currentCast and currentCast.guid == castGUID then return end
+            newCast = castGUID ~= nil or not fishing
+            isFishing = true
+        end
+    end
+    if not newCast and isFishing == fishing then return end
     fishing = isFishing
     if fishing then
-        if countCast then session.casts = session.casts + 1 end
+        if castStarted then SaveFishingTime() end
+        if newCast then session.casts = session.casts + 1 end
+        currentCast = { guid = newCast and castGUID or nil }
         castStarted = GetTime()
         EnhanceAudio()
     else
@@ -422,35 +454,123 @@ local function ToggleAudio()
     RefreshSummary()
 end
 
+local function FindLootItem(window, itemID, name)
+    for _, item in ipairs(window.items) do
+        if (itemID and item.itemID == itemID)
+            or (not (itemID and item.itemID) and item.name == name) then
+            return item
+        end
+    end
+end
+
+local function NewLootItem(window, itemID, name)
+    local item = { itemID = itemID, name = name, offered = 0, cleared = 0, received = 0, counted = 0 }
+    window.items[#window.items + 1] = item
+    return item
+end
+
 local function ReadFishingLoot()
-    if not IsFishingLoot or not IsFishingLoot() then return end
-    lootSlots = lootSlots or {}
-    for slot = 1, GetNumLootItems() do
-        if lootSlots[slot] ~= false and GetLootSlotType(slot) == LOOT_ITEM then
+    local slotCount = GetNumLootItems()
+    if not lootWindow then
+        -- Late events for consumed auto-loot must keep the closed snapshot for deduplication.
+        if slotCount == 0 and closedLootWindow and closedLootWindow.cast == currentCast
+            and GetTime() <= closedLootWindow.expires then return end
+        currentCast = currentCast or {}
+        lootWindow = { slots = {}, items = {}, cast = currentCast }
+        closedLootWindow = nil
+    end
+    for slot = 1, slotCount do
+        local knownSlot = lootWindow.slots[slot]
+        if not (knownSlot and knownSlot.cleared) and GetLootSlotType(slot) == LOOT_ITEM then
             local _, name, quantity = GetLootSlotInfo(slot)
             if name and quantity and quantity > 0 then
                 local link = GetLootSlotLink(slot)
                 local itemID = link and tonumber(link:match("item:(%d+)"))
-                local item = lootSlots[slot] or { name = name, quantity = quantity }
+                local item = knownSlot and knownSlot.item or FindLootItem(lootWindow, itemID, name)
+                item = item or NewLootItem(lootWindow, itemID, name)
                 item.itemID = item.itemID or itemID
-                lootSlots[slot] = item
+                local previousQuantity = knownSlot and knownSlot.quantity or 0
+                local offered = math.max(previousQuantity, quantity)
+                item.offered = item.offered + offered - previousQuantity
+                lootWindow.slots[slot] = { item = item, quantity = offered }
             end
         end
     end
 end
 
-local function CountLoot(slot)
-    local item = lootSlots and lootSlots[slot]
-    if not item then return end
-    lootSlots[slot] = false
-    if not caughtFromWindow then
+local function RecordConfirmedLoot(window, item)
+    -- A slot clear and a receipt can describe the same items, in either order.
+    local confirmed = math.max(item.cleared, math.min(item.offered, item.received), item.receivedWithoutSlots or 0)
+    local quantity = confirmed - item.counted
+    if quantity <= 0 then return end
+    item.counted = confirmed
+    if not window.cast.caught then
         session.catches = session.catches + 1
-        caughtFromWindow = true
+        window.cast.caught = true
     end
-    session.count = session.count + item.quantity
-    session.lastCatch = ("%s ×%d"):format(item.name, item.quantity)
-    addon.RecordCatch(item.itemID, item.name, item.quantity)
+    session.count = session.count + quantity
+    session.lastCatch = ("%s ×%d"):format(item.name, quantity)
+    addon.RecordCatch(item.itemID, item.name, quantity)
+    local remaining = LureRemaining()
+    local lure = remaining == nil and "unknown" or (remaining > 0 and "active" or "none")
+    addon.RecordWFDBObservation(item.itemID, quantity, lure)
     RefreshSummary()
+end
+
+local function GetRecentLootWindow()
+    if lootWindow then return lootWindow end
+    if closedLootWindow and GetTime() <= closedLootWindow.expires then return closedLootWindow end
+    closedLootWindow = nil
+end
+
+local function CountClearedSlot(slot)
+    local window = GetRecentLootWindow()
+    local entry = window and window.slots[slot]
+    if not entry or entry.cleared then return end
+    entry.cleared = true
+    entry.item.cleared = entry.item.cleared + entry.quantity
+    RecordConfirmedLoot(window, entry.item)
+end
+
+local receiptPatterns = {}
+for _, key in ipairs({ "LOOT_ITEM_SELF_MULTIPLE", "LOOT_ITEM_SELF" }) do
+    local format = _G[key]
+    if type(format) == "string" then
+        local fields = {}
+        local pattern = format:gsub("%%%d+%$([sd])", "%%%1"):gsub("([%^%$%(%)%.%[%]%*%+%-%?])", "%%%1")
+        pattern = pattern:gsub("%%([sd])", function(field)
+            fields[#fields + 1] = field
+            return field == "s" and "(.+)" or "(%d+)"
+        end)
+        receiptPatterns[#receiptPatterns + 1] = { text = "^" .. pattern .. "$", quantityFirst = fields[1] == "d" }
+    end
+end
+
+local function CountLootReceipt(message)
+    local window = GetRecentLootWindow()
+    if not window or IsSecret(message) or type(message) ~= "string" then return end
+    local liveFishingLoot = window == lootWindow and IsFishingLoot()
+    for _, pattern in ipairs(receiptPatterns) do
+        local link, count = message:match(pattern.text)
+        if pattern.quantityFirst then link, count = count, link end
+        local id, name
+        if link then id, name = link:match("|Hitem:(%d+)[^|]*|h%[(.-)%]|h") end
+        if id then
+            local itemID = tonumber(id)
+            if liveFishingLoot then ReadFishingLoot() end
+            -- Direct attribution requires the live fishing flag if no slots were readable.
+            local noSlots = liveFishingLoot and not next(window.slots)
+            local item = FindLootItem(window, itemID, name)
+            if not item and noSlots then item = NewLootItem(window, itemID, name) end
+            if item then
+                item.itemID = itemID
+                item.received = item.received + (tonumber(count) or 1)
+                if noSlots then item.receivedWithoutSlots = item.received end
+                RecordConfirmedLoot(window, item)
+            end
+            return
+        end
+    end
 end
 
 local numpadOperators = {
@@ -521,7 +641,11 @@ local function HandleCommand(input)
         return
     end
     if command == "fish" then
-        addon.ToggleFishCatalog()
+        addon.ToggleFishCatalog(tonumber(argument))
+        return
+    end
+    if command == "export" then
+        addon.ShowObservationExport()
         return
     end
     if command == "about" then
@@ -591,6 +715,7 @@ local function Initialize()
     addon.InitializeLocale(db.language)
     addon.InitializeCatchList(db)
     addon.InitializeFishCatalog(db)
+    addon.InitializeObservationExport(db)
     if db.useM == nil then db.useM = false end
     if db.enhanceSound == nil then db.enhanceSound = true end
     addon.InitializeSetup(db, {
@@ -610,12 +735,13 @@ local function Initialize()
     UpdateChannel(false)
 end
 
-events:SetScript("OnEvent", function(_, event, unitOrSlot, setID)
+events:SetScript("OnEvent", function(_, event, unitOrSlot, setID, spellID)
     if event == "PLAYER_LOGIN" then
         Initialize()
     elseif not db then
         return
     elseif event == "PLAYER_ENTERING_WORLD" then
+        lootWindow, closedLootWindow = nil, nil
         UpdateEquipment()
         UpdateChannel(false)
     elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_REGEN_ENABLED" then
@@ -637,13 +763,25 @@ events:SetScript("OnEvent", function(_, event, unitOrSlot, setID)
         end
         RestoreAudio()
     elseif event == "LOOT_READY" or event == "LOOT_OPENED" then
-        ReadFishingLoot()
+        if IsFishingLoot and IsFishingLoot() then
+            ReadFishingLoot()
+        elseif event == "LOOT_READY" or setID == true then
+            -- LOOT_OPENED can follow an already consumed auto-loot snapshot.
+            lootWindow, closedLootWindow = nil, nil
+        end
+    elseif event == "LOOT_SLOT_CHANGED" then
+        if IsFishingLoot and IsFishingLoot() then ReadFishingLoot() end
     elseif event == "LOOT_SLOT_CLEARED" then
-        CountLoot(unitOrSlot)
+        CountClearedSlot(unitOrSlot)
+    elseif event == "CHAT_MSG_LOOT" then
+        CountLootReceipt(unitOrSlot)
     elseif event == "LOOT_CLOSED" then
-        lootSlots, caughtFromWindow = nil, false
+        if lootWindow then
+            lootWindow.expires = GetTime() + LOOT_RECEIPT_GRACE
+            closedLootWindow, lootWindow = lootWindow, nil
+        end
     elseif unitOrSlot == "player" then
-        UpdateChannel(event == "UNIT_SPELLCAST_CHANNEL_START")
+        UpdateChannel(event == "UNIT_SPELLCAST_CHANNEL_START", setID, spellID)
     end
 end)
 
@@ -651,7 +789,7 @@ for _, event in ipairs({
     "PLAYER_LOGIN", "PLAYER_ENTERING_WORLD", "PLAYER_LOGOUT", "PLAYER_EQUIPMENT_CHANGED", "EQUIPMENT_SWAP_FINISHED",
     "PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED", "UNIT_SPELLCAST_CHANNEL_START",
     "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_INTERRUPTED", "LOOT_READY", "LOOT_OPENED",
-    "LOOT_SLOT_CLEARED", "LOOT_CLOSED",
+    "LOOT_SLOT_CHANGED", "LOOT_SLOT_CLEARED", "LOOT_CLOSED", "CHAT_MSG_LOOT",
 }) do
     events:RegisterEvent(event)
 end
