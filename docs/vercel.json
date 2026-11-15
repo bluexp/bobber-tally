@@ -1,0 +1,21 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "trailingSlash": true,
+  "redirects": [
+    {
+      "source": "/addons",
+      "destination": "/downloads/",
+      "permanent": true
+    },
+    {
+      "source": "/en/addons",
+      "destination": "/en/downloads/",
+      "permanent": true
+    }
+  ]
+}
