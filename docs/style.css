@@ -170,11 +170,35 @@ button.button { cursor: pointer; }
 .catalog-stats a:hover { color: var(--gold); }
 .catalog-stats strong { color: var(--gold); font-size: 1rem; font-weight: 650; }
 
-.home-tools, .home-updates { margin-top: 25px; }
+.home-tools, .home-blog, .home-updates { margin-top: 25px; }
 .section-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 10px; }
 .section-heading h2 { font-size: 1.1rem; }
 .section-heading a { color: var(--muted); font-size: .79rem; text-decoration: none; }
 .section-heading a:hover { color: var(--gold); }
+.blog-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.blog-card {
+  display: grid;
+  grid-template-columns: minmax(0, var(--blog-cover-width, 32%)) minmax(0, 1fr);
+  height: 100%;
+  align-items: center;
+  gap: clamp(14px, 2.5vw, 26px);
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  text-decoration: none;
+}
+.blog-card:hover { border-color: var(--gold); }
+.blog-card img { width: 100%; border-radius: 5px; }
+.blog-card :is(h2, h3) { margin-block: 6px 8px; font-size: clamp(1.1rem, 2.35vw, 1.6rem); text-wrap: balance; }
+.blog-card p { color: var(--muted); font-size: .9rem; }
+.blog-date { color: var(--muted); font: .78rem var(--mono); }
+.home-blog { --blog-cover-width: min(30%, 120px); }
+.home-blog .blog-card h3 { font-size: clamp(1.05rem, 2vw, 1.25rem); }
 .tool-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .tool-card {
   display: grid;
@@ -309,6 +333,10 @@ code { border-radius: 3px; padding: .13em .3em; color: var(--gold-hover); backgr
   .features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .setup-grid { gap: 22px; }
 }
+@media (max-width: 740px) {
+  .blog-list { grid-template-columns: 1fr; gap: 10px; }
+  .blog-card { --blog-cover-width: min(30%, 120px); }
+}
 @media (max-width: 670px) {
   :root { --shell: calc(100% - 32px); }
   .nav { min-height: 52px; gap: 17px; }
@@ -319,7 +347,7 @@ code { border-radius: 3px; padding: .13em .3em; color: var(--gold-hover); backgr
   .hero-art { inset: 0; }
   .hero-art::after { background: linear-gradient(90deg, #10141cfa, #10141c8c), linear-gradient(0deg, #10141cd9, transparent); }
   .catalog-stats { width: fit-content; margin: 1px 19px 17px; }
-  .home-tools, .home-updates { margin-top: 19px; }
+  .home-tools, .home-blog, .home-updates { margin-top: 19px; }
   .tool-grid, .home-updates { grid-template-columns: 1fr; gap: 8px; }
   .home-updates { gap: 18px; }
   .tool-card { grid-template-columns: auto minmax(0, 1fr) auto; gap: 11px; }
