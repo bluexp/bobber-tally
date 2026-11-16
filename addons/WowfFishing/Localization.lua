@@ -292,7 +292,6 @@ local english = {
     ["烹饪 %d 变黄  ·  %d 变绿  ·  %d 变灰"] = "Skill %d yellow · %d green · %d gray",
     ["|cffe9c483成品|r"] = "|cffe9c483Result|r",
     ["没有匹配的条目"] = "No matches",
-    ["%s  ·  物品 %d"] = "%s  ·  Item %d",
     ["烹饪配方  ·  成品 %d"] = "Recipe  ·  Item %d",
     ["%d / %d 条"] = "%d / %d entries",
     ["搜索鱼名、地点、类别或物品编号"] = "Search fish, areas, categories or IDs",

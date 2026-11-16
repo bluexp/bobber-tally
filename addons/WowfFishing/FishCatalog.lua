@@ -386,7 +386,7 @@ local function RenderDetails()
     if selected.id then
         local goal = settings.fishingSession.goal
         setGoal:SetText(goal and goal.id == itemID and L["编辑目标"] or L["设置目标"])
-        subtitle:SetText((L["%s  ·  物品 %d"]):format(L[selected.category], itemID))
+        subtitle:SetText(L[selected.category] .. "\n" .. L["物品 %d"]:format(itemID))
         description:SetText(FishDetails(selected))
     else
         subtitle:SetText((L["烹饪配方  ·  成品 %d"]):format(itemID))

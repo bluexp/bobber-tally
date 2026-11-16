@@ -6,7 +6,7 @@
 
 *A fishing add-on for World of Warcraft: Forever with gear swaps, catch tracking, and a fish and cooking catalog.*
 
-**[下载 v0.10.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.10.0/BobberTally-v0.10.0.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
+**[下载 v0.11.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.0/BobberTally-v0.11.0.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
 
 适用客户端接口 `16001`。插件界面支持简体中文和英文。
 
@@ -21,7 +21,7 @@ BobberTally 是「[无限库 WFDB](https://wfdb.cc/)」的游戏内组件。WFDB
 | 统一钓鱼设置 | 集中管理换装和抛竿快捷键、水花声增强、交互键、自动拾取和鱼漂搜索。支持小键盘与鼠标侧键。 |
 | 渔获估价 | 查看抛竿次数、渔获数量、钓鱼用时、两种估价及每小时统计。打开拍卖行时自动刷新报价。渔获列表也显示背包里的鱼。 |
 | 我的挂单 | 查看鱼类在售、已售和每日记录，成交时收到提醒。打开邮箱同步实际结算所得。 |
-| 鱼类与烹饪资料库 | 搜索 88 条鱼类记录和 24 条配方。按当前区域筛选鱼类，点击参考钓点打开地图，也可设置捕获目标。 |
+| 渔获与烹饪资料库 | 搜索 89 条渔获记录和 24 条配方。按当前区域或「非鱼类水产」筛选，查看钓点来源并打开地图，也可设置捕获目标。 |
 
 ## 安装与配置
 

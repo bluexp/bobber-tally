@@ -4,7 +4,7 @@
 
 BobberTally is a fishing add-on for **World of Warcraft: Forever**. Swap between your fishing pole and weapons, track what you catch, compare Auction House listings with vendor prices, and look up fishing spots and cooking recipes.
 
-**[Download v0.10.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.10.0/BobberTally-v0.10.0.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
+**[Download v0.11.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.0/BobberTally-v0.11.0.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
 
 Requires the WoW Forever client (add-on interface `16001`). The add-on supports English and Simplified Chinese.
 
@@ -19,7 +19,7 @@ BobberTally is the in-game add-on for [WFDB](https://wfdb.cc/en/). The [fishing 
 | Fishing Settings | Set gear swap and cast/reel bindings, boost the splash sound, and adjust Interact Key, Auto Loot, and bobber search. Bindings support the numpad and mouse side buttons. |
 | Catch tracking and price estimates | See casts, catches, fishing time, estimated values, and hourly rates. Prices sync when the Auction House opens. The catch list also shows fish in your bags. |
 | My Auctions | Track active fish listings, confirmed sales, and daily records, and get sale alerts. Open the mailbox to sync settled proceeds. |
-| Fish and cooking catalog | Browse 88 fish entries and 24 recipes. Filter fish by your current zone, open fishing spots on the map, and set catch goals. |
+| Catch and cooking catalog | Browse 89 catches and 24 recipes. Filter by your current zone or by non-fish catches, check reference sources, open the map, and set catch goals. |
 
 ## Installation and setup
 
