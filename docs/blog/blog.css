@@ -1,0 +1,52 @@
+.blog-index { padding-top: clamp(24px, 5vw, 52px); }
+.blog-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.blog-card {
+  display: grid;
+  grid-template-columns: minmax(0, 32%) minmax(0, 1fr);
+  height: 100%;
+  align-items: center;
+  gap: clamp(14px, 2.5vw, 26px);
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  text-decoration: none;
+}
+.blog-card:hover { border-color: var(--gold); }
+.blog-card img, .post-figure img { width: 100%; border-radius: 5px; }
+.blog-card h2 { margin-block: 6px 8px; font-size: clamp(1.1rem, 2.35vw, 1.6rem); text-wrap: balance; }
+.blog-card p, .post-notes { color: var(--muted); font-size: .9rem; }
+.blog-date { color: var(--muted); font: .78rem var(--mono); }
+.blog-post { width: min(850px, var(--shell)); }
+.post-intro { max-width: 42rem; margin-bottom: 26px; }
+.post-intro h1 { margin-block: 12px 10px; font-size: clamp(1.85rem, 5vw, 3.25rem); }
+.post-intro p { max-width: 36rem; margin-top: 12px; color: var(--muted); }
+.post-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .77fr);
+  gap: clamp(20px, 5vw, 42px);
+  align-items: start;
+  padding-block: 24px;
+  border-top: 1px solid var(--line);
+}
+.post-section h2 { font-size: clamp(1.16rem, 3vw, 1.55rem); }
+.post-section p { margin-top: 10px; color: var(--muted); line-height: 1.8; }
+.post-figure a { display: block; border-radius: 5px; }
+.post-figure a:hover { outline: 1px solid var(--gold); }
+.post-figure img { border: 1px solid var(--line); }
+.post-end { padding-top: 20px; border-top: 1px solid var(--line); }
+.post-end p + p { margin-top: 10px; }
+.post-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 18px; color: var(--gold); }
+
+@media (max-width: 740px) {
+  .blog-list { grid-template-columns: 1fr; }
+  .blog-card { grid-template-columns: minmax(0, 120px) minmax(0, 1fr); }
+}
+@media (max-width: 535px) {
+  .post-section { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .post-figure { width: min(100%, 340px); }
+}

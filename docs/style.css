@@ -333,6 +333,7 @@ code { border-radius: 3px; padding: .13em .3em; color: var(--gold-hover); backgr
   .language { justify-self: end; }
 }
 @media (max-width: 380px) {
+  .nav nav { gap: 12px; }
   .home-search .primary span { display: none; }
   .search-field::before, .search-field::after { display: none; }
   .home-search input { padding-left: 8px; }
