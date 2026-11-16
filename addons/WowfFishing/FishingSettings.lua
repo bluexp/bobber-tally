@@ -12,17 +12,19 @@ function addon.CreateFishingSettings(page, db, handlers)
         { label = "水花声增强", get = function() return db.enhanceSound end, toggle = handlers.toggleAudio },
         { label = "交互键", name = "softTargetInteract", on = interact.Any, off = interact.Gamepad },
         { label = "自动拾取", name = "autoLootDefault", on = 1, off = 0 },
+        { label = "打开拍卖行自动查价", get = function() return db.autoRefreshAuctionPrices end,
+            toggle = addon.ToggleAuctionAutoRefresh },
         { label = "鱼漂搜索角度", name = "SoftTargetInteractArc", preset = 2 },
         { label = "鱼漂搜索距离（码）", name = "SoftTargetInteractRange", preset = 30 },
     }
     local Label = theme.Label
     addon.SetLocalizedText(Label(page, "GameFontNormalLarge", 20, -30, 416, nil, colors.gold), "快捷键与钓鱼操作")
-    theme.Block(page, "BORDER", 12, -56, 432, 244, colors.card)
-    addon.SetLocalizedText(Label(page, "GameFontHighlightSmall", 20, -309, 416, nil, colors.muted),
+    theme.Block(page, "BORDER", 12, -56, 432, 278, colors.card)
+    addon.SetLocalizedText(Label(page, "GameFontHighlightSmall", 20, -343, 416, nil, colors.muted),
         "交互键和自动拾取也适用于游戏中的其他操作。")
-    addon.SetLocalizedText(Label(page, "GameFontHighlightSmall", 20, -330, 416, nil, colors.muted),
+    addon.SetLocalizedText(Label(page, "GameFontHighlightSmall", 20, -364, 416, nil, colors.muted),
         "搜索距离用于选中鱼漂，实际收竿距离由游戏判定。")
-    local message = Label(page, "GameFontHighlightSmall", 20, -356, 416, nil, colors.gold)
+    local message = Label(page, "GameFontHighlightSmall", 20, -390, 416, nil, colors.gold)
     local lastNotice
 
     local function Refresh(notice)

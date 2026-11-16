@@ -246,6 +246,7 @@ for index, tab in ipairs({ { "fishing", "钓鱼操作" }, { "gear", "换装方�
     tabMarks[tabID] = theme.Block(button, "ARTWORK", 0, -22, 134, 2, colors.gold)
 end
 local currentTab, fishingSettings, gearStatus
+local tabHeights = { fishing = 464, gear = 485, setup = 430 }
 
 local Label = theme.Label
 
@@ -720,7 +721,7 @@ function addon.ShowSetup(tab, notice)
     tab = tab or "setup"
     if not wizard:IsShown() then step = nil end
     currentTab = tab
-    wizard:SetHeight(tab == "gear" and 485 or 430)
+    wizard:SetHeight(tabHeights[tab])
     for id, mark in pairs(tabMarks) do mark:SetShown(tab == id) end
     gearPage:SetShown(tab == "gear")
     fishingPage:SetShown(tab == "fishing")

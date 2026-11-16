@@ -4,7 +4,7 @@
 
 BobberTally is a fishing add-on for **World of Warcraft: Forever**. Swap between your fishing pole and weapons, track what you catch, compare Auction House listings with vendor prices, and look up fishing spots and cooking recipes.
 
-**[Download v0.11.0 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.0/BobberTally-v0.11.0.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
+**[Download v0.11.1 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.1/BobberTally-v0.11.1.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
 
 Requires the WoW Forever client (add-on interface `16001`). The add-on supports English and Simplified Chinese.
 
@@ -17,7 +17,7 @@ BobberTally is the in-game add-on for [WFDB](https://wfdb.cc/en/). The [fishing 
 | Fishing toolbar | Click the equipment icon to swap gear or the hook to cast. The bar chart opens catch statistics and the cog opens Fishing Settings. Drag the four-way arrow to move the toolbar. |
 | Gear sets | Check both hand slots and the latest swap result. A swap succeeds once both slots match the target. Failed swaps show a reason. |
 | Fishing Settings | Set gear swap and cast/reel bindings, boost the splash sound, and adjust Interact Key, Auto Loot, and bobber search. Bindings support the numpad and mouse side buttons. |
-| Catch tracking and price estimates | See casts, catches, fishing time, estimated values, and hourly rates. Prices sync when the Auction House opens. The catch list also shows fish in your bags. |
+| Catch tracking and price estimates | See casts, catches, fishing time, estimated values, and hourly rates. Auction prices refresh on opening by default. Turn this off in Fishing Controls or refresh manually. |
 | My Auctions | Track active fish listings, confirmed sales, and daily records, and get sale alerts. Open the mailbox to sync settled proceeds. |
 | Catch and cooking catalog | Browse 89 catches and 24 recipes. Filter by your current zone or by non-fish catches, check reference sources, open the map, and set catch goals. |
 

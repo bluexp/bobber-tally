@@ -28,7 +28,7 @@ text:SetSpacing(4)
 panel:SetScript("OnShow", function()
     local website = addon.IsEnglish() and "https://wfdb.cc/en/" or "https://wfdb.cc/"
     text:SetText(table.concat({
-        theme.goldText .. L["无限钓鱼助手"] .. " 0.11.0|r",
+        theme.goldText .. L["无限钓鱼助手"] .. " 0.11.1|r",
         L["为《魔兽世界：无限》制作的钓鱼辅助插件。"],
         "",
         theme.goldText .. L["无限库 WFDB 网站"] .. "|r",
@@ -47,7 +47,7 @@ panel:SetScript("OnShow", function()
         L["/wowfish 或 /wowfish loot 打开钓鱼面板，查看抛竿统计、渔获详情、两种单价和总价。"],
         L["按住钓鱼面板的标题栏可单独移动窗口。"],
         L["在「钓鱼设置」可管理快捷键、水花声、交互键、自动拾取和鱼漂搜索。"],
-        L["打开拍卖行时自动更新价格，也可点「更新拍卖价」立即查询。"],
+        L["默认在打开拍卖行时自动获取价格，可在「钓鱼操作」关闭。也可点「更新拍卖价」手动查询。"],
         L["总价按单价乘数量计算，缺少报价的数量会另行标明。"],
         L["/wowfish fish 打开资料库，可筛选非鱼类水产。悬停图标可查看物品说明，点击参考钓点可打开地图。"],
         L["本次渔获在重新登录和重载后保留。点击「结束本次」开始新一轮统计。"],

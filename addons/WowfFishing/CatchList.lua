@@ -457,6 +457,7 @@ end
 
 function addon.InitializeCatchList(db)
     settings = db
+    if db.autoRefreshAuctionPrices == nil then db.autoRefreshAuctionPrices = true end
     db.auctionQuotes = db.auctionQuotes or {}
     quotes = db.auctionQuotes
     catches, catchesByID, catchesByName = {}, {}, {}
@@ -529,7 +530,14 @@ local function CancelAutoRefresh()
     end
 end
 
-local function StartScan()
+function addon.ToggleAuctionAutoRefresh()
+    settings.autoRefreshAuctionPrices = not settings.autoRefreshAuctionPrices
+    if settings.autoRefreshAuctionPrices then return end
+    CancelAutoRefresh()
+    if scan and scan.automatic then FinishScan(nil) end
+end
+
+local function StartScan(automatic)
     if not auctionOpen or scan then return end
     CancelAutoRefresh()
     local ids, seen = {}, {}
@@ -550,21 +558,25 @@ local function StartScan()
             AddItem(recipe.itemID)
         end
     end
-    scan = { ids = ids, offset = 1, checked = 0, found = 0 }
+    scan = { ids = ids, offset = 1, checked = 0, found = 0, automatic = automatic }
     scan.timeout = C_Timer.NewTimer(45, function() FinishScan(L["查询超时，可重新更新"]) end)
     RefreshAuctionControls()
     SendQuery()
 end
 
-refresh:SetScript("OnClick", StartScan)
+local function RefreshPrices()
+    StartScan(false)
+end
+
+refresh:SetScript("OnClick", RefreshPrices)
 
 local function ScheduleAutoRefresh()
-    if autoRefreshTimer or scan then return end
+    if not settings or not settings.autoRefreshAuctionPrices or autoRefreshTimer or scan then return end
     -- Let the default Browse page open and issue its initial favorites query first.
     autoRefreshTimer = C_Timer.NewTimer(0.3, function()
         autoRefreshTimer = nil
         local browse = AuctionHouseFrame and AuctionHouseFrame.BrowseResultsFrame
-        if browse and browse:IsVisible() then StartScan() end
+        if settings.autoRefreshAuctionPrices and browse and browse:IsVisible() then StartScan(true) end
     end)
 end
 
@@ -580,7 +592,7 @@ local function AttachAuctionControls()
     footer:SetHeight(20)
     auctionRefresh = theme.Button(footer, nil, "更新拍卖价", 114, 20, true)
     auctionRefresh:SetPoint("LEFT")
-    auctionRefresh:SetScript("OnClick", StartScan)
+    auctionRefresh:SetScript("OnClick", RefreshPrices)
     auctionStatus = footer:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     auctionStatus:SetPoint("LEFT", auctionRefresh, "RIGHT", 10, 0)
     auctionStatus:SetPoint("RIGHT", -4, 0)
