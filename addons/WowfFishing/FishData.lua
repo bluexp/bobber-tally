@@ -9,6 +9,7 @@ local fishDexReference = {
     url = "https://github.com/Renaud-Sto/FishDex/blob/603d1c1b776e7d9265c1e57c7233fc84f999e919/FishDex/Data.lua",
     classic = true,
 }
+local wowfReference = { name = "WOWF.IO", url = "https://wowf.io/zh/professions/fishing/catch" }
 
 addon.FishData = {
     build = "1.60.1.70862",
@@ -267,6 +268,11 @@ addon.FishData = {
             category = "非鱼类水产",
             zones = { 297, 16, 440, 1222, 1227, 3140 },
             zoneSource = "参考钓点来自经典旧世。",
+            zoneReference = {
+                name = "Forever Mastery / cMaNGOS Classic-DB",
+                url = "https://forevermastery.com/en/items/13755-raw-winter-squid",
+                classic = true,
+            },
             vendorPrice = 7,
         },
         {
@@ -314,7 +320,8 @@ addon.FishData = {
             name = "黑爪龙虾",
             category = "非鱼类水产",
             zones = { 1222, 1227, 3140 },
-            zoneSource = "参考钓点来自经典旧世。",
+            zoneSource = "资料站参考钓点。",
+            zoneReference = wowfReference,
             vendorPrice = 12,
         },
         {
@@ -323,7 +330,7 @@ addon.FishData = {
             category = "非鱼类水产",
             zones = { 440, 1222, 1227 },
             zoneSource = "资料站参考钓点。",
-            zoneReference = { name = "WOWF.IO", url = "https://wowf.io/zh/professions/fishing/catch" },
+            zoneReference = wowfReference,
             vendorPrice = 46,
         },
         {

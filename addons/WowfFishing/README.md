@@ -33,7 +33,7 @@
 
 鱼名和 NPC 价格优先取游戏客户端的当前信息。部分物品在客户端缓存完成前显示英文名称，加载物品资料后会更新。
 
-钓点标明参考资料、无限服玩家报告或社区实测的来源。社区实测须有可核对的无限服钓获记录，区服未公开时显示「未知」。巨型蚌壳（物品 `7973`）的塔纳利斯、赫塔拉的巢穴和风暴海湾为资料站参考。7 和 9 磅重龙虾的钓点来自 FishDex 经典旧世资料。 [WOWF.IO 渔获](https://wowf.io/zh/professions/fishing/catch) · [FishDex 数据](https://github.com/Renaud-Sto/FishDex/blob/603d1c1b776e7d9265c1e57c7233fc84f999e919/FishDex/Data.lua)
+钓点标明参考资料、无限服玩家报告或社区实测的来源。社区实测须有可核对的无限服钓获记录，区服未公开时显示「未知」。黑爪龙虾和巨型蚌壳（物品 `7973`）的参考钓点见 WOWF.IO。冬鱿鱼的钓点可在 Forever Mastery 标注的 cMaNGOS Classic-DB 资料中核对，7 和 9 磅重龙虾的钓点来自 FishDex 经典旧世资料。 [WOWF.IO 渔获](https://wowf.io/zh/professions/fishing/catch) · [冬鱿鱼参考钓点](https://forevermastery.com/en/items/13755-raw-winter-squid) · [FishDex 数据](https://github.com/Renaud-Sto/FishDex/blob/603d1c1b776e7d9265c1e57c7233fc84f999e919/FishDex/Data.lua)
 
 点「当前区域」可以筛选当前位置的鱼类，也可以在搜索框输入其他地区。鱼类详情会显示本角色实际钓到的地点和数量。悬停在社区实测的地点按钮上可查看原始记录网址。
 
