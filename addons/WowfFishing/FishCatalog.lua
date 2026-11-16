@@ -88,7 +88,10 @@ search:SetScript("OnEnterPressed", search.ClearFocus)
 local searchHint = Label(search, "GameFontDisableSmall", 5, -8, 244)
 local currentZone = theme.Button(surface, nil, "当前区域", 102, 26)
 currentZone:SetPoint("TOPLEFT", 209, -19)
-local onlyHere = false
+local nonFishCategory = "非鱼类水产"
+local nonFish = theme.Button(surface, nil, nonFishCategory, 144, 26)
+nonFish:SetPoint("TOPLEFT", 321, -19)
+local onlyHere, onlyNonFish = false, false
 local regionalResults = {}
 
 local list = theme.Inset(surface, 13, -59, 251, 360)
@@ -113,7 +116,7 @@ related:SetPoint("TOPLEFT", 316, -40)
 local setGoal = theme.Button(detail, nil, "设置目标", 94, 25)
 setGoal:SetPoint("RIGHT", related, "LEFT", -6, 0)
 subtitle:SetWidth(134)
-subtitle:SetMaxLines(1)
+subtitle:SetMaxLines(2)
 
 local details = CreateFrame("ScrollFrame", nil, detail)
 details:SetPoint("TOPLEFT", 15, -88)
@@ -219,7 +222,11 @@ local function FishDetails(fish)
 end
 
 local function FishNotes(fish)
-    local text = { L[fish.zoneSource] }
+    local text = {}
+    if fish.zoneSource ~= "" then text[#text + 1] = L[fish.zoneSource] end
+    if fish.zoneReference then
+        text[#text + 1] = fish.zoneReference.name
+    end
     if fish.note then text[#text + 1] = L[fish.note] end
     local observed = observations[fish.id]
     text[#text + 1] = L["\n|cffe9c483本角色钓获|r"]
@@ -304,7 +311,7 @@ local function RenderLocations(fish)
         if x + width > 421 then
             x, y = 0, y + 28
         end
-        LocationButton(index, areaID, name, width, x, y)
+        LocationButton(index, areaID, name, width, x, y, fish.zoneReference and fish.zoneReference.url)
         x = x + width + 5
     end
     if zoneCount > 0 then y = y + 30 end
@@ -446,6 +453,7 @@ end)
 
 local function Matches(entry, query, numeric)
     if entry.id then
+        if onlyNonFish and entry.category ~= nonFishCategory then return false end
         local region
         if onlyHere then
             local zone = (GetRealZoneText() or ""):lower()
@@ -498,9 +506,11 @@ end)
 
 local function SelectMode(value, query, preferred)
     mode = value
-    onlyHere = false
+    onlyHere, onlyNonFish = false, false
     currentZone:SetShown(mode == "fish")
     currentZone:SetText(L["当前区域"])
+    nonFish:SetShown(mode == "fish")
+    nonFish:UnlockHighlight()
     for key, tab in pairs(tabs) do
         local active = key == mode
         tab.active:SetShown(active)
@@ -518,6 +528,11 @@ end
 
 tabs.fish:SetScript("OnClick", function() SelectMode("fish") end)
 tabs.cooking:SetScript("OnClick", function() SelectMode("cooking") end)
+nonFish:SetScript("OnClick", function()
+    onlyNonFish = not onlyNonFish
+    if onlyNonFish then nonFish:LockHighlight() else nonFish:UnlockHighlight() end
+    Filter(search:GetText(), selected)
+end)
 related:SetScript("OnClick", function() SelectMode("cooking", tostring(selected.id)) end)
 currentZone:SetScript("OnClick", function()
     onlyHere = not onlyHere

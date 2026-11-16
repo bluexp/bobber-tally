@@ -43,6 +43,7 @@ addon.EnglishCatalog = {
         [6647] = "Bloated Bristle Whisker Catfish",
         [6657] = "Savory Deviate Delight",
         [6887] = "Spotted Yellowtail",
+        [7973] = "Big-mouth Clam",
         [8364] = "Mithril Head Trout",
         [8365] = "Raw Mithril Head Trout",
         [8366] = "Bloated Mithril Head Trout",

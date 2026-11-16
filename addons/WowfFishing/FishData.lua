@@ -4,6 +4,12 @@
 -- Full provenance and acknowledgements are in README.md.
 local _, addon = ...
 
+local fishDexReference = {
+    name = "FishDex",
+    url = "https://github.com/Renaud-Sto/FishDex/blob/603d1c1b776e7d9265c1e57c7233fc84f999e919/FishDex/Data.lua",
+    classic = true,
+}
+
 addon.FishData = {
     build = "1.60.1.70862",
     zones = {
@@ -258,9 +264,9 @@ addon.FishData = {
         {
             id = 13755,
             name = "新鲜的冬鱿鱼",
-            category = "普通鱼",
+            category = "非鱼类水产",
             zones = { 297, 16, 440, 1222, 1227, 3140 },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "参考钓点来自经典旧世。",
             vendorPrice = 7,
         },
         {
@@ -306,10 +312,19 @@ addon.FishData = {
         {
             id = 13888,
             name = "黑爪龙虾",
-            category = "普通鱼",
+            category = "非鱼类水产",
             zones = { 1222, 1227, 3140 },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "参考钓点来自经典旧世。",
             vendorPrice = 12,
+        },
+        {
+            id = 7973,
+            name = "巨型蚌壳",
+            category = "非鱼类水产",
+            zones = { 440, 1222, 1227 },
+            zoneSource = "资料站参考钓点。",
+            zoneReference = { name = "WOWF.IO", url = "https://wowf.io/zh/professions/fishing/catch" },
+            vendorPrice = 46,
         },
         {
             id = 13889,
@@ -657,57 +672,59 @@ addon.FishData = {
         {
             id = 13907,
             name = "7磅重的龙虾",
-            category = "纪念鱼",
+            category = "非鱼类水产",
             zones = { 139 },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "参考钓点来自经典旧世。",
+            zoneReference = fishDexReference,
             vendorPrice = 700,
         },
         {
             id = 13908,
             name = "9磅重的龙虾",
-            category = "纪念鱼",
+            category = "非鱼类水产",
             zones = { 139 },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "参考钓点来自经典旧世。",
+            zoneReference = fishDexReference,
             vendorPrice = 900,
         },
         {
             id = 13909,
             name = "12磅重的龙虾",
-            category = "纪念鱼",
+            category = "非鱼类水产",
             zones = {  },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "",
             vendorPrice = 1200,
         },
         {
             id = 13910,
             name = "15磅重的龙虾",
-            category = "纪念鱼",
+            category = "非鱼类水产",
             zones = {  },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "",
             vendorPrice = 1500,
         },
         {
             id = 13911,
             name = "19磅重的龙虾",
-            category = "纪念鱼",
+            category = "非鱼类水产",
             zones = {  },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "",
             vendorPrice = 1900,
         },
         {
             id = 13912,
             name = "21磅重的龙虾",
-            category = "纪念鱼",
+            category = "非鱼类水产",
             zones = {  },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "",
             vendorPrice = 2100,
         },
         {
             id = 13913,
             name = "22磅重的龙虾",
-            category = "纪念鱼",
+            category = "非鱼类水产",
             zones = {  },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "",
             vendorPrice = 2200,
         },
         {

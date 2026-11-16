@@ -75,7 +75,7 @@ function addon.ShowObservationExport()
     end
     edit:SetText(#rows > 0 and ("WFDB1:" .. table.concat(rows, ";")) or "")
     status:SetText(#rows > 0 and L["已选中 %d 组近期记录，按 Ctrl+C 或 ⌘C 复制。"]:format(#rows)
-        or L["暂无可导出的记录。更新插件后钓到资料库中的鱼，就会在这里显示。"])
+        or L["暂无可导出的记录。钓到资料库里的条目后会在这里显示。"])
     theme.ShowPanel(panel)
     if #rows > 0 then
         edit:SetFocus()
