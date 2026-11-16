@@ -38,6 +38,7 @@ local fish, recipes = {}, {}
 for _, entry in ipairs(data.entries) do
     names[tostring(entry.id)] = { zh = entry.name, en = english.items[entry.id] or entry.name }
     fish[#fish + 1] = { id = entry.id, zones = #entry.zones > 0 and entry.zones or nil, uses = entry.uses,
+        community = entry.community,
         reported = entry.zoneSource:find("无限服玩家报告", 1, true) ~= nil }
 end
 for _, entry in ipairs(cooking.entries) do

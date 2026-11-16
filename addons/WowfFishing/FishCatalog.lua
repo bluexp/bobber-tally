@@ -164,29 +164,26 @@ local function ZoneName(areaID)
     return fallback or C_Map.GetAreaInfo(areaID) or tostring(areaID)
 end
 
-local function RegionMatches(fish, query, mapID)
-    local reference, observed = false, false
+local function RegionMatch(fish, query, mapID)
     local function MatchesName(name)
         name = name and name:lower() or ""
         return query ~= "" and (onlyHere and name == query or not onlyHere and name:find(query, 1, true))
     end
-    for _, area in ipairs(fish.zones) do
-        local map = data.zoneMaps[area]
-        if (mapID and map == mapID) or MatchesName(ZoneName(area))
+    local function MatchesArea(area)
+        return (mapID and data.zoneMaps[area] == mapID) or MatchesName(ZoneName(area))
             or MatchesName(data.zones[area]) or MatchesName(english.zones[area])
-            or MatchesName(C_Map.GetAreaInfo(area)) then
-            reference = true
-            break
-        end
+            or MatchesName(C_Map.GetAreaInfo(area))
     end
     local seen = observations and observations[fish.id]
     for zone, quantity in pairs(seen and seen.zones or {}) do
-        if quantity > 0 and MatchesName(zone) then
-            observed = true
-            break
-        end
+        if quantity > 0 and MatchesName(zone) then return "已实钓" end
     end
-    return reference, observed
+    for _, spot in ipairs(fish.community or {}) do
+        if MatchesArea(spot.zone) then return "社区实测" end
+    end
+    for _, area in ipairs(fish.zones) do
+        if MatchesArea(area) then return "参考钓点" end
+    end
 end
 
 local function PriceLines(itemID, fallbackVendor)
@@ -237,10 +234,11 @@ local function FishNotes(fish)
 end
 
 local locationsTitle = Label(content, "GameFontHighlight", 0, 0, 421, nil, colors.gold)
+local communityTitle = Label(content, "GameFontHighlight", 0, 0, 421, nil, colors.gold)
 local locationNotes = Label(content, "GameFontHighlightSmall", 0, 0, 421, nil, colors.muted)
 locationNotes:SetSpacing(4)
 local locationMeasure = content:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-local locationButtons = {}
+local locationButtons, communityLabels = {}, {}
 
 local function OpenLocation(button)
     if not button.mapID then return end
@@ -251,53 +249,92 @@ local function OpenLocation(button)
     end
 end
 
+local function LocationButton(index, areaID, name, width, x, y, url)
+    local button = locationButtons[index]
+    if not button then
+        button = theme.Button(content, nil, "", 60, 23)
+        button:SetScript("OnClick", OpenLocation)
+        button:SetScript("OnEnter", function(self)
+            if not self.mapID then return end
+            local map = C_Map.GetMapInfo(self.mapID)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(L["打开地图 · "] .. (map and map.name or self:GetText()))
+            if self.sourceURL then GameTooltip:AddLine(self.sourceURL) end
+            GameTooltip:Show()
+        end)
+        button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        locationButtons[index] = button
+    end
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", x, -y)
+    button:SetWidth(width)
+    button:SetText(name)
+    local mapID = data.zoneMaps[areaID]
+    button.mapID = mapID and C_Map.GetMapInfo(mapID) and mapID or nil
+    button.sourceURL = url
+    button:SetEnabled(button.mapID ~= nil)
+    button:Show()
+end
+
+local function LocationButtonWidth(name)
+    locationMeasure:SetText(name)
+    return math.max(48, math.ceil(locationMeasure:GetStringWidth()) + 20)
+end
+
 local function RenderLocations(fish)
     local zoneCount = fish and #fish.zones or 0
-    for index = zoneCount + 1, #locationButtons do locationButtons[index]:Hide() end
-    locationsTitle:SetShown(fish ~= nil)
+    local communityCount = fish and fish.community and #fish.community or 0
+    for index = zoneCount + communityCount + 1, #locationButtons do locationButtons[index]:Hide() end
+    for index = communityCount + 1, #communityLabels do communityLabels[index]:Hide() end
+    locationsTitle:SetShown(fish ~= nil and (zoneCount > 0 or communityCount == 0))
+    communityTitle:SetShown(communityCount > 0)
     locationNotes:SetShown(fish ~= nil)
     local height = description:GetStringHeight()
     if not fish then return height end
 
     local x, y = 0, height + 14
-    locationsTitle:SetPoint("TOPLEFT", 0, -y)
-    locationsTitle:SetText(L["参考钓点"])
-    y = y + locationsTitle:GetStringHeight() + 6
+    if locationsTitle:IsShown() then
+        locationsTitle:SetPoint("TOPLEFT", 0, -y)
+        locationsTitle:SetText(L["参考钓点"])
+        y = y + locationsTitle:GetStringHeight() + 6
+    end
     for index, areaID in ipairs(fish.zones) do
-        local button = locationButtons[index]
-        if not button then
-            button = theme.Button(content, nil, "", 60, 23)
-            button:SetScript("OnClick", OpenLocation)
-            button:SetScript("OnEnter", function(self)
-                if not self.mapID then return end
-                local map = C_Map.GetMapInfo(self.mapID)
-                GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-                GameTooltip:SetText(L["打开地图 · "] .. (map and map.name or self:GetText()))
-                GameTooltip:Show()
-            end)
-            button:SetScript("OnLeave", function() GameTooltip:Hide() end)
-            locationButtons[index] = button
-        end
         local name = ZoneName(areaID)
-        locationMeasure:SetText(name)
-        local width = math.max(48, math.ceil(locationMeasure:GetStringWidth()) + 20)
+        local width = LocationButtonWidth(name)
         if x + width > 421 then
             x, y = 0, y + 28
         end
-        button:ClearAllPoints()
-        button:SetPoint("TOPLEFT", x, -y)
-        button:SetWidth(width)
-        button:SetText(name)
-        local mapID = data.zoneMaps[areaID]
-        button.mapID = mapID and C_Map.GetMapInfo(mapID) and mapID or nil
-        button:SetEnabled(button.mapID ~= nil)
-        button:Show()
+        LocationButton(index, areaID, name, width, x, y)
         x = x + width + 5
     end
     if zoneCount > 0 then y = y + 30 end
+    if communityCount > 0 then
+        communityTitle:SetPoint("TOPLEFT", 0, -y)
+        communityTitle:SetText(L["无限服社区实测"])
+        y = y + communityTitle:GetStringHeight() + 6
+        for index, spot in ipairs(fish.community) do
+            local name = ZoneName(spot.zone)
+            local width = LocationButtonWidth(name)
+            LocationButton(zoneCount + index, spot.zone, name, width, 0, y, spot.url)
+            local label = communityLabels[index]
+            if not label then
+                label = Label(content, "GameFontHighlightSmall", 0, 0, 421, nil, colors.muted)
+                communityLabels[index] = label
+            end
+            local kind = spot.kind == "pool" and L["鱼群"] or L["开放水域"]
+            local region = spot.region == "UNKNOWN" and L["区服：未知"] or spot.region
+            label:ClearAllPoints()
+            label:SetPoint("TOPLEFT", width + 8, -y - 5)
+            label:SetWidth(413 - width)
+            label:SetText(table.concat({ kind, region, spot.source }, " · "))
+            label:Show()
+            y = y + math.max(23, label:GetStringHeight() + 5) + 5
+        end
+        y = y + 4
+    end
     locationNotes:SetPoint("TOPLEFT", 0, -y)
     local notes = FishNotes(fish)
-    locationNotes:SetText(zoneCount > 0 and notes or (L["待确认\n"] .. notes))
+    locationNotes:SetText((zoneCount > 0 or communityCount > 0) and notes or (L["待确认\n"] .. notes))
     return y + locationNotes:GetStringHeight()
 end
 
@@ -409,19 +446,19 @@ end)
 
 local function Matches(entry, query, numeric)
     if entry.id then
-        local reference, observed
+        local region
         if onlyHere then
             local zone = (GetRealZoneText() or ""):lower()
             local mapID = C_Map.GetBestMapForUnit("player")
-            reference, observed = RegionMatches(entry, zone, mapID)
-            if not reference and not observed then return false end
+            region = RegionMatch(entry, zone, mapID)
+            if not region then return false end
         elseif query ~= "" and not numeric then
-            reference, observed = RegionMatches(entry, query)
+            region = RegionMatch(entry, query)
         end
-        if reference or observed then regionalResults[entry] = observed and "已实钓" or "参考钓点" end
+        regionalResults[entry] = region
         if query == "" then return true end
         if numeric then return entry.id == numeric end
-        if not onlyHere and (reference or observed) then return true end
+        if not onlyHere and region then return true end
         return (ItemName(entry.id) .. " " .. L[entry.category]):lower():find(query, 1, true)
     end
     if query == "" then return true end

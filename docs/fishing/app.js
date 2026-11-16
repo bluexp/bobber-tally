@@ -137,10 +137,13 @@ async function start() {
     const observations = reviewed ? reviews.filter((row) => !region || row.region === region) : [];
     const matchingRecords = (id) => observations.filter((row) =>
       row.item === id && (!zoneID || (!subzones.has(zoneID) && row.map !== 0 && row.map === zones[zoneID]?.map)));
+    const matchingCommunity = (row) => (row.community ?? []).filter((spot) =>
+      (!zoneID || spot.zone === zoneID) && (!region || spot.region === region));
     const output = el("fish-list");
     output.replaceChildren();
     const shown = orderedFish.filter((row) => {
-      if (zoneID && !row.zones?.includes(zoneID) && matchingRecords(row.id).length === 0) return false;
+      if (zoneID && !row.zones?.includes(zoneID) && matchingRecords(row.id).length === 0 &&
+          matchingCommunity(row).length === 0) return false;
       return !query || (/^\d+$/.test(query) ? String(row.id) === query :
         [items[row.id].zh, items[row.id].en].some((value) => value.toLocaleLowerCase().includes(query)));
     });
@@ -161,14 +164,32 @@ async function start() {
       header.append(make("h3", itemName(row.id)), make("span", "#" + row.id));
       card.append(header);
       const regional = matchingRecords(row.id);
+      const community = matchingCommunity(row);
       const provenance = row.reported ? t("无限服玩家报告", "Forever player report") : t("经典旧世参考", "Classic Era reference");
       const labels = (row.zones ?? []).map((id) => name(zones[id]));
-      card.append(make("p", labels.length ? provenance + " · " + labels.join(zh ? "、" : ", ") :
-        t("钓点待确认", "Waters unconfirmed")));
+      if (labels.length) {
+        card.append(make("p", provenance + " · " + labels.join(zh ? "、" : ", ")));
+      } else if (!row.community?.length && !regional.length) {
+        card.append(make("p", t("钓点待确认", "Waters unconfirmed")));
+      }
       if (row.reported && row.id === 251524) card.append(make("p", t("玩家报告来自赤脊山奇想鳍鱼群。", "Reported from Whimsyfin schools in Redridge.")));
-      card.append(make("p", !reviewed ? t("实测库暂不可用", "Observations unavailable") : regional.length ?
+      for (const spot of community) {
+        const kind = spot.kind === "pool" ? t("鱼群", "Fishing pool") : t("开放水域", "Open water");
+        const regionLabel = spot.region === "UNKNOWN" ? t("区服：未知", "Region: unknown") :
+          t(`区服：${regionName(spot.region)}`, `Region: ${regionName(spot.region)}`);
+        const detail = make("p", [
+          t("无限服社区实测", "Forever community observations"), name(zones[spot.zone]), kind, regionLabel
+        ].join(" · ") + " · ");
+        const link = make("a", spot.source);
+        link.href = spot.url;
+        link.target = "_blank";
+        link.rel = "noopener";
+        detail.append(link);
+        card.append(detail);
+      }
+      card.append(make("p", !reviewed ? t("WFDB 投稿记录暂不可用", "WFDB contributions unavailable") : regional.length ?
         t(`已收录 ${regional.length} 组实测`, `${regional.length} reviewed observation groups`) :
-        t("暂无所选地区的已收录实测", "No reviewed observations for this filter")));
+        t("暂无符合筛选条件的 WFDB 投稿", "No WFDB contributions for this filter")));
       if (regional.length) {
         const table = document.createElement("table");
         const headings = table.createTHead().insertRow();

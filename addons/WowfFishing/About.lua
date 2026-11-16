@@ -28,7 +28,7 @@ text:SetSpacing(4)
 panel:SetScript("OnShow", function()
     local website = addon.IsEnglish() and "https://wfdb.cc/en/" or "https://wfdb.cc/"
     text:SetText(table.concat({
-        theme.goldText .. L["无限钓鱼助手"] .. " 0.9.0|r",
+        theme.goldText .. L["无限钓鱼助手"] .. " 0.10.0|r",
         L["为《魔兽世界：无限》制作的钓鱼辅助插件。"],
         "",
         theme.goldText .. L["无限库 WFDB 网站"] .. "|r",
@@ -55,7 +55,7 @@ panel:SetScript("OnShow", function()
         "",
         theme.goldText .. L["资料说明|r"],
         L["收录 88 条鱼类资料和 24 条以这些鱼为材料的烹饪配方，依据客户端 1.60.1.70862 核对。"],
-        L["钓点包括经典旧世参考和玩家报告，资料页逐项标明来源。本角色在无限服的钓获会累计记录地点与数量。"],
+        L["钓点包括经典旧世参考、无限服玩家报告和社区实测。本角色的钓获会累计记录地点与数量。"],
         "",
         theme.goldText .. L["参考资料与感谢|r"],
         L["感谢 Blizzard Entertainment 提供界面和插件 API，感谢 Gethe 维护界面源码镜像。"],
@@ -72,6 +72,8 @@ panel:SetScript("OnShow", function()
         "github.com/timemir/pagle-addon",
         L["感谢 Wago.tools 提供客户端数据导出，感谢无限图鉴与 WOWF.IO 整理中文物品及鱼类资料。"],
         "wago.tools · wuxianwow.com · wowf.io",
+        L["感谢 AzerDex 社区分享无限服实钓记录。"],
+        "azerdex.com/about/data",
         L["完整来源链接和第三方授权见插件目录中的 README.md 与 THIRD_PARTY_LICENSES.txt。"],
     }, "\n"))
     content:SetHeight(math.max(366, text:GetStringHeight() + 12))

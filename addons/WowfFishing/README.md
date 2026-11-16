@@ -1,6 +1,6 @@
 # 无限钓鱼助手
 
-为《魔兽世界：无限》制作的钓鱼辅助插件，当前源码版本 0.9.0，客户端接口版本 16001。
+为《魔兽世界：无限》制作的钓鱼辅助插件，当前源码版本 0.10.0，客户端接口版本 16001。
 
 插件界面支持简体中文和英文，默认跟随客户端。可用 `/wowfish lang zh`、`/wowfish lang en` 或 `/wowfish lang auto` 为当前角色选择语言，再输入 `/reload` 生效。游戏原生物品提示及装备链接沿用客户端语言。
 
@@ -33,11 +33,11 @@
 
 鱼名和 NPC 价格优先取游戏客户端的当前信息。部分物品在客户端缓存完成前显示英文名称，加载物品资料后会更新。
 
-钓点包含经典旧世的参考资料和无限服玩家报告，游戏内逐项标明。无限服新增鱼类及钓点仍在补充，钓获条件未核实的条目标为待确认。插件会保存本角色在无限服实际钓到的地点和数量，用于持续核对。
+钓点包含经典旧世参考、无限服玩家报告和无限服社区实测。社区实测标明来源和区服，区服未公开时显示「未知」。无限服新增鱼类及钓点仍在补充，钓获条件未核实的条目标为待确认。
 
-点「当前区域」可以筛选当前位置的鱼类，也可以在搜索框输入其他地区。鱼类详情分别列出参考钓点和本角色实钓记录。
+点「当前区域」可以筛选当前位置的鱼类，也可以在搜索框输入其他地区。鱼类详情会显示本角色实际钓到的地点和数量。悬停在社区实测的地点按钮上可查看原始记录网址。
 
-点击鱼类详情中的参考钓点可打开游戏世界地图。没有独立地图的洞穴、海湾和岛屿会打开所在地区。地点与地图编号依据国服客户端的 AreaTable 和 UiMap。 [地图数据](https://wago.tools/db2/UiMap?build=1.60.1.70862)
+点击鱼类详情中的钓点可打开游戏世界地图。没有独立地图的洞穴、海湾和岛屿会打开所在地区。地点与地图编号依据国服客户端的 AreaTable 和 UiMap。 [地图数据](https://wago.tools/db2/UiMap?build=1.60.1.70862)
 
 ## 烹饪资料
 
@@ -57,7 +57,8 @@
 - **timemir / Pagle** 对无限服鱼类资料范围、客户端数据与钓获地点资料的缺口做了公开研究，用于核对目录覆盖范围。感谢作者分享研究与来源记录。[鱼类数据研究](https://github.com/timemir/pagle-addon/blob/main/docs/research/forever-content-data.md)
 - **Wago.tools** 提供客户端 `ItemSparse` 和 `AreaTable` 的公开数据导出，用于核对物品编号、重量鱼、膨胀鱼、卖价及地区名。感谢提供数据工具。[Wago.tools](https://wago.tools/db2/ItemSparse?build=1.60.1.70862)
 - **无限图鉴 wuxianwow.com** 的公开中文客户端物品数据用于核对名称和 NPC 单价。数据清单版本为 `1.60.1.70862`。感谢整理与开放数据。[数据说明](https://wuxianwow.com/ai)、[物品数据](https://wuxianwow.com/data/items.json)
-- **WOWF.IO** 的钓鱼渔获资料用于补充中文鱼名、配方用途与参考地区。感谢整理鱼类专题。[钓鱼渔获](https://wowf.io/zh/professions/fishing/catch)
+- **WOWF.IO** 是核对中文鱼名、配方用途与参考地区的优先资料。钓鱼专题同时提供鱼类清单与按区域查阅的钓点参考。[钓鱼渔获](https://wowf.io/zh/professions/fishing/catch) · [钓鱼点](https://wowf.io/zh/professions/fishing/nodes) · [数据来源说明](https://wowf.io/zh/about)
 - **Wowhead 玩家报告** 为无限新增鱼「奇想鳍鱼」在赤脊山鱼群的记录提供线索，资料页标为待本角色实钓核对。感谢参与提交钓鱼观察的玩家。[奇想鳍鱼](https://www.wowhead.com/forever/item=251524/whimsyfin)
+- **AzerDex / ForeverDB 社区** 的公开钓获记录用于核对提瑞斯法林地和银松森林的钓点。依据第 15 次发布逐条核对物品编号与地图。来源页的最后观察日期分别为 2026 年 10 月 21 日和 9 月 24 日，区服未公开。[采集方法](https://azerdex.com/about/data) · [提瑞斯法林地](https://azerdex.com/fishing/1420) · [银松森林开放水域](https://azerdex.com/fishing/1421) · [银松森林鼠尾鱼群](https://azerdex.com/object/-1569625634)
 
 上述网站与作者各自拥有相关内容的权利。游戏物品名称、图标与游戏数据属于 Blizzard Entertainment。第三方 MIT 授权声明随插件一并保留。

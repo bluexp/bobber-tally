@@ -123,7 +123,11 @@ addon.FishData = {
             name = "新鲜的长颌泥鲷",
             category = "普通鱼",
             zones = { 40, 1519, 1537, 1637, 1638, 1657, 1, 12, 141, 215, 1497, 85, 130, 10, 11, 44, 267, 331, 406 },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "参考钓点来自经典旧世。",
+            community = {
+                { zone = 85, kind = "open", region = "UNKNOWN", source = "AzerDex", url = "https://azerdex.com/fishing/1420" },
+                { zone = 130, kind = "open", region = "UNKNOWN", source = "AzerDex", url = "https://azerdex.com/fishing/1421" },
+            },
             vendorPrice = 1,
         },
         {
@@ -131,7 +135,10 @@ addon.FishData = {
             name = "新鲜的闪亮小鱼",
             category = "普通鱼",
             zones = { 1, 12, 141, 215, 40, 1519, 1537, 1637, 1638, 1657, 1497 },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "参考钓点来自经典旧世。",
+            community = {
+                { zone = 85, kind = "open", region = "UNKNOWN", source = "AzerDex", url = "https://azerdex.com/fishing/1420" },
+            },
             vendorPrice = 1,
             uses = { "鱼缸" },
         },
@@ -140,7 +147,10 @@ addon.FishData = {
             name = "病怏怏的鱼",
             category = "普通鱼",
             zones = { 85, 130, 1497 },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "参考钓点来自经典旧世。",
+            community = {
+                { zone = 85, kind = "open", region = "UNKNOWN", source = "AzerDex", url = "https://azerdex.com/fishing/1420" },
+            },
             vendorPrice = 1,
         },
         {
@@ -330,7 +340,10 @@ addon.FishData = {
             name = "新鲜的鼠尾鱼",
             category = "普通鱼",
             zones = { 38, 130, 267, 331, 406 },
-            zoneSource = "经典旧世钓点参考，待无限服实钓核对。",
+            zoneSource = "参考钓点来自经典旧世。",
+            community = {
+                { zone = 130, kind = "pool", region = "UNKNOWN", source = "AzerDex", url = "https://azerdex.com/object/-1569625634" },
+            },
             vendorPrice = 25,
         },
         {
