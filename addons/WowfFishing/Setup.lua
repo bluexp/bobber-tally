@@ -733,7 +733,6 @@ function addon.InitializeSetup(settings, callbacks)
             selectedKey = key
         end, Render)
         keyCapture:AttachButton(keyButton)
-        useKey:SetScript("OnClick", function() keyCapture:UseConflictingKey() end)
         fishingSettings = addon.CreateFishingSettings(fishingPage, settings, handlers)
         gearStatus = addon.CreateGearStatus(gearPage, settings, handlers.key, HandSetID)
     end
