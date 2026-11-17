@@ -54,7 +54,7 @@ MIT、GPL 等通常允许商业使用，无法实现本项目的禁止商用要�
 
 ## 维护及打包
 
-本次只制定许可 1.0，插件功能版本仍为 v0.11.3，不替换已发布 ZIP。后续正式发版须使用新的插件版本号，并运行仓库打包脚本：
+从 v0.11.4 起，正式安装包随附许可 1.0、署名声明、本问答和第三方许可。钓鱼逻辑沿用 v0.11.3，旧版 ZIP 与标签保持原样。后续发版运行仓库打包脚本：
 
 ```sh
 python3 tools/package-bobber-tally.py vX.Y.Z
@@ -97,4 +97,4 @@ For modified versions, use “Based on BobberTally” and add modification detai
 
 **Contact:** Ask through [GitHub Issues](https://github.com/bluexp/bobber-tally/issues). Additional rights require prior express written consent from each authorized rightsholder; no commercial grant is promised. Keep sensitive details out of public issues.
 
-**Packaging:** This licensing change does not change v0.11.3 functionality or replace its released archive. For the next release, use a new add-on version and `python3 tools/package-bobber-tally.py vX.Y.Z`. The script checks matching root/add-on license and notice files and includes this FAQ and all licensing files. Existing archives are never overwritten. Edit root LICENSE/NOTICE first, then synchronize their add-on copies.
+**Packaging:** Starting with v0.11.4, official archives include license version 1.0, the attribution notice, this FAQ, and third-party licenses. Fishing behavior remains as in v0.11.3; earlier archives and tags are preserved. Build future releases with `python3 tools/package-bobber-tally.py vX.Y.Z`. The script checks matching root/add-on license and notice files and includes this FAQ and all licensing files. Existing archives are never overwritten. Edit root LICENSE/NOTICE first, then synchronize their add-on copies.

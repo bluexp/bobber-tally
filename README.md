@@ -6,7 +6,7 @@
 
 *A fishing add-on for World of Warcraft: Forever with gear swaps, catch tracking, and a fish and cooking catalog.*
 
-**[下载 v0.11.3 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.3/BobberTally-v0.11.3.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
+**[下载 v0.11.4 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.4/BobberTally-v0.11.4.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
 
 适用客户端接口 `16001`。插件界面支持简体中文和英文。
 
