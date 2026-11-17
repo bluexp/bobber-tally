@@ -28,7 +28,7 @@ text:SetSpacing(4)
 panel:SetScript("OnShow", function()
     local website = addon.IsEnglish() and "https://wfdb.cc/en/" or "https://wfdb.cc/"
     text:SetText(table.concat({
-        theme.goldText .. L["无限钓鱼助手"] .. " 0.11.2|r",
+        theme.goldText .. L["无限钓鱼助手"] .. " 0.11.3|r",
         L["为《魔兽世界：无限》制作的钓鱼辅助插件。"],
         "",
         theme.goldText .. L["无限库 WFDB 网站"] .. "|r",
