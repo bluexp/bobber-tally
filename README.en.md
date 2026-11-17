@@ -10,6 +10,12 @@ Requires the WoW Forever client (add-on interface `16001`). The add-on supports 
 
 BobberTally is the in-game add-on for [WFDB](https://wfdb.cc/en/). The [fishing database](https://wfdb.cc/en/fishing/) provides fishing spots, recipes, and contribution previews. The [Mac client](https://wfdb.cc/en/downloads/#macos) installs and updates the add-on and prepares catch records for submission.
 
+## License and attribution
+
+Original add-on code and accompanying documentation use the [BobberTally Noncommercial Attribution License 1.0](LICENSE): **no commercial use; noncommercial personal use, study, modification, and free sharing require preserved attribution.** Keeping the supplied notices is sufficient for private use. Public copies must credit `BobberTally · originally by bluexp · https://github.com/bluexp/bobber-tally`; modified versions must also identify their changes and include complete readable source.
+
+This is a custom **source-available license**, not an OSI open-source license. See the full terms for scope and obligations; other WFDB products are excluded. FishDex data retains MIT permissions and other third-party rights remain intact. Only copies expressly carrying the new terms are covered; existing release archives and tags are preserved. [Attribution notice](NOTICE) · [Licensing FAQ and commercial boundaries](addons/WowfFishing/LICENSING.md) · [Contributing](CONTRIBUTING.md)
+
 ## Features
 
 | Feature | What you can do |

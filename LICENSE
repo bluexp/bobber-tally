@@ -1,0 +1,333 @@
+BobberTally 非商业使用及署名许可协议 1.0
+BobberTally Noncommercial Attribution License 1.0
+
+制定日期 / Prepared: 2026-11-17
+SPDX-License-Identifier: LicenseRef-BobberTally-NC-Attribution-1.0
+Copyright (c) 2026 bluexp and BobberTally contributors.
+项目来源 / Source: https://github.com/bluexp/bobber-tally
+
+本协议为自定义的软件源码可用许可，含禁止商业使用的限制，不是经
+Open Source Initiative（OSI）认可的开源许可证，也不是 MIT、GPL、
+Apache 或 Creative Commons 许可证。以下中文为正式文本，英文为便于
+理解的译文；有歧义或不一致时，以中文为准，但不排除适用的强制性法律。
+
+一、定义及适用范围
+
+1. “授权人”指以本协议提供其有权授权内容的各版权人；“您”指行使本
+   协议所授予权利的个人或实体。“本软件”仅包括随附本协议的下列内容
+   中授权人有权授权的原创部分：addons/WowfFishing/ 下的插件源码和
+   配套文档，以及根目录 README.md、README.en.md、COMPLIANCE.md、
+   CONTRIBUTING.md、LICENSE、NOTICE 和 tools/package-bobber-tally.py。
+   同一内容在正式插件安装包中的副本亦适用本协议。
+2. 官网、论坛、桌面及移动客户端、小红书工具和素材，以及本仓库其他
+   路径中的内容不在本协议的授权范围内。公开可读本身不构成许可。
+3. “修改版”指修改、翻译、移植、节选或其他包含本软件受保护表达的
+   衍生作品；“分发”包括向他人提供源码、安装包、整合包或修改版。
+   对事实、思想、接口知识或独立实现，不因本协议而产生新的专有权。
+4. “商业使用”指以获得商业利益、金钱报酬或其他经济对价为目的，或者
+   为营利业务的运营、产品或服务提供支持而使用、复制、修改或分发本
+   软件。个人、企业及非营利机构均按行为的实际目的判断，免费提供、
+   未产生利润或声称“仅供学习”并不当然构成非商业使用。
+
+二、有条件的非商业授权
+
+在您遵守本协议的条件下，授权人就其有权授权的部分，授予您全球范围、
+免许可费、非独占的版权许可，仅用于非商业目的运行、学习、复制、修改
+和分发本软件。个人娱乐、自学、非商业研究、测试及免费社区交流均可
+适用本授权。除本协议明示授予的权利外，其余权利保留。
+
+只有实施本来需要授权人许可的行为时，才需要依本协议取得许可；单纯
+阅读本协议或行使法律另行赋予的权利，不视为接受额外义务。
+
+三、禁止商业使用
+
+本协议不授权任何商业使用，尤其包括：
+
+1. 出售、出租、付费下载、订阅、会员专享、付费解锁或以捐赠为获取或
+   使用条件提供本软件，或随付费整合包、产品及服务捆绑提供；
+2. 将本软件用于有偿安装、配置、维护、代练、工作室运营、商业化游戏
+   服务，或通过现实货币及其他经济对价交易游戏资产的业务；
+3. 将本软件或其功能整合进商业产品、收费服务或营利业务的内部工具，
+   或为此开发、修改、测试及部署本软件；
+4. 通过本软件的分发、功能演示、教程或宣传直接获取广告、带货、推广、
+   赞助或其他商业收益，包括自行设置广告或推广链接作为下载条件。
+
+游戏的正常订阅费、个人在游戏内使用虚拟货币进行正常游戏交易，以及
+独立第三方通用托管平台自身的收费或广告，不单独使个人娱乐或免费分享
+成为商业使用；您自行实施上述商业行为的除外。支付带宽或制作成本的
+名义也不能使收费分发获得授权。
+
+注明出处不能使商业使用合法化。如需本协议范围以外的权利，应事先联系
+对应版权人并取得明确的书面许可；沉默不构成同意。本协议不承诺提供
+商业授权，任何另行授权也不能替代第三方或游戏平台所要求的许可。
+
+四、所有使用均须保留出处
+
+1. 个人本地使用、备份和自行修改时，须保留随附的 LICENSE、NOTICE、
+   THIRD_PARTY_LICENSES.txt，以及已有的版权、来源和致谢标识。无需
+   注册、公开个人身份、发布使用声明或向作者报告游戏行为。
+2. 公开分发原版或修改版时，须随副本提供本协议全文、NOTICE 和适用的
+   第三方许可；在下载页、仓库首页或随包 README 等用户容易找到的
+   位置，以可读形式列出项目名称 BobberTally（无限钓鱼助手）、原作者
+   bluexp、原仓库链接和本协议名称。网络页面应提供可点击的来源链接。
+3. 公开发布展示本软件的截图、视频、教程或实质性代码节选，且该使用
+   依赖本协议授权时，须在正文、说明或相邻署名处提供项目名称、作者
+   和原仓库链接。只需在同一作品中清楚署名一次，无需逐帧加水印。
+4. 不得删除、掩盖或误导性修改原有来源标识，或将他人的原创工作声称
+   为自己的原创。允许调整界面布局或文档结构，但须在“关于”、来源
+   页面或同样容易找到的位置保留等效署名及原有第三方致谢。
+
+可直接采用的署名格式（修改版应改为“基于”并另列修改者）：
+BobberTally（无限钓鱼助手），原作者 bluexp
+https://github.com/bluexp/bobber-tally
+按 BobberTally 非商业使用及署名许可协议 1.0 使用。
+
+五、修改及再分发
+
+1. 修改版须显著标明“非官方修改版”、修改者、修改日期及主要改动，
+   不得冒充原作者或官方版本。可另行署名自己的贡献。
+2. 分发修改版时，须以可读、未混淆的形式随包提供该修改版完整的插件
+   源码及必要构建说明；不得只提供无法核对的下载链接或不可读产物。
+3. 在您有权许可的范围内，修改版中本软件及其衍生部分须继续按本协议
+   1.0 分发，不得改用允许商用或去除署名义务的许可，也不得增设阻止
+   接收者行使本协议所授权利的条件或技术限制。
+4. 接收者就授权人的原有部分直接从相应授权人取得本协议项下的许可，
+   并非由分发者转授权。独立作品仅与本软件放在同一介质或整合包中，
+   不会因此自动受本协议约束；该整合包分发本软件的行为仍须合规。
+
+六、第三方内容、历史版本及法定权利
+
+1. FishDex 的引用数据继续适用 THIRD_PARTY_LICENSES.txt 中的 MIT
+   许可；本协议不限制该许可已独立授予的权利。引用来源和具体范围见
+   插件 README.md、源文件的来源注释及第三方许可文件。
+2. 游戏素材、其他第三方代码、数据、名称、图标和商标仍受各自权利及
+   条款约束，不能由授权人重新许可为本协议内容。引用、致谢或公开
+   可读不表示授权人已取得对其转授权的权利。若存在许可冲突，应先
+   排除有关内容或取得必要权利，再进行使用或分发。
+3. 本协议适用于明确附带本协议的副本，不自动追溯改变既有发布包、
+   标签或依法取得的其他许可。先前有效授予的权利按原条款继续处理；
+   未附许可证的旧副本也不会仅因公开而自动取得商业使用权。
+4. 法律规定的合理使用、合理引用、公有领域、法定例外及不可放弃的
+   权利不受限制。GitHub 等平台依其适用条款独立授予的查看和 Fork
+   权利不被本协议撤回，进一步使用仍须有相应法律依据。
+
+七、名称与标识
+
+本协议允许为真实署名、说明来源和识别原版而使用项目名称及现有标识；
+不授予其他商标或品牌授权，也不允许暗示 bluexp、WFDB、其他贡献者、
+Blizzard Entertainment 或运营方为您的作品背书、担保或提供官方支持。
+
+八、贡献
+
+贡献者保留其版权。明确提交用于并入本项目的原创贡献，除非与维护者
+另有事先书面约定，按本协议 1.0 提供；提交者须有权如此授权，并明确
+列出第三方来源、许可及署名要求。本条不构成版权转让或另行商业授权，
+也不能为其他权利人作出授权。具体提交流程见根目录 CONTRIBUTING.md。
+
+九、期限、违约及恢复
+
+1. 合规取得的本版本许可持续至相关版权期限届满；授权人以后变更许可
+   不会单独撤回您已依本版本合法取得的权利。
+2. 违反本协议时，与该违反有关的授权自违反发生时终止，您须停止未经
+   授权的使用与分发。首次非故意遗漏署名或许可文件，如在自行发现或
+   收到书面通知两者较早之日起 30 日内全面补正并采取合理措施更正已
+   分发的副本，相关许可自动恢复。故意侵权、商业使用或再次违约须经
+   对应授权人书面同意方可恢复。恢复不自动免除既有法律责任。
+3. 合规接收者的独立许可不因分发者违约而终止。有关权属、第三方权利、
+   免责、责任限制及争议的条款在终止后仍适用。
+
+十、免责声明与责任限制
+
+在适用法律允许的最大范围内，本软件按“现状”和“可用状态”提供，
+不附带适销性、特定用途适用性、权利无瑕疵、不侵权、持续可用或准确性
+的明示或默示保证。授权人及贡献者不承担因使用或无法使用本软件导致的
+损失，包括数据、游戏账号、游戏内资产及间接损失，但法律禁止排除或
+限制的责任除外。本协议不是对游戏规则合规性或账号安全的保证，也不
+代替适用的游戏及平台条款。
+
+十一、其他事项及联系
+
+1. 任何条款无效或不可执行，不影响其余条款；应在法律允许范围内尽量
+   保留其原意。适用法律及有管辖权的法院依相关法律规则确定。
+2. 就本协议所授予的权利，本协议构成完整条款；不同条件、豁免或超出
+   本协议范围的授权，须由有权授权的对应版权人明确书面同意。
+3. 联系维护者：通过 https://github.com/bluexp/bobber-tally/issues
+   提交许可问题或联系请求。公开 Issue 请勿填写身份、合同或其他敏感
+   信息；必要时先请求适当的私下联系渠道。
+
+======================================================================
+English translation (the Chinese text above controls)
+======================================================================
+
+This is a custom source-available software license with a noncommercial
+restriction. It is not OSI-approved and is not MIT, GPL, Apache, or a
+Creative Commons license. Mandatory applicable law remains unaffected.
+
+1. Definitions and scope
+
+Each licensor licenses only material they have authority to license. "You"
+means the individual or entity exercising the licensed rights. "Software"
+covers only licensor-controlled original material distributed with these
+terms in addons/WowfFishing/, the root README.md, README.en.md,
+COMPLIANCE.md, CONTRIBUTING.md, LICENSE, NOTICE, and
+tools/package-bobber-tally.py, including copies in official add-on packages.
+Websites, forums, desktop and mobile clients, Xiaohongshu tools and assets,
+and all other repository paths are outside this grant. Public access alone
+is not a license.
+
+"Modified versions" include adaptations, translations, ports, and excerpts
+containing protected expression. "Distribution" includes providing source,
+packages, bundles, or modified versions to others. This license creates no
+new exclusive rights in facts, ideas, API knowledge, or independent work.
+
+"Commercial use" means use, copying, modification, or distribution intended
+to obtain commercial advantage, monetary compensation, or other economic
+consideration, or to support the operations, products, or services of a
+for-profit business. Purpose governs regardless of the user's legal form.
+Free access, lack of profit, or a "study only" label is not determinative.
+
+2. Conditional noncommercial grant
+
+Subject to compliance, each licensor grants a worldwide, royalty-free,
+nonexclusive copyright license to run, study, copy, modify, and distribute
+their licensable material solely for noncommercial purposes, including
+personal recreation, study, noncommercial research, testing, and free
+community exchange. All other rights are reserved. These terms govern
+activities requiring the licensor's permission; merely reading the terms
+or exercising independent legal rights does not impose extra obligations.
+
+3. No commercial use
+
+No commercial use is granted, including sale, rental, paid downloads,
+subscriptions, membership exclusives, paid unlocks, donations required for
+access or use, and bundling with paid products or services; paid setup,
+configuration, maintenance, boosting, commercial gaming operations, or
+trading game assets for real-world consideration; integration into
+commercial products, paid services, or internal business tools, including
+development and testing for those purposes; and directly monetizing its
+distribution, demonstrations, tutorials, or promotion through advertising,
+sales, sponsorships, referrals, or download gates you arrange.
+
+Ordinary game subscription fees, normal personal in-game transactions in
+virtual currency, and an independent general-purpose hosting platform's
+own fees or ads do not alone make personal recreation or free sharing
+commercial. Your own commercial activities above remain excluded. Calling
+a distribution fee cost recovery does not authorize it.
+
+Attribution does not authorize commercial use. Obtain express prior
+written permission from each relevant rightsholder for rights beyond this
+grant. Silence is not consent. No commercial license is promised, and any
+separate permission cannot replace third-party or game-platform permission.
+
+4. Attribution for all uses
+
+Keep LICENSE, NOTICE, THIRD_PARTY_LICENSES.txt, and existing copyright,
+source, and acknowledgment notices, including for private use, backups,
+and personal modifications. No registration, public identity disclosure,
+usage announcement, or reporting of gameplay is required.
+
+Distribute the full license, NOTICE, and applicable third-party licenses
+with every original or modified copy. Prominently identify BobberTally,
+original author bluexp, the original repository URL, and this license in
+the download page, repository README, or accompanying documentation. Web
+pages must use a clickable source link.
+
+For public screenshots, videos, tutorials, or substantial code excerpts
+whose use depends on this license, credit the project, author, and original
+repository in the work, description, or adjacent credit. One clear credit
+per work suffices; no per-frame watermark is required. Do not erase, hide,
+misrepresent, or falsely claim original authorship. Layout changes are
+allowed if equivalent credit and existing third-party acknowledgments
+remain readily available in an About view, source page, or similar place.
+
+Suggested credit (use "Based on" and add your name for a modified version):
+BobberTally, originally by bluexp
+https://github.com/bluexp/bobber-tally
+Used under the BobberTally Noncommercial Attribution License 1.0.
+
+5. Modifications and redistribution
+
+Clearly identify an unofficial modified version, its modifier, modification
+date, and main changes. You may credit your contributions. Include complete
+readable, unobfuscated add-on source for the modified version and necessary
+build instructions in its package, not only an unverifiable download link
+or unreadable artifact. To the extent you can license them, the Software
+and its derivative portions must remain under version 1.0 of these terms;
+do not permit commercial use, remove attribution duties, or impose terms
+or technical restrictions preventing recipients from exercising this grant.
+
+Recipients receive licenses to each licensor's original material directly
+from that licensor, not by sublicensing. Independent works merely bundled
+on the same medium do not become subject to these terms; distribution of
+the Software in that bundle must still comply.
+
+6. Third parties, earlier releases, and legal rights
+
+FishDex data remains under the MIT license in THIRD_PARTY_LICENSES.txt;
+this license does not restrict rights independently granted by MIT. See
+the add-on README, source comments, and third-party notices for provenance.
+Game assets and other third-party code, data, names, icons, and trademarks
+retain their own rights and terms. References, acknowledgments, or public
+access do not establish sublicensing authority. Resolve conflicts through
+exclusion or the necessary permissions before use or distribution.
+
+Only copies expressly accompanied by these terms are covered. These terms
+do not retroactively change earlier archives, tags, or other valid grants.
+Earlier grants remain governed by their own terms; public older copies
+without a license do not automatically acquire commercial permissions.
+Fair use, quotation exceptions, the public domain, mandatory rights, and
+independently granted platform rights to view or fork remain unaffected.
+Further use requires its own applicable legal basis.
+
+7. Names and marks
+
+Project names and existing identifiers may be used for truthful attribution
+and identification. No other trademark or brand rights are granted. Do
+not imply endorsement, warranty, or official support by bluexp, WFDB,
+contributors, Blizzard Entertainment, or a game operator.
+
+8. Contributions
+
+Contributors keep copyright. Original contributions explicitly submitted
+for inclusion are offered under version 1.0 of these terms unless agreed
+otherwise in writing beforehand. Submitters must have authority and list
+third-party sources, licenses, and credit duties. No copyright assignment,
+separate commercial permission, or authorization on another rightsholder's
+behalf results. See the root CONTRIBUTING.md for the submission process.
+
+9. Duration, breach, and reinstatement
+
+A compliant grant lasts for the applicable copyright term; later licensing
+changes alone do not revoke rights already lawfully obtained under this
+version. Rights related to a breach terminate when it occurs. Stop the
+unauthorized activity. For a first inadvertent omission of attribution or
+license files, rights automatically reinstate if fully corrected within
+30 days of discovery or written notice, whichever occurs first, with
+reasonable measures to correct distributed copies. Intentional violations,
+commercial use, and repeat breaches require written reinstatement by the
+relevant licensor. Reinstatement does not automatically waive past liability.
+Compliant recipients retain their independent grants. Ownership,
+third-party rights, disclaimers, liability limits, and dispute terms survive.
+
+10. Disclaimer and liability
+
+To the maximum extent allowed by applicable law, the Software is provided
+"as is" and "as available", without express or implied warranties of
+merchantability, fitness, title, noninfringement, availability, or accuracy.
+Licensors and contributors are not liable for loss arising from its use or
+unavailability, including data, game accounts, virtual assets, or indirect
+loss, except where law prohibits exclusion or limitation. This is no
+assurance of game-policy compliance or account safety and does not replace
+applicable game or platform terms.
+
+11. General terms and contact
+
+Invalid terms do not invalidate the remainder; preserve their intent to
+the extent allowed by law. Governing law and competent courts follow
+applicable legal rules. These are the complete terms for this grant;
+different terms, waivers, or additional rights require express written
+agreement from the relevant authorized rightsholder.
+
+Contact the maintainer through https://github.com/bluexp/bobber-tally/issues.
+Do not put identity documents, contracts, or sensitive information in a
+public issue; request an appropriate private channel first if needed.

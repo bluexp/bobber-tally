@@ -12,6 +12,12 @@
 
 BobberTally 是「[无限库 WFDB](https://wfdb.cc/)」的游戏内组件。WFDB 的[钓鱼数据库](https://wfdb.cc/fishing/)提供钓点、配方与投稿预览，[Mac 客户端](https://wfdb.cc/downloads/#macos)提供插件安装、更新与记录整理。
 
+## 许可与署名
+
+本项目原创插件代码及配套文档采用 [BobberTally 非商业使用及署名许可协议 1.0](LICENSE)：**禁止商用；允许非商业个人使用、学习、修改和免费分享，须保留作者与出处。**个人本地使用保留随附声明即可；公开分享或修改版须注明 `BobberTally · 原作者 bluexp · https://github.com/bluexp/bobber-tally`，修改版另标改动并随包提供完整可读源码。
+
+这是自定义的**源码可用许可**，含非商业限制，不是 OSI 开源许可。完整适用范围及义务以协议为准，其他 WFDB 产品不在该授权内。FishDex 数据继续适用 MIT 等原第三方授权；新协议仅覆盖明确随附它的副本，既有发布 ZIP 和标签保持原样。[署名声明](NOTICE) · [许可问答与商用边界](addons/WowfFishing/LICENSING.md) · [贡献须知](CONTRIBUTING.md)
+
 ## 功能
 
 | 功能 | 游戏内操作 |

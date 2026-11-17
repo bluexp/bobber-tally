@@ -35,8 +35,12 @@
 
 ## 第三方资料与发布范围
 
+2026 年 11 月 17 日制定 [BobberTally 非商业使用及署名许可协议 1.0](LICENSE)，适用于明确附带该协议的原创插件源码及指定配套文档。该协议禁止商用，要求保留作者和来源，属于源码可用许可。它不替代游戏平台条款，不改变 FishDex 等第三方的独立许可，也不追溯改写既有发布 ZIP 或标签。[许可问答](addons/WowfFishing/LICENSING.md) · [署名声明](NOTICE)
+
 FishDex 引用部分随包保留 MIT 授权和版权声明。客户端物品资料与参考钓点逐项标明来源，静态资料包含物品名称、编号、地点与用途等参考字段。公开可读的第三方资料仍受各自的权利与使用条款约束，已核实的 MIT 授权适用于 FishDex 引用部分。游戏截图用于免费玩家项目的功能说明，并保留游戏权属提示。[资料来源与致谢](addons/WowfFishing/README.md) · [FishDex 授权](addons/WowfFishing/THIRD_PARTY_LICENSES.txt) · [暴雪玩家网站法律问答](https://www.blizzard.com/it-it/legal/c1ae32ac-7ff9-4ac3-a03b-fc04b8697010/blizzard-legal-faq)
 
 ## English summary
+
+The [BobberTally Noncommercial Attribution License 1.0](LICENSE), prepared on November 17, 2026, covers only expressly accompanied copies of the original add-on and specified supporting files. This custom source-available license prohibits commercial use and requires attribution. It does not replace platform terms, restrict independent third-party licenses, or retroactively change release archives or tags.
 
 BobberTally is distributed free of charge with readable Lua source. Casting and reeling require separate player inputs through the game’s secure spell button and Interact action. The add-on records completed loot events and refreshes auction listings after a player requests a lookup at the Auction House. Character settings and observations are stored locally in the game’s saved variables. This review describes the source and the published rules. The publisher and operator retain final authority over add-on use. [WoW UI Add-On Development Policy](https://eu.forums.blizzard.com/en/wow/t/wow-user-interface-add-on-development-policy/1642) · [China Battle.net EULA](https://legal.battlenet.com.cn/zh-cn/legal/simple/2e90163d-612f-41a5-addd-8a837ac43d02/non-printable)

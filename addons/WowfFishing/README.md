@@ -6,6 +6,14 @@
 
 v0.11.3 修复 v0.11.2 的启动故障。升级后，钓鱼工具栏和 `/wowfish` 命令恢复，原有快捷键与渔获记录继续使用。
 
+## 许可与署名 / License and attribution
+
+原创插件代码及配套文档采用 [BobberTally 非商业使用及署名许可协议 1.0](LICENSE)。**禁止商用；非商业个人使用须保留出处，允许按协议学习、修改和免费分享。**个人本地使用保留 `LICENSE`、`NOTICE`、`THIRD_PARTY_LICENSES.txt` 和原署名即可，无需公开发布使用声明。公开分发注明 `BobberTally · 原作者 bluexp · https://github.com/bluexp/bobber-tally`；修改版标明非官方版本、修改者、日期与改动，并附完整可读源码。完整义务以协议为准。
+
+这是自定义的源码可用许可，不是 OSI 开源许可。FishDex 引用数据仍按 MIT 授权，其他第三方内容按原权利处理。新协议只覆盖明确随附它的副本，不改写旧发布 ZIP 和标签。[署名声明](NOTICE) · [许可问答](LICENSING.md)
+
+Original code and accompanying documentation use the [BobberTally Noncommercial Attribution License 1.0](LICENSE), a custom source-available license. **Commercial use is prohibited; noncommercial use requires attribution.** For private use, keep the license, notice, third-party licenses, and existing credits; no public announcement is needed. Public copies must identify BobberTally, original author bluexp, and the repository URL. Unofficial modifications must identify their author, date, and changes and include complete readable source. The full terms control. FishDex data retains MIT permissions; existing release archives and tags are preserved. See [NOTICE](NOTICE) and the [licensing FAQ](LICENSING.md).
+
 ## 使用
 
 - `/wowfish gear` 或「钓鱼设置 → 换装方案」显示鱼竿、武器、主副手、当前装备和换装键。最近一次换装的目标、结果和时间会按角色保留，主副手都符合目标时才显示成功。方案缺失、装备找不到或装备槽不一致时，可在这里查看原因并打开换装向导。

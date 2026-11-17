@@ -1,0 +1,31 @@
+BobberTally / 无限钓鱼助手
+Copyright (c) 2026 bluexp and BobberTally contributors.
+Original author / 原作者: bluexp
+Source / 项目来源: https://github.com/bluexp/bobber-tally
+Project website / 项目网站: https://bobbertally.com/
+
+License / 项目许可:
+BobberTally Noncommercial Attribution License 1.0
+BobberTally 非商业使用及署名许可协议 1.0
+SPDX: LicenseRef-BobberTally-NC-Attribution-1.0
+See the accompanying LICENSE for the complete terms and limited scope.
+完整条款及适用范围见随附 LICENSE。
+
+Noncommercial use only. Preserve attribution, source links, and notices.
+仅限非商业使用。须保留署名、来源链接和许可声明。
+Private use requires keeping the notices, not a public usage announcement.
+个人本地使用保留原声明即可，无需公开发布使用声明。
+
+Third-party content retains its own rights and terms. FishDex data is
+licensed under MIT; preserve THIRD_PARTY_LICENSES.txt. Full provenance and
+acknowledgments are in the add-on README.md and source comments. This NOTICE
+does not relicense third-party content or reduce its independent permissions.
+第三方内容继续适用原权利及条款；FishDex 数据适用 MIT。须保留
+THIRD_PARTY_LICENSES.txt，完整来源见插件 README.md 与源码注释。
+本声明不改变第三方许可，也不减少第三方许可独立授予的权利。
+
+World of Warcraft and related game assets and marks belong to their
+respective rightsholders, including Blizzard Entertainment. BobberTally is
+an independent player project; no official endorsement is implied.
+《魔兽世界》及相关游戏素材、标识归包括 Blizzard Entertainment 在内的
+相应权利人所有。BobberTally 为独立玩家项目，不表示获得官方背书。
