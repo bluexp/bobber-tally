@@ -28,7 +28,7 @@ text:SetSpacing(4)
 panel:SetScript("OnShow", function()
     local website = addon.IsEnglish() and "https://wfdb.cc/en/" or "https://wfdb.cc/"
     text:SetText(table.concat({
-        theme.goldText .. L["无限钓鱼助手"] .. " 0.11.1|r",
+        theme.goldText .. L["无限钓鱼助手"] .. " 0.11.2|r",
         L["为《魔兽世界：无限》制作的钓鱼辅助插件。"],
         "",
         theme.goldText .. L["无限库 WFDB 网站"] .. "|r",
@@ -40,6 +40,7 @@ panel:SetScript("OnShow", function()
         theme.goldText .. L["使用方法|r"],
         L["/wowfish setup 打开换装向导。选择鱼竿和武器后，设置换装键并保存。"],
         L["两个快捷键都支持小键盘和鼠标侧键。录入侧键时，将鼠标停在录入按钮上。"],
+        L["可直接使用游戏已绑定的键；清除插件绑定后，原操作恢复。"],
         L["点击工具栏的装备图标换装，柱状图打开渔获统计，齿轮打开钓鱼设置。"],
         L["已有 F、W 方案的角色可继续使用原有 M 键换装。"],
         L["装备鱼竿后，左键点击鱼钩图标抛竿。按住工具栏最右侧的四向箭头可移动整组。"],

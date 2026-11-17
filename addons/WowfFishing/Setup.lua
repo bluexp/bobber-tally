@@ -300,9 +300,7 @@ local keyLabel = Label(surface, "GameFontHighlight", 28, -246, 190, nil, colors.
 addon.SetLocalizedText(keyLabel, "一键换装快捷键")
 local keyButton = theme.Button(surface, "WowfFishingSetupKey", "", 144, 26)
 keyButton:SetPoint("TOPLEFT", 192, -240)
-local useKey = theme.Button(surface, nil, "使用此键", 86, 26, true)
-useKey:SetPoint("LEFT", keyButton, "RIGHT", 6, 0)
-local selectedKey, selectedOverride, keyCapture
+local selectedKey, keyCapture
 
 local function KeyChord(key)
     if CreateKeyChordStringUsingMetaKeyState then
@@ -329,46 +327,28 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
     frame:SetPropagateKeyboardInput(false)
     frame:EnableKeyboard(false)
     frame:Hide()
-    local releaseKey, chord, conflict
+    local releaseKey, chord
 
     function frame:IsListening()
         return activeCapture == self
     end
 
-    function frame:StopListening(acceptedKey, override)
+    function frame:StopListening(acceptedKey)
         if not self:IsListening() then return end
-        activeCapture, releaseKey, chord, conflict = nil, nil, nil, nil
+        activeCapture, releaseKey, chord = nil, nil, nil
         self:SetScript("OnUpdate", nil)
         self:EnableKeyboard(false)
         self:ClearFocus()
         self:SetText("")
         self:Hide()
-        if acceptedKey then accept(acceptedKey, override) end
-        refresh()
+        local notice = acceptedKey and accept(acceptedKey)
+        refresh(notice or nil)
     end
 
-    local function ValidateInput(input, override)
-        local acceptedKey, errorMessage, canOverride = validate(input, override)
-        conflict = canOverride and input or nil
-        if not acceptedKey then
-            refresh(conflict and L["%s 已被游戏占用。使用此键会暂时覆盖原操作。"]:format(input) or errorMessage)
-        end
+    local function ValidateInput(input)
+        local acceptedKey, errorMessage = validate(input)
+        if not acceptedKey then refresh(errorMessage) end
         return acceptedKey
-    end
-
-    local function Accept(input, override)
-        local acceptedKey = ValidateInput(input, override)
-        if acceptedKey then frame:StopListening(acceptedKey, override) end
-    end
-
-    function frame:HasConflict()
-        return conflict ~= nil
-    end
-
-    function frame:UseConflictingKey()
-        if self:IsListening() and conflict and not releaseKey and not InCombatLockdown() then
-            Accept(conflict, true)
-        end
     end
 
     function frame:AttachButton(button)
@@ -376,7 +356,8 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
         button:SetScript("OnClick", function(_, mouseButton)
             if mouseButton == "Button4" or mouseButton == "Button5" then
                 if self:IsListening() and not releaseKey and not InCombatLockdown() then
-                    Accept(KeyChord(mouseButton:upper()))
+                    local key = ValidateInput(KeyChord(mouseButton:upper()))
+                    if key then self:StopListening(key) end
                 end
             elseif not mouseButton or mouseButton == "LeftButton" then
                 self:ToggleListening()
@@ -404,7 +385,7 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
         local input = chord
         releaseKey, chord = nil, nil
         self:SetScript("OnUpdate", nil)
-        if input then Accept(input) end
+        if input and not InCombatLockdown() then self:StopListening(input) end
     end
 
     local function CheckKeyRelease(self)
@@ -414,7 +395,7 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
 
     local function RejectEnter(self)
         if not self:IsListening() then return end
-        releaseKey, chord, conflict = nil, nil, nil
+        releaseKey, chord = nil, nil
         self:SetScript("OnUpdate", nil)
         refresh(L["回车不能用作快捷键，请按其他键。"])
     end
@@ -429,7 +410,7 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
             self:StopListening()
             return
         end
-        if key == releaseKey or modifierKeys[key:gsub("^[LR]", "")] then return end
+        if releaseKey or modifierKeys[key:gsub("^[LR]", "")] then return end
         releaseKey = key
         if IsKeyDown then self:SetScript("OnUpdate", CheckKeyRelease) end
         chord = ValidateInput(KeyChord(key))
@@ -521,12 +502,11 @@ local function Render(notice)
     if weaponPage then selected = weapon end
     local equipped = SameItem(selected, CurrentMainHand())
     local available = finishPage and FindItem(Items(true), rod) or chosen
-    local validKey = finishPage and selectedKey and handlers.validateKey(selectedKey, selectedOverride)
+    local validKey = finishPage and selectedKey and handlers.validateKey(selectedKey)
     keyLabel:SetShown(finishPage)
     keyButton:SetShown(finishPage)
     keyButton:SetEnabled(not pending and not combat)
     keyButton:SetText(capturingKey and L["请按快捷键…"] or selectedKey or L["点击录入"])
-    useKey:SetShown(finishPage and keyCapture:HasConflict())
     for i, entry in ipairs(summary) do
         local item = i == 1 and rod or weapon
         entry.icon:SetShown(finishPage)
@@ -558,6 +538,8 @@ local function Render(notice)
         hint = not available and L["所选鱼竿不在身上，请找回鱼竿或返回重选。"]
             or (capturingKey and L["按键盘键，或在录入按钮上按鼠标侧键。Esc 取消。"])
             or (not validKey and L["支持键盘、小键盘、鼠标侧键和组合键。"])
+            or (validKey == db.fishKey and L["保存后，%s 将从抛竿 / 收竿改为换装。"]:format(validKey))
+            or L["可直接使用游戏已绑定的键；清除插件绑定后，原操作恢复。"]
     end
     message:SetText(notice or (combat and L["请脱离战斗后再继续。"]) or hint or "")
 end
@@ -629,7 +611,7 @@ local function Advance(attempt)
 
     local key
     if step == 3 then
-        key, saveError = handlers.validateKey(selectedKey or "", selectedOverride)
+        key, saveError = handlers.validateKey(selectedKey or "")
         if not key then Finish(saveError); return end
     end
     local old = db.setupEquipment
@@ -670,7 +652,7 @@ nextStep:SetScript("OnClick", function()
         return
     end
     if step == 3 and not CheckWeaponDraft() then return end
-    if step == 3 and not (selectedKey and handlers.validateKey(selectedKey, selectedOverride)) then
+    if step == 3 and not (selectedKey and handlers.validateKey(selectedKey)) then
         keyCapture:ToggleListening()
         return
     end
@@ -731,7 +713,7 @@ function addon.ShowSetup(tab, notice)
             local setup = db.setupEquipment
             rod = setup and setup.rod and { id = setup.rod.main } or nil
             weapon = setup and setup.weapon and { id = setup.weapon.main } or nil
-            selectedKey, selectedOverride = handlers.key(), nil
+            selectedKey = handlers.key()
         end
         surface:Show()
         Render(lastNotice)
@@ -747,10 +729,8 @@ end
 function addon.InitializeSetup(settings, callbacks)
     db, handlers = settings, callbacks
     if not keyCapture then
-        keyCapture = addon.CreateKeyCapture(surface, "WowfFishingSetupKeyCapture", function(chord, override)
-            return handlers.validateKey(chord, override)
-        end, function(key, override)
-            selectedKey, selectedOverride = key, override
+        keyCapture = addon.CreateKeyCapture(surface, "WowfFishingSetupKeyCapture", handlers.validateKey, function(key)
+            selectedKey = key
         end, Render)
         keyCapture:AttachButton(keyButton)
         useKey:SetScript("OnClick", function() keyCapture:UseConflictingKey() end)

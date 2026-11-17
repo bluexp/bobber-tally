@@ -4,7 +4,7 @@
 
 BobberTally is a fishing add-on for **World of Warcraft: Forever**. Swap between your fishing pole and weapons, track what you catch, compare Auction House listings with vendor prices, and look up fishing spots and cooking recipes.
 
-**[Download v0.11.1 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.1/BobberTally-v0.11.1.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
+**[Download v0.11.2 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.2/BobberTally-v0.11.2.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
 
 Requires the WoW Forever client (add-on interface `16001`). The add-on supports English and Simplified Chinese.
 
@@ -28,7 +28,7 @@ BobberTally is the in-game add-on for [WFDB](https://wfdb.cc/en/). The [fishing 
 3. Run `/wowfish setup`. Choose your fishing pole and the weapon you want to switch back to, then record a swap key. The wizard waits for the game to confirm each gear change. Close the Equipment Manager before saving.
 4. Run `/wowfish settings`. Under **Fishing Controls**, set a **Cast / Reel Key** and enable **Interact Key**. To record a mouse side button, keep the pointer over the binding field while pressing it. With your pole equipped, press the key to cast, then press it again after the splash to reel in.
 
-If a key is already bound in the game, choose **Use Anyway** to override it temporarily. Click **Clear** to restore the original binding.
+You can record a key that is already bound in WoW. BobberTally overrides it temporarily. Change keys or click **Clear** to restore the original action. If you assign the same key to both add-on actions, the last one you save gets it.
 
 ## In-game commands
 
@@ -41,7 +41,7 @@ If a key is already bound in the game, choose **Use Anyway** to override it temp
 | `/wowfish auctions` | View active listings, confirmed sales, and daily records. |
 | `/wowfish fish` | Open the fish and cooking catalog. |
 | `/wowfish export` | Export recent fishing records for preview in the WFDB fishing database. |
-| `/wowfish bind G` | Bind the cast/reel action. Replace `G` with an available key. |
+| `/wowfish bind G` | Bind the cast/reel action. Replace `G` with the key you want to use. |
 | `/wowfish about` | Find WFDB website addresses, in-game help, and credits. |
 
 ## Interface language

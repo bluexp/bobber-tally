@@ -6,7 +6,7 @@
 
 *A fishing add-on for World of Warcraft: Forever with gear swaps, catch tracking, and a fish and cooking catalog.*
 
-**[下载 v0.11.1 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.1/BobberTally-v0.11.1.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
+**[下载 v0.11.2 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.2/BobberTally-v0.11.2.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
 
 适用客户端接口 `16001`。插件界面支持简体中文和英文。
 
@@ -30,7 +30,7 @@ BobberTally 是「[无限库 WFDB](https://wfdb.cc/)」的游戏内组件。WFDB
 3. 输入 `/wowfish setup`，选择鱼竿和要换回的武器，再录入换装键。向导会在游戏确认装备后继续。
 4. 打开「钓鱼设置 → 钓鱼操作」，录入抛竿 / 收竿键并开启「交互键」。录入鼠标侧键时，把鼠标停在录入按钮上再按侧键。
 
-已占用的游戏按键可在确认后由插件暂时使用。点击「清除」即可释放插件绑定，原来的游戏绑定会恢复。
+游戏已绑定的键可以直接录入。插件临时使用该键，换键或点击「清除」后恢复原操作。如果两个插件动作录入同一个键，以最后保存的为准。
 
 ## 语言 / Language
 
@@ -57,7 +57,7 @@ The add-on uses the client language by default. Choose a language for the curren
 | `/wowfish auctions` | 查看在售挂单、成交和每日记录 |
 | `/wowfish fish` | 打开鱼类与烹饪资料库 |
 | `/wowfish export` | 导出近期实钓记录，可在 WFDB 钓鱼数据库预览 |
-| `/wowfish bind G` | 绑定抛竿和收竿，`G` 可换为空闲键 |
+| `/wowfish bind G` | 绑定抛竿和收竿，`G` 可换为你想使用的键 |
 | `/wowfish about` | 查看 WFDB 网站地址、插件说明与致谢 |
 
 ## 实机预览

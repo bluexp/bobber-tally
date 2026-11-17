@@ -248,6 +248,7 @@ end
 local function UpdateBindings()
     if InCombatLockdown() then return end
     UpdateCastButton()
+    -- These overrides shadow game bindings without changing the saved binding set.
     ClearOverrideBindings(bindings)
     local key = GearKey()
     if key then
@@ -601,43 +602,42 @@ local function NormalizeKey(input)
     return nil, L["不支持快捷键 %s，请换一个键。"]:format(key)
 end
 
-local function ValidateGearKey(input, override)
-    local key, errorMessage = NormalizeKey(input)
-    if not key then return nil, errorMessage end
-    if key == db.fishKey then return nil, key .. L[" 已用于抛竿和收竿。"] end
-    local action = GetBindingAction(key, true)
-    if not override and key ~= GearKey() and action and action ~= "" then
-        return nil, key .. L[" 已绑定其他操作，请换一个空闲键。"], true
-    end
-    return key
-end
-
-local function SaveGearKey(key)
+local function SetGearKey(key)
     if db.useM and key ~= "M" and MultiBar6 then MultiBar6:SetAlpha(1) end
     db.useM = key == "M"
     db.gearKey = key
+end
+
+local function SaveGearKey(key)
+    local moved = key and key == db.fishKey
+    if moved then db.fishKey = nil end
+    SetGearKey(key)
     UpdateEquipment()
     addon.RefreshGearStatus()
     if addon.RefreshFishingSettings then addon.RefreshFishingSettings() end
-end
-
-local function ValidateFishKey(input, override)
-    local key, errorMessage = NormalizeKey(input)
-    if not key then return nil, errorMessage end
-    if key == GearKey() then return nil, L["这个按键已用于换装，请换一个。"] end
-    local action = GetBindingAction(key, true)
-    if not override and key ~= db.fishKey and action and action ~= "" then
-        return nil, L["按键已被占用，请换一个。"], true
+    if moved then
+        local notice = L["%s 已改为换装键，原抛竿 / 收竿绑定已清除。"]:format(key)
+        Say(notice)
+        return notice
     end
-    return key
 end
 
 local function SaveFishKey(key)
+    local moved = key and key == GearKey()
+    if moved then SetGearKey(nil) end
     db.fishKey = key
     UpdateBindings()
     RefreshSummary()
+    if moved then addon.RefreshGearStatus() end
     if addon.RefreshFishingSettings then addon.RefreshFishingSettings() end
-    if key then Say(key .. L[" 用于抛竿和收竿。请在游戏设置中开启「交互键」。"]) end
+    if key then
+        Say(key .. L[" 用于抛竿和收竿。请在游戏设置中开启「交互键」。"])
+        if moved then
+            local notice = L["%s 已改为抛竿 / 收竿键，原换装绑定已清除。"]:format(key)
+            Say(notice)
+            return notice
+        end
+    end
 end
 
 local function HandleCommand(input)
@@ -689,7 +689,7 @@ local function HandleCommand(input)
         return
     end
     if command == "bind" then
-        local key, errorMessage = ValidateFishKey(argument)
+        local key, errorMessage = NormalizeKey(argument)
         if not key then
             Say(errorMessage)
             return
@@ -699,9 +699,7 @@ local function HandleCommand(input)
         SaveFishKey(nil)
     elseif command == "m" and (argument == "on" or argument == "off") then
         if argument == "on" then
-            local key, errorMessage = ValidateGearKey("M", true)
-            if not key then Say(errorMessage); return end
-            SaveGearKey(key)
+            SaveGearKey("M")
             Say(L["M 已用于切换钓鱼装备。"])
         elseif GearKey() == "M" then
             SaveGearKey(nil)
@@ -730,8 +728,8 @@ local function Initialize()
     if db.useM == nil then db.useM = false end
     if db.enhanceSound == nil then db.enhanceSound = true end
     addon.InitializeSetup(db, {
-        key = GearKey, validateKey = ValidateGearKey, saveKey = SaveGearKey, say = Say,
-        validateFishKey = ValidateFishKey, saveFishKey = SaveFishKey, toggleAudio = ToggleAudio,
+        key = GearKey, validateKey = NormalizeKey, saveKey = SaveGearKey, say = Say,
+        saveFishKey = SaveFishKey, toggleAudio = ToggleAudio,
     })
     RestoreAudio()
     spellName = C_Spell.GetSpellName(FISHING_SPELL_ID)

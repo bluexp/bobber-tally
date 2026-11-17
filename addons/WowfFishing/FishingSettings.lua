@@ -7,8 +7,8 @@ local interact = Enum.SoftTargetEnableFlags or {}
 function addon.CreateFishingSettings(page, db, handlers)
     local settings = {
         { label = "抛竿 / 收竿键", get = function() return db.fishKey end,
-            validate = handlers.validateFishKey, save = handlers.saveFishKey },
-        { label = "一键换装快捷键", get = handlers.key, validate = handlers.validateKey, save = handlers.saveKey },
+            save = handlers.saveFishKey },
+        { label = "一键换装快捷键", get = handlers.key, save = handlers.saveKey },
         { label = "水花声增强", get = function() return db.enhanceSound end, toggle = handlers.toggleAudio },
         { label = "交互键", name = "softTargetInteract", on = interact.Any, off = interact.Gamepad },
         { label = "自动拾取", name = "autoLootDefault", on = 1, off = 0 },
@@ -36,11 +36,9 @@ function addon.CreateFishingSettings(page, db, handlers)
                 local capturing = setting.capture:IsListening()
                 listening = listening or capturing
                 local key = setting.get()
-                local conflict = setting.capture:HasConflict()
                 setting.action:SetText(capturing and L["请按快捷键…"] or key or L["点击录入"])
                 setting.action:SetEnabled(not combat)
-                setting.extra:SetText(L[conflict and "使用此键" or "清除"])
-                setting.extra:SetEnabled(not combat and (conflict or (key ~= nil and not capturing)))
+                setting.extra:SetEnabled(not combat and key ~= nil and not capturing)
             elseif setting.toggle then
                 local enabled = setting.get()
                 setting.value:SetText(enabled and L["已开启"] or L["已关闭"])
@@ -62,7 +60,8 @@ function addon.CreateFishingSettings(page, db, handlers)
                 end
             end
         end
-        message:SetText(notice or (listening and L["按键盘键，或在录入按钮上按鼠标侧键。Esc 取消。"]) or "")
+        message:SetText(notice or (listening and L["按键盘键，或在录入按钮上按鼠标侧键。Esc 取消。"])
+            or L["可直接使用游戏已绑定的键；清除插件绑定后，原操作恢复。"])
     end
 
     local function Apply(setting, value)
@@ -80,17 +79,14 @@ function addon.CreateFishingSettings(page, db, handlers)
         setting.action = theme.Button(page, nil, "", setting.save and 144 or 80, 25, true)
         setting.action:SetPoint("TOPLEFT", setting.save and 196 or 260, y)
         if setting.save or setting.preset then
-            setting.extra = theme.Button(page, nil, setting.preset and "恢复默认" or "", 86, 25)
+            setting.extra = theme.Button(page, nil, setting.preset and "恢复默认" or "清除", 86, 25)
             setting.extra:SetPoint("TOPLEFT", 346, y)
         end
         if setting.save then
-            setting.capture = addon.CreateKeyCapture(page, nil, setting.validate, setting.save, Refresh)
+            setting.capture = addon.CreateKeyCapture(page, nil, handlers.validateKey, setting.save, Refresh)
             setting.capture:AttachButton(setting.action)
             setting.extra:SetScript("OnClick", function()
-                if InCombatLockdown() then return end
-                if setting.capture:HasConflict() then
-                    setting.capture:UseConflictingKey()
-                elseif not setting.capture:IsListening() then
+                if not InCombatLockdown() and not setting.capture:IsListening() then
                     setting.save(nil)
                     Refresh(L["快捷键已清除。"])
                 end
