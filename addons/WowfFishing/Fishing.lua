@@ -578,27 +578,49 @@ local function CountLootReceipt(message, lineID)
     end
 end
 
-local numpadOperators = {
-    NUMPADDECIMAL = true,
-    NUMPADDIVIDE = true,
-    NUMPADEQUALS = true,
-    NUMPADMINUS = true,
-    NUMPADMULTIPLY = true,
-    NUMPADPLUS = true,
+local bindingModifiers = { ALT = 1, CTRL = 2, SHIFT = 3, META = 4 }
+local namedKeys = {
+    SPACE = true, TAB = true, BACKSPACE = true, CAPSLOCK = true, NUMLOCK = true,
+    INSERT = true, DELETE = true, HOME = true, END = true, PAGEUP = true, PAGEDOWN = true,
+    UP = true, DOWN = true, LEFT = true, RIGHT = true,
+    PRINTSCREEN = true, SCROLLLOCK = true, PAUSE = true, CLEAR = true, MENU = true,
+    NUMPADDECIMAL = true, NUMPADDIVIDE = true, NUMPADEQUALS = true,
+    NUMPADMINUS = true, NUMPADMULTIPLY = true, NUMPADPLUS = true,
+    OEMCOMMA = true, OEMPERIOD = true, MOUSEWHEELUP = true, MOUSEWHEELDOWN = true,
 }
+
+local function IsBindingKey(key)
+    local mouse = tonumber(key:match("^BUTTON(%d+)$"))
+    if mouse then return mouse >= 3 and mouse <= 31 and key == "BUTTON" .. mouse end
+    local functionKey = tonumber(key:match("^F(%d+)$"))
+    if functionKey then return functionKey >= 1 and functionKey <= 24 and key == "F" .. functionKey end
+    local modifier = key:gsub("^[LR]", "")
+    if key == "ESCAPE" or key == "UNKNOWN" or bindingModifiers[modifier] or modifier == "CMD" then
+        return false
+    end
+    return key:match("^[A-Z0-9%p]$") or key:match("^NUMPAD[0-9]$") or key:match("^OEM[1-8]$")
+        or namedKeys[key] or (key:match("^[A-Z][A-Z0-9_]+$") and type(_G["KEY_" .. key]) == "string")
+end
 
 local function NormalizeKey(input)
     local key = input:match("^%s*(.-)%s*$"):upper()
+    if key == "" then return nil, L["支持键盘、小键盘、中键、侧键、滚轮和组合键。"] end
     local remaining = key
-    for _, modifier in ipairs({ "ALT", "CTRL", "SHIFT" }) do
-        remaining = remaining:gsub("^" .. modifier .. "%-", "")
+    local modifiers = {}
+    while true do
+        local modifier, suffix = remaining:match("^([A-Z]+)%-(.+)$")
+        local order = bindingModifiers[modifier]
+        if not order then break end
+        if modifiers[order] then return nil, L["不支持快捷键 %s，请换一个键。"]:format(key) end
+        modifiers[order] = modifier .. "-"
+        remaining = suffix
     end
-    if remaining:match("^[A-Z0-9]$") then return key end
-    if remaining:match("^NUMPAD[0-9]$") or numpadOperators[remaining] then return key end
-    if remaining == "BUTTON4" or remaining == "BUTTON5" then return key end
-    local number = tonumber(remaining:match("^F(%d+)$"))
-    if number and number >= 1 and number <= 12 and remaining == "F" .. number then return key end
-    if key == "" then return nil, L["支持键盘、小键盘、鼠标侧键和组合键。"] end
+    if remaining == "ENTER" or remaining == "NUMPADENTER" or remaining == "RETURN" or remaining == "NUMPADRETURN" then
+        return nil, L["回车不能用作快捷键，请按其他键。"]
+    end
+    if IsBindingKey(remaining) then
+        return (modifiers[1] or "") .. (modifiers[2] or "") .. (modifiers[3] or "") .. (modifiers[4] or "") .. remaining
+    end
     return nil, L["不支持快捷键 %s，请换一个键。"]:format(key)
 end
 

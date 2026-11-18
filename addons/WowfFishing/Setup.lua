@@ -308,26 +308,23 @@ local function KeyChord(key)
     end
     return (IsAltKeyDown() and "ALT-" or "")
         .. (IsControlKeyDown() and "CTRL-" or "")
-        .. (IsShiftKeyDown() and "SHIFT-" or "") .. key
+        .. (IsShiftKeyDown() and "SHIFT-" or "")
+        .. (IsMetaKeyDown and IsMetaKeyDown() and "META-" or "") .. key
 end
 
 local activeCapture
 local modifierKeys = { ALT = true, CTRL = true, SHIFT = true, META = true, CMD = true }
 
 function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
-    -- Keep keyboard focus in the recorder so Enter cannot open chat.
-    local frame = CreateFrame("EditBox", name, parent)
+    -- A keyboard listener receives binding keys without an edit box consuming numpad input.
+    local frame = CreateFrame("Frame", name, parent)
     frame:SetPoint("TOPLEFT", parent)
     frame:SetSize(1, 1)
-    frame:SetAlpha(0)
-    frame:SetFontObject(GameFontHighlightSmall)
-    frame:SetAutoFocus(false)
-    frame:SetMaxLetters(1)
     frame:EnableMouse(false)
     frame:SetPropagateKeyboardInput(false)
     frame:EnableKeyboard(false)
     frame:Hide()
-    local releaseKey, chord
+    local releaseKey, chord, captureButton
 
     function frame:IsListening()
         return activeCapture == self
@@ -338,8 +335,7 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
         activeCapture, releaseKey, chord = nil, nil, nil
         self:SetScript("OnUpdate", nil)
         self:EnableKeyboard(false)
-        self:ClearFocus()
-        self:SetText("")
+        captureButton:EnableMouseWheel(false)
         self:Hide()
         local notice = acceptedKey and accept(acceptedKey)
         refresh(notice or nil)
@@ -351,18 +347,29 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
         return acceptedKey
     end
 
+    local function RecordMouseKey(input)
+        if frame:IsListening() and not releaseKey and not InCombatLockdown() then
+            local key = ValidateInput(KeyChord(input))
+            if key then frame:StopListening(key) end
+        end
+    end
+
     function frame:AttachButton(button)
+        captureButton = button
         button:RegisterForClicks("AnyUp")
         button:SetScript("OnClick", function(_, mouseButton)
-            if mouseButton == "Button4" or mouseButton == "Button5" then
-                if self:IsListening() and not releaseKey and not InCombatLockdown() then
-                    local key = ValidateInput(KeyChord(mouseButton:upper()))
-                    if key then self:StopListening(key) end
-                end
-            elseif not mouseButton or mouseButton == "LeftButton" then
+            if not mouseButton or mouseButton == "LeftButton" then
                 self:ToggleListening()
+            elseif mouseButton == "MiddleButton" then
+                RecordMouseKey("BUTTON3")
+            elseif mouseButton:match("^Button%d+$") then
+                RecordMouseKey(mouseButton:upper())
             end
         end)
+        button:SetScript("OnMouseWheel", function(_, delta)
+            if delta ~= 0 then RecordMouseKey(delta > 0 and "MOUSEWHEELUP" or "MOUSEWHEELDOWN") end
+        end)
+        button:EnableMouseWheel(false)
     end
 
     function frame:ToggleListening()
@@ -373,9 +380,9 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
         else
             if activeCapture then activeCapture:StopListening() end
             activeCapture = self
+            captureButton:EnableMouseWheel(true)
             self:Show()
             self:EnableKeyboard(true)
-            self:SetFocus()
             refresh()
         end
     end
@@ -402,7 +409,7 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
 
     frame:SetScript("OnKeyDown", function(self, key)
         if not self:IsListening() then return end
-        if key == "ENTER" or key == "NUMPADENTER" then
+        if key == "ENTER" or key == "NUMPADENTER" or key == "RETURN" or key == "NUMPADRETURN" then
             RejectEnter(self)
             return
         end
@@ -411,16 +418,14 @@ function addon.CreateKeyCapture(parent, name, validate, accept, refresh)
             return
         end
         if releaseKey or modifierKeys[key:gsub("^[LR]", "")] then return end
+        chord = ValidateInput(KeyChord(key))
+        if not chord then return end
         releaseKey = key
         if IsKeyDown then self:SetScript("OnUpdate", CheckKeyRelease) end
-        chord = ValidateInput(KeyChord(key))
-        if chord then refresh(L["已识别 %s，请松开按键。"]:format(chord)) end
+        refresh(L["已识别 %s，请松开按键。"]:format(chord))
     end)
     frame:SetScript("OnKeyUp", FinishKey)
-    frame:SetScript("OnEnterPressed", RejectEnter)
     local function Cancel(self) self:StopListening() end
-    frame:SetScript("OnEscapePressed", Cancel)
-    frame:SetScript("OnEditFocusLost", Cancel)
     frame:SetScript("OnEvent", Cancel)
     frame:RegisterEvent("PLAYER_REGEN_DISABLED")
     parent:HookScript("OnHide", function() frame:StopListening() end)
@@ -536,8 +541,8 @@ local function Render(notice)
         heading:SetText(L["确认换装方案"])
         description:SetText(L["确认鱼竿和武器，录好换装键后即可保存。"])
         hint = not available and L["所选鱼竿不在身上，请找回鱼竿或返回重选。"]
-            or (capturingKey and L["按键盘键，或在录入按钮上按鼠标侧键。Esc 取消。"])
-            or (not validKey and L["支持键盘、小键盘、鼠标侧键和组合键。"])
+            or (capturingKey and L["按键盘键，或在录入按钮上按中键、侧键或滚动滚轮。Esc 取消。"])
+            or (not validKey and L["支持键盘、小键盘、中键、侧键、滚轮和组合键。"])
             or (validKey == db.fishKey and L["保存后，%s 将从抛竿 / 收竿改为换装。"]:format(validKey))
             or L["可直接使用游戏已绑定的键；清除插件绑定后，原操作恢复。"]
     end

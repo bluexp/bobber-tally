@@ -6,7 +6,7 @@
 
 *A fishing add-on for World of Warcraft: Forever with gear swaps, catch tracking, and a fish and cooking catalog.*
 
-**[下载 v0.11.4 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.4/BobberTally-v0.11.4.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
+**[下载 v0.11.5 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.5/BobberTally-v0.11.5.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
 
 适用客户端接口 `16001`。插件界面支持简体中文和英文。
 
@@ -34,7 +34,7 @@ BobberTally 是「[无限库 WFDB](https://wfdb.cc/)」的游戏内组件。WFDB
 1. 解压 ZIP，将 `WowfFishing` 文件夹放入 `_forever_/Interface/AddOns/`。
 2. 重启游戏，在角色选择界面的插件列表中启用「无限钓鱼助手」或「BobberTally」。
 3. 输入 `/wowfish setup`，选择鱼竿和要换回的武器，再录入换装键。向导会在游戏确认装备后继续。
-4. 打开「钓鱼设置 → 钓鱼操作」，录入抛竿 / 收竿键并开启「交互键」。录入鼠标侧键时，把鼠标停在录入按钮上再按侧键。
+4. 打开「钓鱼设置 → 钓鱼操作」，录入抛竿 / 收竿键并开启「交互键」。支持小键盘、方向键、符号键和组合键。录入中键、侧键或滚轮时，把指针停在录入按钮上。主键盘和小键盘的回车均禁用，按 Esc 取消录入。
 
 游戏已绑定的键可以直接录入。插件临时使用该键，换键或点击「清除」后恢复原操作。如果两个插件动作录入同一个键，以最后保存的为准。
 

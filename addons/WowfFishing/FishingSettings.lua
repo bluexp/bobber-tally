@@ -60,7 +60,7 @@ function addon.CreateFishingSettings(page, db, handlers)
                 end
             end
         end
-        message:SetText(notice or (listening and L["按键盘键，或在录入按钮上按鼠标侧键。Esc 取消。"])
+        message:SetText(notice or (listening and L["按键盘键，或在录入按钮上按中键、侧键或滚动滚轮。Esc 取消。"])
             or L["可直接使用游戏已绑定的键；清除插件绑定后，原操作恢复。"])
     end
 
