@@ -653,7 +653,7 @@ local function SaveFishKey(key)
     if moved then addon.RefreshGearStatus() end
     if addon.RefreshFishingSettings then addon.RefreshFishingSettings() end
     if key then
-        Say(key .. L[" 用于抛竿和收竿。请在游戏设置中开启「交互键」。"])
+        Say(L["%s 已绑定为抛竿 / 收竿键。可在「钓鱼操作」调整交互键。"]:format(key))
         if moved then
             local notice = L["%s 已改为抛竿 / 收竿键，原换装绑定已清除。"]:format(key)
             Say(notice)
@@ -738,6 +738,7 @@ local function HandleCommand(input)
 end
 
 local function Initialize()
+    WowfFishingAccountDB = WowfFishingAccountDB or {}
     WowfFishingDB = WowfFishingDB or {}
     db = WowfFishingDB
     db.fishingSession = db.fishingSession or { casts = 0, catches = 0, count = 0, seconds = 0, items = {} }
@@ -773,11 +774,15 @@ events:SetScript("OnEvent", function(_, event, ...)
     elseif not db then
         return
     elseif event == "PLAYER_ENTERING_WORLD" then
+        addon.InitializeInteractKey()
         lootWindow, closedLootWindow = nil, nil
         UpdateEquipment()
         UpdateChannel(false)
     elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_REGEN_ENABLED" then
-        if event == "PLAYER_REGEN_ENABLED" then StopMovingToolbar() end
+        if event == "PLAYER_REGEN_ENABLED" then
+            StopMovingToolbar()
+            addon.InitializeInteractKey()
+        end
         if pendingSwap and event == "PLAYER_EQUIPMENT_CHANGED" then CheckSwap(pendingSwap) end
         UpdateEquipment()
     elseif event == "EQUIPMENT_SWAP_FINISHED" then

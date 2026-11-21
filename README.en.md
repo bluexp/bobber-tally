@@ -36,6 +36,8 @@ This is a custom **source-available license**, not an OSI open-source license. S
 
 You can record a key that is already bound in WoW. BobberTally overrides it temporarily. Change keys or click **Clear** to restore the original action. If you assign the same key to both add-on actions, the last one you save gets it.
 
+The v0.11.6 development build enables Interact Key automatically the first time it loads for each game account. You can turn it off in Fishing Controls. Your choice persists when you reload the UI or switch characters.
+
 ## In-game commands
 
 | Command | What it does |

@@ -3,6 +3,20 @@ local L = addon.L
 local theme = addon.Theme
 local colors = theme.colors
 local interact = Enum.SoftTargetEnableFlags or {}
+local INTERACT_CVAR = "softTargetInteract"
+
+local function SetNumericCVar(name, value)
+    local ok, applied = pcall(C_CVar.SetCVar, name, tostring(value))
+    return ok and applied and tonumber(C_CVar.GetCVar(name)) == value
+end
+
+function addon.InitializeInteractKey()
+    if WowfFishingAccountDB.interactKeyInitialized or interact.Any == nil or InCombatLockdown() then return end
+    local current = tonumber(C_CVar.GetCVar(INTERACT_CVAR))
+    if current ~= nil and (current == interact.Any or SetNumericCVar(INTERACT_CVAR, interact.Any)) then
+        WowfFishingAccountDB.interactKeyInitialized = true
+    end
+end
 
 function addon.CreateFishingSettings(page, db, handlers)
     local settings = {
@@ -10,7 +24,7 @@ function addon.CreateFishingSettings(page, db, handlers)
             save = handlers.saveFishKey },
         { label = "一键换装快捷键", get = handlers.key, save = handlers.saveKey },
         { label = "水花声增强", get = function() return db.enhanceSound end, toggle = handlers.toggleAudio },
-        { label = "交互键", name = "softTargetInteract", on = interact.Any, off = interact.Gamepad },
+        { label = "交互键", name = INTERACT_CVAR, on = interact.Any, off = interact.Gamepad },
         { label = "自动拾取", name = "autoLootDefault", on = 1, off = 0 },
         { label = "打开拍卖行自动查价", get = function() return db.autoRefreshAuctionPrices end,
             toggle = addon.ToggleAuctionAutoRefresh },
@@ -65,8 +79,8 @@ function addon.CreateFishingSettings(page, db, handlers)
     end
 
     local function Apply(setting, value)
-        local ok, applied = pcall(C_CVar.SetCVar, setting.name, tostring(value))
-        if ok and applied and tonumber(C_CVar.GetCVar(setting.name)) == value then
+        if SetNumericCVar(setting.name, value) then
+            if setting.name == INTERACT_CVAR then WowfFishingAccountDB.interactKeyInitialized = true end
             Refresh(L["设置已应用。"])
         else
             Refresh(L["客户端未应用这项设置。"])
