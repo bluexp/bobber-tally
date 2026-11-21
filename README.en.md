@@ -4,7 +4,7 @@
 
 BobberTally is a fishing add-on for **World of Warcraft: Forever**. Swap between your fishing pole and weapons, track what you catch, compare Auction House listings with vendor prices, and look up fishing spots and cooking recipes.
 
-**[Download v0.11.5 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.5/BobberTally-v0.11.5.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
+**[Download v0.11.6 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.6/BobberTally-v0.11.6.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
 
 Requires the WoW Forever client (add-on interface `16001`). The add-on supports English and Simplified Chinese.
 
@@ -32,11 +32,11 @@ This is a custom **source-available license**, not an OSI open-source license. S
 1. Download and unzip the add-on. Copy the extracted `WowfFishing` folder to `_forever_/Interface/AddOns/`.
 2. Restart the game and enable **BobberTally** (shown as **无限钓鱼助手** on Chinese clients) in the AddOns list at character selection.
 3. Run `/wowfish setup`. Choose your fishing pole and the weapon you want to switch back to, then record a swap key. The wizard waits for the game to confirm each gear change. Close the Equipment Manager before saving.
-4. Run `/wowfish settings`. Under **Fishing Controls**, set a **Cast / Reel Key** and enable **Interact Key**. Use numpad, navigation, punctuation, or key combinations. Keep the pointer over the binding field to record a middle button, side button, or wheel direction. Both Enter keys are reserved and Esc cancels recording. With your pole equipped, press the key to cast, then press it again after the splash to reel in.
+4. Run `/wowfish settings`. Under **Fishing Controls**, set a **Cast / Reel Key**. Use numpad, navigation, punctuation, or key combinations. Keep the pointer over the binding field to record a middle button, side button, or wheel direction. Both Enter keys are reserved and Esc cancels recording. With your pole equipped, press the key to cast, then press it again after the splash to reel in.
 
 You can record a key that is already bound in WoW. BobberTally overrides it temporarily. Change keys or click **Clear** to restore the original action. If you assign the same key to both add-on actions, the last one you save gets it.
 
-The v0.11.6 development build enables Interact Key automatically the first time it loads for each game account. You can turn it off in Fishing Controls. Your choice persists when you reload the UI or switch characters.
+v0.11.6 enables Interact Key automatically the first time it loads for each game account. You can turn it off in Fishing Controls. Your choice persists when you reload the UI or switch characters.
 
 ## In-game commands
 
