@@ -4,7 +4,7 @@
 
 BobberTally is a fishing add-on for **World of Warcraft: Forever**. Swap between your fishing pole and weapons, track what you catch, compare Auction House listings with vendor prices, and look up fishing spots and cooking recipes.
 
-**[Download v0.11.6 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.6/BobberTally-v0.11.6.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
+**[Download v0.11.7 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.7/BobberTally-v0.11.7.zip)** · [Installation guide on WFDB](https://wfdb.cc/en/addons/bobber-tally/)
 
 Requires the WoW Forever client (add-on interface `16001`). The add-on supports English and Simplified Chinese.
 
@@ -23,7 +23,7 @@ This is a custom **source-available license**, not an OSI open-source license. S
 | Fishing toolbar | Click the equipment icon to swap gear or the hook to cast. The bar chart opens catch statistics and the cog opens Fishing Settings. Drag the four-way arrow to move the toolbar. |
 | Gear sets | Check both hand slots and the latest swap result. A swap succeeds once both slots match the target. Failed swaps show a reason. |
 | Fishing Settings | Set gear swap and cast/reel bindings, boost the splash sound, and adjust Interact Key, Auto Loot, and bobber search. Bindings support the numpad and mouse side buttons. |
-| Catch tracking and price estimates | See casts, catches, fishing time, estimated values, and hourly rates. Auction prices refresh on opening by default. Turn this off in Fishing Controls or refresh manually. |
+| Catch tracking and price estimates | See casts, catches, fishing time, estimated values, and hourly rates. Refresh auction prices manually or enable automatic lookups in Fishing Controls. |
 | My Auctions | Track active fish listings, confirmed sales, and daily records, and get sale alerts. Open the mailbox to sync settled proceeds. |
 | Catch and cooking catalog | Browse 89 catches and 24 recipes. Filter by your current zone or by non-fish catches, check reference sources, open the map, and set catch goals. |
 
@@ -32,13 +32,11 @@ This is a custom **source-available license**, not an OSI open-source license. S
 1. Download and unzip the add-on. Copy the extracted `WowfFishing` folder to `_forever_/Interface/AddOns/`.
 2. Restart the game and enable **BobberTally** (shown as **无限钓鱼助手** on Chinese clients) in the AddOns list at character selection.
 3. Run `/wowfish setup`. Choose your fishing pole and the weapon you want to switch back to, then record a swap key. The wizard waits for the game to confirm each gear change. Close the Equipment Manager before saving.
-4. Run `/wowfish settings`. Under **Fishing Controls**, set a **Cast / Reel Key**. Use numpad, navigation, punctuation, or key combinations. Keep the pointer over the binding field to record a middle button, side button, or wheel direction. Both Enter keys are reserved and Esc cancels recording. With your pole equipped, press the key to cast, then press it again after the splash to reel in.
+4. Run `/wowfish settings`. Under **Fishing Controls**, set a **Cast / Reel Key**. Use numpad, navigation, punctuation, or key combinations. Keep the pointer over the binding field to record a middle button, side button, or wheel direction. Both Enter keys are reserved and Esc cancels recording. Enable Interact Key to use the same key to cast and reel in after the splash.
 
 You can record a key that is already bound in WoW. BobberTally overrides it temporarily. Change keys or click **Clear** to restore the original action. If you assign the same key to both add-on actions, the last one you save gets it.
 
-v0.11.6 enables Interact Key automatically the first time it loads for each game account. You can turn it off in Fishing Controls. Your choice persists when you reload the UI or switch characters.
-
-The v0.11.7 source leaves Interact Key to the player and adds on-screen help after two missed casts or a failed gear swap. Splash enhancement and automatic price lookups are opt-in for new setups. Existing settings carry forward. The public download is v0.11.6.
+You can right-click the bobber while Interact Key is off. The add-on shows how to enable it when needed, offers guidance after two casts without loot, and explains failed gear swaps. Splash enhancement and automatic price lookups are opt-in for new setups. Existing settings carry forward.
 
 ## In-game commands
 

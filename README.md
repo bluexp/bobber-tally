@@ -6,7 +6,7 @@
 
 *A fishing add-on for World of Warcraft: Forever with gear swaps, catch tracking, and a fish and cooking catalog.*
 
-**[下载 v0.11.6 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.6/BobberTally-v0.11.6.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
+**[下载 v0.11.7 ZIP](https://github.com/bluexp/bobber-tally/releases/download/v0.11.7/BobberTally-v0.11.7.zip)** · [无限库 WFDB 中文安装指南](https://wfdb.cc/addons/bobber-tally/) · [English installation guide](https://wfdb.cc/en/addons/bobber-tally/)
 
 适用客户端接口 `16001`。插件界面支持简体中文和英文。
 
@@ -25,7 +25,7 @@ BobberTally 是「[无限库 WFDB](https://wfdb.cc/)」的游戏内组件。WFDB
 | 钓鱼工具栏 | 点击装备图标换装，点击鱼钩抛竿。柱状图打开渔获统计，齿轮打开设置。按住四向箭头拖动工具栏。 |
 | 换装方案 | 查看主副手和最近一次换装结果。插件确认两处装备都达到目标后才显示成功，失败时会说明原因。 |
 | 统一钓鱼设置 | 集中管理换装和抛竿快捷键、水花声增强、交互键、自动拾取和鱼漂搜索。支持小键盘与鼠标侧键。 |
-| 渔获估价 | 查看抛竿次数、渔获数量、钓鱼用时、两种估价及每小时统计。「打开拍卖行自动查价」默认开启，可在「钓鱼操作」关闭，也可手动更新拍卖价。 |
+| 渔获估价 | 查看抛竿次数、渔获数量、钓鱼用时、两种估价及每小时统计。可手动更新拍卖价，也可在「钓鱼操作」开启自动查价。 |
 | 我的挂单 | 查看鱼类在售、已售和每日记录，成交时收到提醒。打开邮箱同步实际结算所得。 |
 | 渔获与烹饪资料库 | 搜索 89 条渔获记录和 24 条配方。按当前区域或「非鱼类水产」筛选，查看钓点来源并打开地图，也可设置捕获目标。 |
 
@@ -38,9 +38,7 @@ BobberTally 是「[无限库 WFDB](https://wfdb.cc/)」的游戏内组件。WFDB
 
 游戏已绑定的键可以直接录入。插件临时使用该键，换键或点击「清除」后恢复原操作。如果两个插件动作录入同一个键，以最后保存的为准。
 
-v0.11.6 会在每个游戏账号首次加载新版时自动开启交互键。之后可在「钓鱼操作」关闭，重载界面或切换角色会保留选择。
-
-v0.11.7 源码已加入手动开启交互键、连续两竿未收到渔获提示和换装失败提示。水花声增强、自动查价供玩家自行开启，升级沿用现有设置。公开下载为 v0.11.6。
+在「钓鱼操作」开启交互键，听见水花声后再按同一个键收竿。交互键关闭时可右键点击浮漂。插件会提示如何开启交互键、连续两竿无渔获后如何调整，以及换装失败的原因。新配置可自行开启水花声增强和自动查价，升级沿用已有设置。
 
 ## 语言 / Language
 
