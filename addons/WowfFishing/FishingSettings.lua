@@ -10,12 +10,14 @@ local function SetNumericCVar(name, value)
     return ok and applied and tonumber(C_CVar.GetCVar(name)) == value
 end
 
-function addon.InitializeInteractKey()
-    if WowfFishingAccountDB.interactKeyInitialized or interact.Any == nil or InCombatLockdown() then return end
+function addon.IsKeyboardInteractEnabled()
+    if interact.Any == nil then return end
     local current = tonumber(C_CVar.GetCVar(INTERACT_CVAR))
-    if current ~= nil and (current == interact.Any or SetNumericCVar(INTERACT_CVAR, interact.Any)) then
-        WowfFishingAccountDB.interactKeyInitialized = true
-    end
+    if current ~= nil then return current == interact.Any end
+end
+
+function addon.IsInteractCVar(name)
+    return type(name) == "string" and name:lower() == INTERACT_CVAR:lower()
 end
 
 function addon.CreateFishingSettings(page, db, handlers)
@@ -39,6 +41,7 @@ function addon.CreateFishingSettings(page, db, handlers)
     addon.SetLocalizedText(Label(page, "GameFontHighlightSmall", 20, -364, 416, nil, colors.muted),
         "搜索距离用于选中鱼漂，实际收竿距离由游戏判定。")
     local message = Label(page, "GameFontHighlightSmall", 20, -390, 416, nil, colors.gold)
+    message:SetMaxLines(2)
     local lastNotice
 
     local function Refresh(notice)
@@ -80,7 +83,7 @@ function addon.CreateFishingSettings(page, db, handlers)
 
     local function Apply(setting, value)
         if SetNumericCVar(setting.name, value) then
-            if setting.name == INTERACT_CVAR then WowfFishingAccountDB.interactKeyInitialized = true end
+            if setting.name == INTERACT_CVAR then handlers.interactChanged() end
             Refresh(L["设置已应用。"])
         else
             Refresh(L["客户端未应用这项设置。"])

@@ -38,6 +38,8 @@ You can record a key that is already bound in WoW. BobberTally overrides it temp
 
 v0.11.6 enables Interact Key automatically the first time it loads for each game account. You can turn it off in Fishing Controls. Your choice persists when you reload the UI or switch characters.
 
+The v0.11.7 source leaves Interact Key to the player and adds on-screen help after two missed casts or a failed gear swap. Splash enhancement and automatic price lookups are opt-in for new setups. Existing settings carry forward. The public download is v0.11.6.
+
 ## In-game commands
 
 | Command | What it does |

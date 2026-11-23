@@ -457,7 +457,6 @@ end
 
 function addon.InitializeCatchList(db)
     settings = db
-    if db.autoRefreshAuctionPrices == nil then db.autoRefreshAuctionPrices = true end
     db.auctionQuotes = db.auctionQuotes or {}
     quotes = db.auctionQuotes
     catches, catchesByID, catchesByName = {}, {}, {}

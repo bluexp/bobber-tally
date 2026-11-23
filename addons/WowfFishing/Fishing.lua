@@ -5,6 +5,8 @@ local colors = theme.colors
 local FISHING_SPELL_ID = 7620
 local GEAR_BUTTON = "WowfFishingFloatingGear"
 local CAST_BUTTON = "WowfFishingCastButton"
+local INTERACT_HINT_BUTTON = "WowfFishingInteractHint"
+local INTERACT_HINT = "同键收竿需开启交互键。输入 /wowfish settings 设置，或右键点击浮漂。"
 local ICON_SIZE, CAST_OFFSET = 42, 7
 local TOOLBAR_WIDTH = 232
 local LOOT_ITEM = Enum and Enum.LootSlotType and Enum.LootSlotType.Item or LOOT_SLOT_ITEM or 1
@@ -51,6 +53,9 @@ local castButton = CreateFrame("Button", CAST_BUTTON, toolbar, "SecureActionButt
 castButton:SetPoint("LEFT", CAST_OFFSET, 0)
 castButton:RegisterForClicks("LeftButtonUp", "LeftButtonDown")
 local castIcon = ToolbarIcon(castButton)
+-- This binding target only displays help when keyboard interaction is disabled.
+local interactHintButton = CreateFrame("Button", INTERACT_HINT_BUTTON, toolbar)
+interactHintButton:RegisterForClicks("LeftButtonUp", "LeftButtonDown")
 local gearButton = CreateFrame("Button", GEAR_BUTTON, toolbar)
 gearButton:SetPoint("LEFT", castButton, "RIGHT", 6, 0)
 local gearIcon = ToolbarIcon(gearButton)
@@ -115,6 +120,7 @@ local pendingSwap, session, castStarted, currentCast
 local MAIN_HAND, OFF_HAND = 16, 17
 local lureTicker, lureWasActive, lureWarned
 local fishing, hasPole = false, false
+local missedCasts, reelHintGeneration = 0, 0
 
 local function PositionToolbar()
     local position = db.castButtonPosition
@@ -154,6 +160,9 @@ castButton:SetScript("OnEnter", function(self)
     end
     if db.fishKey then
         GameTooltip:AddLine(L["抛竿与收竿快捷键  "] .. db.fishKey, 1, 1, 1)
+        if addon.IsKeyboardInteractEnabled() == false then
+            GameTooltip:AddLine(L["同键收竿需开启交互键。"], 1, 0.8, 0.35, true)
+        end
     end
     GameTooltip:Show()
 end)
@@ -169,6 +178,18 @@ end
 local function Say(message)
     print("|cff63c6ea" .. L["无限钓鱼助手"] .. "|r " .. message)
 end
+
+local function ShowControlNotice(message)
+    Say(message)
+    UIErrorsFrame:AddMessage(message, 1, 0.35, 0.35, 1)
+end
+
+interactHintButton:SetScript("OnClick", function()
+    if not fishing or not currentCast or currentCast.interactHintShown then return end
+    if addon.IsKeyboardInteractEnabled() ~= false then return end
+    currentCast.interactHintShown = true
+    ShowControlNotice(L[INTERACT_HINT])
+end)
 
 local function GearKey()
     return db.gearKey or (db.useM and "M") or nil
@@ -256,11 +277,38 @@ local function UpdateBindings()
     end
     if db.fishKey and spellName and hasPole then
         if fishing then
-            SetOverrideBinding(bindings, true, db.fishKey, "INTERACTTARGET")
+            if addon.IsKeyboardInteractEnabled() == false then
+                SetOverrideBindingClick(bindings, true, db.fishKey, INTERACT_HINT_BUTTON, "LeftButton")
+            else
+                SetOverrideBinding(bindings, true, db.fishKey, "INTERACTTARGET")
+            end
         else
             SetOverrideBindingClick(bindings, true, db.fishKey, CAST_BUTTON, "LeftButton")
         end
     end
+end
+
+local function ResetReelHints()
+    missedCasts, reelHintGeneration = 0, reelHintGeneration + 1
+end
+
+local function UpdateInteractBinding()
+    ResetReelHints()
+    UpdateBindings()
+end
+
+local function CheckMissedCast(cast)
+    if not cast or not db.fishKey then return end
+    local generation = reelHintGeneration
+    -- The loot event can follow the channel stop.
+    C_Timer.After(LOOT_RECEIPT_GRACE + 1, function()
+        if cast.lootSeen or generation ~= reelHintGeneration or not hasPole or missedCasts >= 2 then return end
+        if addon.IsKeyboardInteractEnabled() == false then return end
+        missedCasts = missedCasts + 1
+        if missedCasts == 2 then
+            ShowControlNotice(L["连续两竿未收到渔获。请面向浮漂，听到水花后再按收竿键，或右键点击浮漂。"])
+        end
+    end)
 end
 
 local audioSettings = {
@@ -330,6 +378,7 @@ local function UpdateChannel(channelStarted, castGUID, eventSpellID)
         EnhanceAudio()
     else
         SaveFishingTime()
+        CheckMissedCast(currentCast)
         if db.audioBeforeFishing then audioTimer = C_Timer.NewTimer(5, RestoreAudio) end
     end
     UpdateBindings()
@@ -346,7 +395,10 @@ local function UpdateEquipment()
     if db.useM and MultiBar6 and not InCombatLockdown() then
         MultiBar6:SetAlpha(hasPole and 1 or 0)
     end
-    if wasEquipped and not hasPole then RestoreAudio() end
+    if wasEquipped and not hasPole then
+        ResetReelHints()
+        RestoreAudio()
+    end
     if hasPole and not lureTicker then
         RefreshLure()
         lureTicker = C_Timer.NewTicker(1, RefreshLure)
@@ -361,9 +413,15 @@ end
 
 local function FinishSwap(target, success, message, ...)
     pendingSwap = nil
-    db.lastGearSwap = { target = target, success = success, message = message, args = { ... }, time = GetServerTime() }
+    local previous, now = db.lastGearSwap, GetServerTime()
+    db.lastGearSwap = { target = target, success = success, message = message, args = { ... }, time = now }
     addon.RefreshGearStatus()
-    if not success then Say(L[message]:format(...)) end
+    if success or message == "退出游戏前未确认换装结果。" then return end
+    local reason = L[message]:format(...)
+    if previous and not previous.success and previous.target == target and now - (previous.time or 0) <= 15 then
+        reason = L["%s 可输入 /wowfish gear 查看装备方案。"]:format(reason)
+    end
+    ShowControlNotice(L["换装失败。%s"]:format(reason))
 end
 
 local function CheckSwap(attempt, timedOut)
@@ -479,6 +537,10 @@ local function ReadFishingLoot(autoLoot)
         currentCast = currentCast or {}
         lootWindow = { slots = {}, items = {}, receiptLines = {}, cast = currentCast }
         closedLootWindow = nil
+    end
+    if not lootWindow.cast.lootSeen then
+        lootWindow.cast.lootSeen = true
+        ResetReelHints()
     end
     if autoLoot then lootWindow.autoLoot = true end
     for slot = 1, slotCount do
@@ -648,17 +710,23 @@ local function SaveFishKey(key)
     local moved = key and key == GearKey()
     if moved then SetGearKey(nil) end
     db.fishKey = key
+    ResetReelHints()
     UpdateBindings()
     RefreshSummary()
     if moved then addon.RefreshGearStatus() end
     if addon.RefreshFishingSettings then addon.RefreshFishingSettings() end
     if key then
-        Say(L["%s 已绑定为抛竿 / 收竿键。可在「钓鱼操作」调整交互键。"]:format(key))
+        Say(L["%s 已绑定为抛竿 / 收竿键。"]:format(key))
+        local notice
         if moved then
-            local notice = L["%s 已改为抛竿 / 收竿键，原换装绑定已清除。"]:format(key)
+            notice = L["%s 已改为抛竿 / 收竿键，原换装绑定已清除。"]:format(key)
             Say(notice)
-            return notice
         end
+        if addon.IsKeyboardInteractEnabled() == false then
+            notice = L[INTERACT_HINT]
+            Say(notice)
+        end
+        return notice
     end
 end
 
@@ -738,7 +806,6 @@ local function HandleCommand(input)
 end
 
 local function Initialize()
-    WowfFishingAccountDB = WowfFishingAccountDB or {}
     WowfFishingDB = WowfFishingDB or {}
     db = WowfFishingDB
     db.fishingSession = db.fishingSession or { casts = 0, catches = 0, count = 0, seconds = 0, items = {} }
@@ -749,10 +816,9 @@ local function Initialize()
     addon.InitializeObservationExport(db)
     addon.InitializeAuctionWatch(db)
     if db.useM == nil then db.useM = false end
-    if db.enhanceSound == nil then db.enhanceSound = true end
     addon.InitializeSetup(db, {
         key = GearKey, validateKey = NormalizeKey, saveKey = SaveGearKey, say = Say,
-        saveFishKey = SaveFishKey, toggleAudio = ToggleAudio,
+        saveFishKey = SaveFishKey, toggleAudio = ToggleAudio, interactChanged = UpdateInteractBinding,
     })
     RestoreAudio()
     spellName = C_Spell.GetSpellName(FISHING_SPELL_ID)
@@ -773,15 +839,16 @@ events:SetScript("OnEvent", function(_, event, ...)
         Initialize()
     elseif not db then
         return
+    elseif event == "CVAR_UPDATE" then
+        if addon.IsInteractCVar(unitOrSlot) then UpdateInteractBinding() end
     elseif event == "PLAYER_ENTERING_WORLD" then
-        addon.InitializeInteractKey()
+        ResetReelHints()
         lootWindow, closedLootWindow = nil, nil
         UpdateEquipment()
         UpdateChannel(false)
     elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_REGEN_ENABLED" then
         if event == "PLAYER_REGEN_ENABLED" then
             StopMovingToolbar()
-            addon.InitializeInteractKey()
         end
         if pendingSwap and event == "PLAYER_EQUIPMENT_CHANGED" then CheckSwap(pendingSwap) end
         UpdateEquipment()
@@ -823,7 +890,7 @@ events:SetScript("OnEvent", function(_, event, ...)
 end)
 
 for _, event in ipairs({
-    "PLAYER_LOGIN", "PLAYER_ENTERING_WORLD", "PLAYER_LOGOUT", "PLAYER_EQUIPMENT_CHANGED", "EQUIPMENT_SWAP_FINISHED",
+    "PLAYER_LOGIN", "PLAYER_ENTERING_WORLD", "PLAYER_LOGOUT", "PLAYER_EQUIPMENT_CHANGED", "EQUIPMENT_SWAP_FINISHED", "CVAR_UPDATE",
     "PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED", "UNIT_SPELLCAST_CHANNEL_START",
     "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_INTERRUPTED", "LOOT_READY", "LOOT_OPENED",
     "LOOT_SLOT_CHANGED", "LOOT_SLOT_CLEARED", "LOOT_CLOSED", "CHAT_MSG_LOOT",
